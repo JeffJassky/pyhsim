@@ -2,7 +2,7 @@
   <section class="panel" :class="{ 'panel--collapsible': collapsible }">
     <header class="panel__header">
       <div class="panel__title">
-        <slot name="icon"><span v-if="icon">{{ icon }}</span></slot>
+        <slot name="icon"></slot>
         <h3>{{ title }}</h3>
       </div>
       <div class="panel__toolbar">

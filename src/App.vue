@@ -57,4 +57,12 @@ a {
 a.router-link-active {
   opacity: 1;
 }
+
+:deep(h3){
+  margin: 1.5em 0 0 0;
+  padding: 0 !important;
+  color: white;
+  opacity: 0.5;
+  font-size: 0.9em;
+}
 </style>
