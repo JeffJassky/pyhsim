@@ -1,0 +1,83 @@
+<template>
+  <div class="param">
+    <label>
+      {{ paramDef.label }}
+      <small v-if="paramDef.unit">{{ paramDef.unit }}</small>
+    </label>
+    <component
+      :is="inputType"
+      v-bind="inputProps"
+      :value="value"
+      @input="onInput"
+      @change="onInput"
+    >
+      <option
+        v-if="paramDef.type === 'select'"
+        v-for="opt in paramDef.options"
+        :key="opt.value"
+        :value="opt.value"
+      >
+        {{ opt.label }}
+      </option>
+    </component>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+import type { ParamDef } from '@/types';
+
+const props = defineProps<{ paramDef: ParamDef; value: string | number | boolean }>();
+const emit = defineEmits<{ update: [string | number | boolean] }>();
+
+const inputType = computed(() => {
+  if (props.paramDef.type === 'slider') return 'input';
+  if (props.paramDef.type === 'switch') return 'input';
+  if (props.paramDef.type === 'select') return 'select';
+  return 'input';
+});
+
+const inputProps = computed(() => {
+  const base: Record<string, unknown> = {};
+  if (props.paramDef.type === 'slider') {
+    base.type = 'range';
+    base.min = props.paramDef.min;
+    base.max = props.paramDef.max;
+    base.step = props.paramDef.step ?? 1;
+  } else if (props.paramDef.type === 'number') {
+    base.type = 'number';
+  } else if (props.paramDef.type === 'text') {
+    base.type = 'text';
+  } else if (props.paramDef.type === 'switch') {
+    base.type = 'checkbox';
+    base.checked = Boolean(props.value);
+  }
+  return base;
+});
+
+const onInput = (event: Event) => {
+  const target = event.target as HTMLInputElement | HTMLSelectElement;
+  let next: string | number | boolean = target.value;
+  if (props.paramDef.type === 'slider' || props.paramDef.type === 'number') {
+    next = Number(target.value);
+  } else if (props.paramDef.type === 'switch') {
+    next = (target as HTMLInputElement).checked;
+  }
+  emit('update', next);
+};
+</script>
+
+<style scoped>
+.param {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+</style>
