@@ -9,7 +9,9 @@
       </nav>
     </header>
     <main class="app__body">
-      <RouterView />
+      <div class="app__viewport">
+        <RouterView />
+      </div>
     </main>
   </div>
 </template>
@@ -20,17 +22,37 @@ import { RouterLink, RouterView } from 'vue-router';
 
 <style scoped>
 .app {
-  min-height: 100vh;
+  --app-header-height: 64px;
+  height: 100vh;
+  width: 100vw;
+  display: grid;
+  grid-template-rows: var(--app-header-height) 1fr;
+  overflow: hidden;
+}
+
+.app__body {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app__viewport {
+  height: 100%;
+  width: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.app__body {
+.app__viewport :deep(> *) {
   flex: 1;
+  min-height: 0;
 }
 
 .app__header {
-  padding: 0.75rem 1.5rem;
+  height: var(--app-header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(6px);
