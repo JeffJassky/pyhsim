@@ -15,7 +15,7 @@
           :items="timeline.items"
           :selected-id="timeline.selectedId"
           :playhead-min="minute"
-          @select="(id) => timeline.select(id)"
+          @select="handleTimelineSelect"
           @remove="timeline.removeItem"
           @update="handleTimelineMove"
           @playhead="setMinute"
@@ -87,11 +87,11 @@
       </Panel>
     </section>
     <FloatingInspector
-      :visible="Boolean(selectedItem)"
+      :visible="inspectorVisible"
       :item="selectedItem"
       :def="selectedDef"
       @change="handleInspectorChange"
-      @close="timeline.select(undefined)"
+      @close="handleInspectorClose"
     />
   </AppShell>
 </template>
@@ -154,6 +154,7 @@ const filteredDefs = computed(() =>
 
 const selectedItem = computed(() => timeline.items.find((item) => item.id === timeline.selectedId));
 const selectedDef = computed(() => library.defs.find((def) => def.key === selectedItem.value?.meta.key));
+const inspectorVisible = ref(false);
 
 const defaultParams = (def: InterventionDef) =>
   Object.fromEntries(def.params.map((param) => [param.key, param.default ?? 0]));
@@ -177,6 +178,13 @@ const handleCreate = (def: InterventionDef) => {
 const handleInspectorChange = (item: TimelineItem) => timeline.updateItem(item.id, item);
 const handleTimelineMove = ({ id, start, end }: { id: UUID; start: string; end: string }) => {
   timeline.updateItem(id, { start, end });
+};
+const handleTimelineSelect = (id?: UUID) => {
+  timeline.select(id);
+  inspectorVisible.value = Boolean(id);
+};
+const handleInspectorClose = () => {
+  inspectorVisible.value = false;
 };
 
 const isEditableTarget = (target: EventTarget | null) => {
@@ -203,6 +211,19 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleTimelineDeleteShortcut);
 });
+
+watch(
+  () => timeline.selectedId,
+  (id, prev) => {
+    if (!id) {
+      inspectorVisible.value = false;
+      return;
+    }
+    if (id !== prev) {
+      inspectorVisible.value = true;
+    }
+  }
+);
 
 const viewSignalSets = {
   scnCoupling: ['melatonin', 'vasopressin', 'vip'],

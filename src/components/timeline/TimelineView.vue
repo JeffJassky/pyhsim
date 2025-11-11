@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { DataSet } from 'vis-data';
 import { Timeline as VisTimeline, type TimelineOptions } from 'vis-timeline/standalone';
 import '@/assets/vis-timeline.css';
@@ -34,6 +34,12 @@ let timeline: VisTimeline | null = null;
 let dataset: DataSet<any> | null = null;
 let playheadId = 'playhead-marker';
 
+const tagPlayheadElement = () => {
+  if (!container.value) return;
+  const el = container.value.querySelector(`.vis-custom-time[data-custom-time="${playheadId}"]`);
+  el?.classList.add('playhead-marker');
+};
+
 const toVisItems = (items: TimelineItem[]) =>
   items.map((item) => ({
     id: item.id,
@@ -46,8 +52,12 @@ const toVisItems = (items: TimelineItem[]) =>
 
 const syncItems = () => {
   if (!dataset) return;
+  const selectedId = props.selectedId;
   dataset.clear();
   dataset.add(toVisItems(props.items));
+  if (selectedId) {
+    nextTick(() => setSelection(selectedId));
+  }
 };
 
 const toISO = (value: any) => new Date(value).toISOString();
@@ -73,6 +83,7 @@ const updatePlayhead = (minute: number) => {
   } else {
     timeline.setCustomTime(time, playheadId);
   }
+  tagPlayheadElement();
   timeline.setCustomTimeTitle(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), playheadId);
 };
 
@@ -121,6 +132,7 @@ const initTimeline = () => {
   timeline = new VisTimeline(container.value, dataset, options());
   timeline.on('select', (event) => {
     const id = (event.items?.[0] as UUID) || undefined;
+    if (!id) return;
     emit('select', id);
   });
   const onTimeEvent = (event: any) => {
@@ -130,8 +142,12 @@ const initTimeline = () => {
   };
   timeline.on('timechange', onTimeEvent);
   timeline.on('timechanged', onTimeEvent);
+  const shouldHandlePlayheadClick = (event: any) => {
+    return event.what === 'background' || event.what === 'axis';
+  };
+
   timeline.on('click', (event: any) => {
-    if (!event.time) return;
+    if (!event.time || !shouldHandlePlayheadClick(event)) return;
     const minute = (event.time.getHours() * 60 + event.time.getMinutes()) as Minute;
     emit('playhead', minute);
   });
@@ -254,7 +270,7 @@ watch(
   box-shadow: 0 0 12px rgba(248, 250, 252, 0.35);
 }
 
-.playhead-marker{
-	pointer-events: none;
+.timeline-vis :deep(.vis-custom-time.playhead-marker) {
+  pointer-events: none;
 }
 </style>
