@@ -2,18 +2,18 @@
   <div class="profile-palette">
     <div v-for="profile in profiles" :key="profile.key" class="profile-card">
       <div class="profile-card__header">
-        <div>
+        <div class="profile-card__title-bar">
           <h4>{{ profile.label }}</h4>
-          <p>{{ profile.description.physiology }}</p>
+          <label class="switch">
+            <input
+              type="checkbox"
+              :checked="state[profile.key].enabled"
+              @change="toggle(profile.key, $event)"
+            />
+            <span class="slider" />
+          </label>
         </div>
-        <label class="switch">
-          <input
-            type="checkbox"
-            :checked="state[profile.key].enabled"
-            @change="toggle(profile.key, $event)"
-          />
-          <span class="slider" />
-        </label>
+        <p>{{ profile.description.physiology }}</p>
       </div>
       <div
         v-if="state[profile.key].enabled && profile.params.length"
@@ -80,8 +80,14 @@ const update = (key: ProfileKey, paramKey: string, event: Event) => {
 
 .profile-card__header {
   display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile-card__title-bar {
+  display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
 }
 
@@ -117,8 +123,8 @@ input[type='range'] {
 .switch {
   position: relative;
   display: inline-block;
-  width: 38px;
   height: 20px;
+  width: 40px;
 }
 
 .switch input {
@@ -134,6 +140,7 @@ input[type='range'] {
   background-color: rgba(255, 255, 255, 0.25);
   transition: 0.2s;
   border-radius: 34px;
+  width: 40px;
 }
 
 .slider:before {

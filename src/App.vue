@@ -3,7 +3,7 @@
     <header class="app__header">
       <nav class="app-nav">
         <span class="logo">physim</span>
-        <RouterLink to="/studio">Studio</RouterLink>
+        <RouterLink to="/">Studio</RouterLink>
         <RouterLink to="/library">Library</RouterLink>
         <RouterLink to="/scenarios">Scenarios</RouterLink>
       </nav>

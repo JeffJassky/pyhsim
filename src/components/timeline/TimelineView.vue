@@ -180,10 +180,7 @@ watch(
 <style scoped>
 .timeline-container {
   position: relative;
-  background: #0c121d;
   border-radius: 16px;
-  padding: 0.25rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 .timeline-vis {
@@ -193,7 +190,7 @@ watch(
 
 .timeline-vis :deep(.vis-timeline) {
   border: none;
-  background: radial-gradient(circle at top, rgba(26, 42, 78, 0.85), rgba(8, 12, 20, 0.95));
+  background: rgba(32, 53, 95, 0.85);
   border-radius: 14px;
 }
 
@@ -204,11 +201,29 @@ watch(
 .timeline-vis :deep(.vis-item) {
   border: none;
   border-radius: 12px;
-  padding: 6px 12px;
+  padding: 6px;
   font-weight: 600;
   color: #f8fafc;
   background: rgba(96, 165, 250, 0.2);
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
+  min-width: 50px;
+  overflow: hidden;
+}
+
+.timeline-vis :deep(.vis-item .vis-item-content) {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeline-vis :deep(.vis-item .vis-item-content > *) {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .timeline-vis :deep(.vis-item.timeline-item--locked) {
@@ -239,4 +254,7 @@ watch(
   box-shadow: 0 0 12px rgba(248, 250, 252, 0.35);
 }
 
+.playhead-marker{
+	pointer-events: none;
+}
 </style>

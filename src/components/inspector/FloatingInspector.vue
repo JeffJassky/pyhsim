@@ -1,6 +1,6 @@
 <template>
   <transition name="float-fade">
-    <aside v-if="visible" class="floating-inspector">
+    <aside v-if="visible" ref="inspectorEl" class="floating-inspector">
       <Panel title="Inspector" icon="🛠">
         <InspectorPanel
           :item="item"
@@ -14,18 +14,38 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import Panel from '@/components/core/Panel.vue';
 import InspectorPanel from '@/components/inspector/InspectorPanel.vue';
 import type { InterventionDef, TimelineItem } from '@/types';
 
-defineProps<{
+const props = defineProps<{
   visible: boolean;
   item?: TimelineItem;
   def?: InterventionDef;
   readonly?: boolean;
 }>();
 
-defineEmits<{ change: [TimelineItem] }>();
+const emit = defineEmits<{ change: [TimelineItem]; close: [] }>();
+
+const inspectorEl = ref<HTMLElement | null>(null);
+
+const handlePointerDown = (event: PointerEvent) => {
+  if (!props.visible) return;
+  const root = inspectorEl.value;
+  if (!root) return;
+  const target = event.target instanceof Node ? event.target : null;
+  if (target && root.contains(target)) return;
+  emit('close');
+};
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handlePointerDown);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handlePointerDown);
+});
 </script>
 
 <style scoped>

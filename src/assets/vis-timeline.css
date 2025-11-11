@@ -655,8 +655,6 @@ div.vis-tooltip {
   padding: 0;
   position: absolute;
   width: 0;
-  border-left-width: 1px;
-  border-left-style: solid;
 }
 
 .vis-item .vis-item-content {
@@ -779,8 +777,6 @@ div.vis-tooltip {
   padding: 0;
   position: absolute;
   width: 0;
-  border-left-width: 1px;
-  border-left-style: solid;
 }
 
 .vis-item.vis-cluster-dot {
@@ -1022,13 +1018,6 @@ div.vis-tooltip {
   box-sizing: border-box;
 }
 
-.vis-panel.vis-center,
-.vis-panel.vis-left,
-.vis-panel.vis-right,
-.vis-panel.vis-top,
-.vis-panel.vis-bottom {
-  border: 1px #bfbfbf;
-}
 
 .vis-panel.vis-center,
 .vis-panel.vis-left,
@@ -1061,11 +1050,10 @@ div.vis-tooltip {
   direction: rtl;
 }
 
-.vis-panel.vis-center,
-.vis-panel.vis-top,
-.vis-panel.vis-bottom {
-  border-left-style: solid;
-  border-right-style: solid;
+
+.vis-top{
+	font-size: 0.7em;
+	opacity: 0.6;
 }
 
 .vis-background {

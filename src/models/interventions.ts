@@ -200,7 +200,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     label: "Wake Up",
     color: "#facc15",
     icon: "🌅",
-    defaultDurationMin: 15,
+    defaultDurationMin: 60,
     params: [],
     kernels: {
       cortisol: `function(t,p,I){ 
@@ -820,6 +820,65 @@ export const INTERVENTIONS: InterventionDef[] = [
       }`,
     },
     group: "Movement",
+  },
+  {
+    key: "sex",
+    label: "Sexual activity",
+    color: "#f472b6",
+    icon: "💞",
+    defaultDurationMin: 30,
+    params: [],
+    kernels: {
+      dopamine: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = Math.max(5, p.duration||30);
+        const tf = Math.max(0,t);
+        const active = Math.min(tf, dur);
+        const during = tf<=dur ? I * 0.28 * Math.sin(Math.PI * active / dur) : 0;
+        const rec = tf>dur ? -I * 0.18 * Math.exp(-(tf-dur)/25) : 0;
+        return during + rec;
+      }`,
+      oxytocin: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = Math.max(5, p.duration||30);
+        const tf = Math.max(0,t);
+        if(tf<=dur) return I * 0.35 * (1 - Math.exp(-tf/6));
+        const rec = tf - dur;
+        return I * 0.35 * Math.exp(-rec/150);
+      }`,
+      prolactin: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = Math.max(5, p.duration||30);
+        const tf = Math.max(0,t);
+        if(tf<=dur) return I * 0.08 * (tf / dur);
+        const rec = tf - dur;
+        return I * 0.42 * (1 - Math.exp(-rec/6)) * Math.exp(-rec/120);
+      }`,
+      serotonin: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = Math.max(5, p.duration||30);
+        const tf = Math.max(0,t);
+        if(tf<=dur) return I * 0.15 * (tf / dur);
+        const rec = tf - dur;
+        return I * 0.26 * (1 - Math.exp(-rec/18)) * Math.exp(-rec/160);
+      }`,
+      cortisol: `function(t,p,I){
+        const dur = Math.max(5, p.duration||30);
+        const tf = Math.max(0,t);
+        if(tf===0) return 0;
+        if(tf<=dur) return -I * 0.06 * Math.sin(Math.PI * tf / dur);
+        const rec = tf - dur;
+        return -I * 0.16 * Math.exp(-rec/80);
+      }`,
+      vagal: `function(t,p,I){
+        if(t<=0) return 0;
+        const dur = Math.max(5, p.duration||30);
+        if(t<=dur) return -I * 0.05 * Math.sin(Math.PI * t / dur);
+        const rec = t - dur;
+        return I * 0.3 * (1 - Math.exp(-rec/22)) * Math.exp(-rec/210);
+      }`,
+    },
+    group: "Intimacy",
   },
   {
     key: "coldExposure",

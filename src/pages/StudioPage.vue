@@ -1,5 +1,5 @@
 <template>
-  <AppShell>
+  <AppShell always-show-sidebar>
     <template #sidebar>
       <Panel title="Profiles" icon="🧬">
         <ProfilePalette />
@@ -10,7 +10,7 @@
       </Panel>
     </template>
     <section class="studio-grid">
-      <Panel title="Timeline" icon="📅">
+      <Panel ref="timelinePanelRef" title="Timeline" icon="📅">
         <TimelineView
           :items="timeline.items"
           :selected-id="timeline.selectedId"
@@ -62,25 +62,16 @@
             >
               {{ group.label }}
             </button>
-            <button
-              class="chart-info-button"
-              type="button"
-              :aria-pressed="openGroupInfoKey === group.key"
-              @click.stop="toggleGroupInfo(group.key)"
-              :title="`More about ${group.label}`"
-            >
-              ⓘ
-            </button>
           </div>
         </nav>
-        <div v-if="openGroupInfoBlock" class="chart-info-card">
+        <div v-if="activeGroupInfo" class="chart-info-card">
           <p>
             <strong>Physiology</strong>
-            {{ openGroupInfoBlock.physiology }}
+            {{ activeGroupInfo.physiology }}
           </p>
           <p>
             <strong>Application</strong>
-            {{ openGroupInfoBlock.application }}
+            {{ activeGroupInfo.application }}
           </p>
         </div>
 
@@ -100,13 +91,14 @@
       :item="selectedItem"
       :def="selectedDef"
       @change="handleInspectorChange"
+      @close="timeline.select(undefined)"
     />
   </AppShell>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import type { ComputedRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import type { ComponentPublicInstance, ComputedRef } from 'vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import Panel from '@/components/core/Panel.vue';
 import PlayheadBar from '@/components/core/PlayheadBar.vue';
@@ -153,6 +145,8 @@ useMeters();
 useHeatmap();
 useArousal();
 
+const timelinePanelRef = ref<ComponentPublicInstance | null>(null);
+
 const search = ref('');
 const filteredDefs = computed(() =>
   library.defs.filter((def) => def.label.toLowerCase().includes(search.value.toLowerCase()))
@@ -164,6 +158,11 @@ const selectedDef = computed(() => library.defs.find((def) => def.key === select
 const defaultParams = (def: InterventionDef) =>
   Object.fromEntries(def.params.map((param) => [param.key, param.default ?? 0]));
 
+const scrollTimelineIntoView = () => {
+  const panelEl = timelinePanelRef.value?.$el as HTMLElement | undefined;
+  panelEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
 const handleCreate = (def: InterventionDef) => {
   const startMin = minute.value as Minute;
   const endMin = (startMin + def.defaultDurationMin) as Minute;
@@ -172,12 +171,38 @@ const handleCreate = (def: InterventionDef) => {
     params: defaultParams(def),
     intensity: 1,
   });
+  scrollTimelineIntoView();
 };
 
 const handleInspectorChange = (item: TimelineItem) => timeline.updateItem(item.id, item);
 const handleTimelineMove = ({ id, start, end }: { id: UUID; start: string; end: string }) => {
   timeline.updateItem(id, { start, end });
 };
+
+const isEditableTarget = (target: EventTarget | null) => {
+  if (!target) return false;
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const editableTags = ['INPUT', 'TEXTAREA', 'SELECT'];
+  return editableTags.includes(target.tagName);
+};
+
+const handleTimelineDeleteShortcut = (event: KeyboardEvent) => {
+  if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+  if (isEditableTarget(event.target)) return;
+  const id = timeline.selectedId;
+  if (!id) return;
+  event.preventDefault();
+  timeline.removeItem(id);
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleTimelineDeleteShortcut);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleTimelineDeleteShortcut);
+});
 
 const viewSignalSets = {
   scnCoupling: ['melatonin', 'vasopressin', 'vip'],
@@ -506,7 +531,6 @@ const activeGroupByRoot = ref<Record<RootTabKey, ChartGroupKey>>({
   physiology: 'scnCoupling',
   application: 'clock',
 });
-const openGroupInfo = ref<ChartGroupKey | null>(null);
 
 const rootTabMap = new Map(rootTabOptions.map((tab) => [tab.key, tab]));
 
@@ -529,10 +553,6 @@ watch(
   activeRootTab,
   (newRoot) => {
     ensureGroupForRoot(newRoot);
-    const allowed = new Set(getGroupKeysForRoot(newRoot));
-    if (openGroupInfo.value && !allowed.has(openGroupInfo.value)) {
-      openGroupInfo.value = null;
-    }
   },
   { immediate: true }
 );
@@ -557,23 +577,15 @@ const resolveSpecs = (specsSource: ChartGroup['specs']) =>
 
 const activeGroupSpecs = computed(() => resolveSpecs(activeGroup.value.specs));
 const activeGroupSeriesData = computed(() => activeGroup.value.data.value);
+const activeGroupInfo = computed(() => activeGroup.value.info);
 
 const setActiveGroup = (groupKey: ChartGroupKey) => {
   activeGroupByRoot.value = { ...activeGroupByRoot.value, [activeRootTab.value]: groupKey };
-  openGroupInfo.value = null;
-};
-
-const toggleGroupInfo = (groupKey: ChartGroupKey) => {
-  openGroupInfo.value = openGroupInfo.value === groupKey ? null : groupKey;
 };
 
 const panelTitle = computed(() => `${activeRootTabMeta.value.label}: ${activeGroup.value.label}`);
 const panelIcon = computed(() => activeGroup.value.icon);
 const rootInfoText = computed(() => activeRootTabMeta.value.info);
-const openGroupInfoKey = computed(() => openGroupInfo.value);
-const openGroupInfoBlock = computed(() =>
-  openGroupInfo.value ? chartGroups[openGroupInfo.value].info : null
-);
 
 const interventionBands = computed(() =>
   timeline.items.map((item) => {
@@ -634,26 +646,6 @@ const interventionBands = computed(() =>
 
 .chart-tabs-nav__button.is-active {
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.chart-info-button {
-  padding: 0.25rem;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  color: inherit;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-width: 1.6rem;
-  min-height: 1.6rem;
-  line-height: 1;
-}
-
-.chart-info-button:hover,
-.chart-info-button[aria-pressed='true'] {
-  background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.35);
 }
 

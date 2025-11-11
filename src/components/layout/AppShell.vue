@@ -1,5 +1,8 @@
 <template>
-  <div class="app-shell">
+  <div
+    class="app-shell"
+    :class="{ 'app-shell--sidebar-lock': alwaysShowSidebar }"
+  >
     <div class="app-shell__body">
       <aside class="app-shell__sidebar">
         <slot name="sidebar">Sidebar</slot>
@@ -14,7 +17,14 @@
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+withDefaults(
+  defineProps<{
+    alwaysShowSidebar?: boolean;
+  }>(),
+  { alwaysShowSidebar: false }
+);
+</script>
 
 <style scoped>
 .app-shell {
@@ -41,24 +51,16 @@
   flex: 1;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-}
-
-aside,
-main {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  padding: 1rem;
+  gap: 2rem;
+  padding: 1rem 2rem;
 }
 
 @media (max-width: 1200px) {
-  .app-shell__body {
+  .app-shell:not(.app-shell--sidebar-lock) .app-shell__body {
     grid-template-columns: 1fr;
   }
-  .app-shell__sidebar,
-  .app-shell__inspector {
+  .app-shell:not(.app-shell--sidebar-lock) .app-shell__sidebar,
+  .app-shell:not(.app-shell--sidebar-lock) .app-shell__inspector {
     display: none;
   }
 }
