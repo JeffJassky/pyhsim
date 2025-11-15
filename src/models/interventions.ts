@@ -89,6 +89,17 @@ function carbAppearance(t: number, p: any) {
   return blunt * (sugar + starch); // “mg/dL-equivalent” appearance driver (arbitrary unit)
 }
 
+export const KERNEL_RUNTIME_HELPERS = {
+  clamp,
+  exp,
+  pk1,
+  pk_dual,
+  gammaPulse,
+  hill,
+  gastricDelay,
+  carbAppearance,
+};
+
 /**
  * First-phase / second-phase insulin secretion shape driven by glucose appearance.
  * We emulate a quick spike (β-cell first phase) plus a slower tail (second phase).

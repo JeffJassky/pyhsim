@@ -16,11 +16,20 @@ import type {
 import { SIGNALS_ALL } from '@/types';
 import { clamp } from '@/utils/math';
 import { SIGNAL_BASELINES, SIGNAL_COUPLINGS } from '@/models';
+import { KERNEL_RUNTIME_HELPERS } from '@/models/interventions';
+
+const kernelHelperEntries = Object.entries(KERNEL_RUNTIME_HELPERS);
+const kernelHelperNames = kernelHelperEntries.map(([name]) => name);
+const kernelHelperValues = kernelHelperEntries.map(([, value]) => value);
 
 function hydrateKernel(fnString: string): KernelFn {
   try {
     // eslint-disable-next-line no-new-func
-    return new Function(`return (${fnString})`)();
+    const factory = new Function(
+      ...kernelHelperNames,
+      `return (${fnString})`
+    ) as (...args: unknown[]) => KernelFn;
+    return factory(...kernelHelperValues);
   } catch (err) {
     console.error('Failed to hydrate kernel', err);
     return () => 0;

@@ -13,4 +13,7 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  build: {
+    minify: false, // keep output readable instead of obfuscated/minified
+  },
 });
