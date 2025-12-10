@@ -6,6 +6,7 @@
         <RouterLink to="/">Studio</RouterLink>
         <RouterLink to="/library">Library</RouterLink>
         <RouterLink to="/scenarios">Scenarios</RouterLink>
+        <RouterLink to="/log">Log</RouterLink>
       </nav>
     </header>
     <main class="app__body">

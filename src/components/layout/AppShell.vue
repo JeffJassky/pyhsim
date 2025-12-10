@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
   .app-shell__body {
     grid-template-columns: 1fr;
     gap: 1rem;
-    padding: 1rem;
+    padding: 0rem 1rem 1rem 1rem;
   }
 
   .app-shell__mobile-toggle {
