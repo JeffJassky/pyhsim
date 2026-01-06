@@ -5,63 +5,56 @@ This document outlines how different "influencers" (interventions like food, lig
 
 ---
 
-## 1. Food (The "Energy & Fuel" Influencer)
-Users expect food to be the primary mover of their metabolic and energy charts.
+## 1. Alcohol & Recovery (The "Hangover" Influencer)
+Target: **Performance Optimizers** and **Social Recovery** users.
 
 *   **The Lay Expectation:**
-    *   **Sugar/Carbs:** "If I eat a donut (high sugar/GI), my blood sugar should spike fast and high, then crash. My insulin should follow it like a shadow."
-    *   **Protein/Fiber:** "If I add fiber or protein to a meal, the sugar spike should look 'flatter' and last longer. I shouldn't feel that immediate crash."
-    *   **Fat:** "Fat should make me feel full for a long time and slow down the whole process."
-*   **The Validation Check:** Turning up "Sugar" should immediately increase the peak height of the **Glucose** and **Insulin** signals.
+    *   **The Buzz:** "I feel relaxed immediately (GABA), but my heart starts racing or my HRV drops (Vagal suppression) while I'm sleeping."
+    *   **The Hangover:** "The next morning, I expect my 'Inflammation' and 'Acetaldehyde' signals to be high, and my 'Calm' meter to be trashed."
+*   **The Validation Check:** Adding 4 units of Alcohol at 8:00 PM should cause a sustained drop in **Vagal Tone** and a peak in **Acetaldehyde** that lasts into the next morning.
 
-## 2. Caffeine & Stimulants (The "Focus & Crash" Influencer)
-This is the primary tool for the **Neurodivergent** and **Optimizer** markets.
-
-*   **The Lay Expectation:**
-    *   **Caffeine:** "It shouldn't hit instantly. It takes 20–30 mins to kick in, lasts for hours, and if I drink it too late, my 'Melatonin' or 'Sleep' charts should be ruined."
-    *   **ADHD Meds (Adderall):** "I expect a clear 'Peak' where I feel focused, and then a 'Comedown' or 'Crash' where my energy and dopamine drop below where they started."
-*   **The Validation Check:** Increasing the "mg" of Caffeine should lift the **Dopamine** and **Norepinephrine** curves for a long duration (4-6 hours).
-
-## 3. Light (The "Clock" Influencer)
-Crucial for **Sleep Seekers** and **Biohackers**.
+## 2. Nootropics & Micronutrients (The "Stack" Influencer)
+Target: **Optimizers** and **Neurodivergent** users.
 
 *   **The Lay Expectation:**
-    *   **Morning Sunlight:** "Seeing the sun early should 'jumpstart' my day. I expect my Cortisol to rise and my Melatonin to stay dead-flat."
-    *   **Evening Blue Light:** "Looking at my phone at night should 'kill' my Melatonin. It's the reason I can't fall asleep."
-*   **The Validation Check:** Adding "Blue Light" at 10:00 PM should cause a visible "cliff" or drop in the **Melatonin** signal.
+    *   **Creatine:** "I don't expect a 'hit' like caffeine. It should be a subtle, long-term lift in my 'Energy' baseline and muscle 'mTOR' readiness."
+    *   **L-Theanine:** "If I take this with coffee, the 'Norepinephrine' spike from the caffeine should feel 'smoother'—less jittery (higher GABA buffering)."
+    *   **Magnesium:** "Taking this at night should lift my 'GABA' and 'BDNF', helping me recover from a high-stress day."
+*   **The Validation Check:** Combining **Caffeine** + **L-Theanine** should show a higher **GABA** level than Caffeine alone, buffering the "Overwhelm" meter.
 
-## 4. Temperature (The "Shock & Recovery" Influencer)
-A favorite of the **Optimizer** and **Recovery** markets.
-
-*   **The Lay Expectation:**
-    *   **Cold Plunge:** "It should feel like a shock. My adrenaline should spike immediately, but then I should feel a 'calm' (Vagal tone) wash over me afterwards."
-    *   **Sauna:** "I expect to feel 'relaxed-tired.' My heart rate (Adrenaline proxy) goes up while I'm in there, but my stress hormones should drop after I get out."
-*   **The Validation Check:** **Adrenaline** spikes during the "Cold Exposure" intervention, followed by a rise in **Vagal Tone** once the intervention ends.
-
-## 5. Movement (The "Burn & Build" Influencer)
-The primary driver for **Coaches** and **Athletes**.
+## 3. Hormonal Management (The "Stability" Influencer)
+Target: **Hormonal Health** users.
 
 *   **The Lay Expectation:**
-    *   **Cardio (Bike/Walk):** "I'm burning energy. My blood sugar should go down (as muscles use it), and my 'Energy' meter should feel high during, then dip into a 'good tired' later."
-    *   **Lifting:** "This is a stressor. I expect my Cortisol to go up while I'm heavy lifting, but my Growth Hormone to spike later that night while I sleep."
-*   **The Validation Check:** **Glucose** should trend downward during a long "Bike" session. **Growth Hormone** peak at night should be taller if a "Lift" intervention was added during the day.
+    *   **Birth Control:** "If I'm on the pill, I expect my 'Estrogen' and 'Progesterone' charts to be a flat line across the month, rather than the big waves of a natural cycle."
+    *   **Inositol:** "I'm taking this for PCOS; my insulin response to a high-carb meal should be 'calmer' (more sensitive) than without it."
+    *   **Seed Cycling:** "Pumpkin seeds in the first half should subtly support my 'Estrogen' peak."
+*   **The Validation Check:** Changing the profile to "Oral Contraceptive: Yes" should flatten the month-long baseline variations in **Energy** and **Ghrelin**.
+
+## 4. Neuro-Strategies (The "Brain Hack" Influencer)
+Target: **ADHD/Autism** users.
+
+*   **The Lay Expectation:**
+    *   **Body Doubling:** "Working with someone else should 'prop up' my 'Dopamine' so I don't hit that mid-afternoon slump as hard."
+    *   **Sensory Overload:** "Being in a loud mall (High Sensory Load) should spike my 'Adrenaline' and 'Cortisol' even if I'm just standing still."
+    *   **Guanfacine:** "This shouldn't make me 'wired' like Adderall; it should just lower my 'Norepinephrine' and 'Blood Pressure' jitters."
+*   **The Validation Check:** Adding a "Body Doubling" session should show a sustained, mild lift in **Dopamine** and **Oxytocin**.
+
+## 5. Advanced Training (The "Anabolic/Catabolic" Influencer)
+Target: **Coaches** and **Athletes**.
+
+*   **The Lay Expectation:**
+    *   **HIIT vs LISS:** "HIIT should be an adrenaline bomb that triggers Growth Hormone later. LISS should just be a steady 'AMPK' (fat burning) signal and a slow glucose drain."
+    *   **Protein Timing:** "Taking protein right after lifting should maximize my 'mTOR' (building) signal."
+*   **The Validation Check:** **mTOR** should peak significantly higher when "Protein" (Food) is added within 60 minutes of a "Lift" intervention.
 
 ---
 
-## Demographic Specific "Expectation Anchors"
-
-### The Neurodivergent User
-*   **Will check first:** "Does my Adderall dose show me exactly when I'm going to be useless (the crash)?"
-*   **Model Failure:** If Dopamine doesn't drop significantly when the medication wears off.
-
-### The Performance Optimizer
-*   **Will check first:** "Does my 4:00 PM coffee actually show up as a sleep inhibitor at 11:00 PM?"
-*   **Model Failure:** If Caffeine has no effect on the nightly Melatonin or Sleep Pressure curves.
-
-### The Hormonal Health User
-*   **Will check first:** "Do I actually see why I'm hungrier/more tired during my period week?"
-*   **Model Failure:** If changing the "Cycle Day" in the profile doesn't shift the baseline of the **Energy** or **Ghrelin** (Hunger) charts.
-
-### The Coach
-*   **Will check first:** "Can I show my client that their 10:00 PM 'Midnight Snack' is why their insulin never dropped during sleep?"
-*   **Model Failure:** If a "Food" intervention at night doesn't keep the **Insulin** curve elevated through the early hours of the simulation.
+## Modeled & Validated Influencers:
+- **Food:** Non-linear glucose/insulin response with fiber/fat blunting and reactive hypoglycemic crashes.
+- **Caffeine:** Hill-curve based melatonin suppression and multi-hour alertness kinetics.
+- **ADHD Medications:** Biphasic peak and continuous delayed pulse crash for dopamine, norepinephrine, and energy.
+- **Light:** Phase-dependent melatonin suppression and cortisol stimulation using Hill-curve saturation.
+- **Temperature:** Immediate adrenaline/norepinephrine surges followed by continuous vagal tone rebound.
+- **Movement:** Muscular glucose disposal, acute stress response, and delayed growth hormone amplification via ghrelin coupling.
+- **Hormonal Health:** Baseline shifts for energy availability and appetite (ghrelin) based on cycle day (Estrogen/Progesterone).

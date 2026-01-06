@@ -63,9 +63,9 @@ export const useEngineStore = defineStore('engine', {
           console.debug('[EngineStore] Received series from worker. Keys:', Object.keys(series));
           
           // Data validation check
-          const sampleKey = 'dopamine';
-          if (series[sampleKey as any]) {
-            const sample = series[sampleKey as any];
+          const sampleKey: Signal = 'dopamine';
+          if (series[sampleKey]) {
+            const sample = series[sampleKey];
             let hasData = false;
             for (let i = 0; i < Math.min(10, sample.length); i++) {
               if (sample[i] !== 0) hasData = true;

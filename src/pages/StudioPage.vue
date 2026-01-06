@@ -373,6 +373,7 @@ type ChartGroupKey =
   | 'fuel'
   | 'recovery'
   | 'emotional'
+  | 'reproductive'
   | 'biomarkers'
   | 'liverKidney';
 

@@ -15,7 +15,7 @@
       <h4>Biological Effects</h4>
       <div v-for="(spec, signal) in def.kernels" :key="signal" class="effect">
         <span class="effect-signal">{{ signal }}</span>
-        <p class="effect-desc">{{ spec.desc }}</p>
+        <p class="effect-desc">{{ spec?.desc }}</p>
       </div>
     </div>
   </div>
