@@ -498,6 +498,11 @@ export const SIGNAL_DEFS: SignalDef[] = [
         mapping: linear(-0.04),
         description: 'Post-meal insulin blunts ghrelin release for 2–3 hours.',
       },
+      {
+        source: 'progesterone',
+        mapping: linear(0.12),
+        description: 'Progesterone rise in the luteal phase increases appetite baseline.',
+      },
     ],
     metadata: { version: '1.0.0' },
   },
@@ -788,6 +793,11 @@ export const SIGNAL_DEFS: SignalDef[] = [
         source: 'melatonin',
         mapping: linear(-0.06),
         description: 'Melatonin signals biological night, pulling down perceived energy.',
+      },
+      {
+        source: 'estrogen',
+        mapping: linear(0.15),
+        description: 'Estrogen supports metabolic vigor and perceived energy availability.',
       },
     ],
     metadata: { version: '1.0.0' },

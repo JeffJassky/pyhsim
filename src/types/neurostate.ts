@@ -239,8 +239,13 @@ export type KernelFn = (t: number, p: ParamValues, I: number) => number;
  */
 export type KernelFnString = string;
 
+export interface KernelSpec {
+  fn: KernelFnString;
+  desc: string; // Human-readable explanation of the math/physiology
+}
+
 /** Signal-specific kernels for an intervention */
-export type KernelSet = Partial<Record<Signal, KernelFnString>>;
+export type KernelSet = Partial<Record<Signal, KernelSpec>>;
 
 /** Library item definition */
 export interface InterventionDef {

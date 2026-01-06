@@ -5,6 +5,8 @@ import type {
   DelaySpec,
   ItemForWorker,
   KernelFn,
+  KernelSet,
+  KernelSpec,
   Minute,
   ParamValues,
   Physiology,
@@ -40,11 +42,12 @@ function hydrateKernel(fnString: string): KernelFn {
 
 const kernelCache = new Map<string, Partial<Record<Signal, KernelFn>>>();
 
-function getKernelSet(defId: string, kernels: Partial<Record<Signal, string>>) {
+function getKernelSet(defId: string, kernels: KernelSet) {
   if (!kernelCache.has(defId)) {
     const hydrated: Partial<Record<Signal, KernelFn>> = {};
-    for (const [signal, body] of Object.entries(kernels)) {
-      hydrated[signal as Signal] = hydrateKernel(body);
+    for (const [signal, spec] of Object.entries(kernels)) {
+      if (!spec) continue;
+      hydrated[signal as Signal] = hydrateKernel(spec.fn);
     }
     kernelCache.set(defId, hydrated);
   }

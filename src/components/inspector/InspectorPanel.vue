@@ -10,6 +10,14 @@
       :value="local.params[param.key] ?? param.default"
       @update="(val) => updateParam(param.key, val)"
     />
+
+    <div v-if="Object.keys(def.kernels).length" class="effects">
+      <h4>Biological Effects</h4>
+      <div v-for="(spec, signal) in def.kernels" :key="signal" class="effect">
+        <span class="effect-signal">{{ signal }}</span>
+        <p class="effect-desc">{{ spec.desc }}</p>
+      </div>
+    </div>
   </div>
   <p v-else class="empty">Select an item to edit parameters.</p>
 </template>
@@ -19,6 +27,7 @@ import { reactive, watch } from 'vue';
 import type { InterventionDef, ParamValues, TimelineItem } from '@/types';
 import IntensityControl from './IntensityControl.vue';
 import ParamEditor from './ParamEditor.vue';
+import { SIGNALS_ALL } from '@/types';
 
 const props = defineProps<{ item?: TimelineItem; def?: InterventionDef; readonly?: boolean }>();
 const emit = defineEmits<{ change: [TimelineItem] }>();
@@ -70,5 +79,37 @@ const updateIntensity = (value: number) => {
 
 .empty {
   opacity: 0.6;
+}
+
+.effects {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+h4 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  margin: 0 0 0.5rem;
+  opacity: 0.6;
+  letter-spacing: 0.05em;
+}
+
+.effect {
+  margin-bottom: 0.75rem;
+}
+
+.effect-signal {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #a78bfa;
+}
+
+.effect-desc {
+  margin: 0.1rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  opacity: 0.85;
 }
 </style>

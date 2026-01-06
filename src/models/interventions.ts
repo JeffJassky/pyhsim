@@ -106,8 +106,8 @@ export const KERNEL_RUNTIME_HELPERS = {
  */
 function insulinSecretionFromMeal(t: number, p: any, I: number) {
   const A = carbAppearance(t, p);
-  // Scale → cap amplitude by total available carbs (soft cap around 120–140 g)
-  const amp = I * clamp(A / (A + 140), 0, 1);
+  // Scale → cap amplitude using saturating Hill curve
+  const amp = I * 1.8 * hill(A, 120, 1.5);
   const fast = gammaPulse(t, 5, 35, 0); // first phase
   const slow = gammaPulse(t, 18, 160, 0); // second phase
   return amp * (0.55 * fast + 0.45 * slow);
@@ -172,37 +172,69 @@ function dopaminePalatable(t: number, p: any, I: number) {
 }
 
 export const FOOD_KERNELS: KernelSet = {
-  insulin: `function(t,p,I){ 
-    const A = (${carbAppearance.toString()})(t,p);
-    // Increase amplitude for better visibility
-    const amp = I * 1.5 * Math.min(1, A / (A + 100));
-    const fast = (${gammaPulse.toString()})(t, 5, 35, 0); 
-    const slow = (${gammaPulse.toString()})(t, 18, 160, 0);
-    return amp * (0.6 * fast + 0.4 * slow);
-  }`,
+  insulin: {
+    fn: `function(t,p,I){ 
+      const A = (${carbAppearance.toString()})(t,p);
+      const amp = I * 1.8 * (${hill.toString()})(A, 150, 1.4);
+      const fast = (${gammaPulse.toString()})(t, 5, 35, 0); 
+      const slow = (${gammaPulse.toString()})(t, 18, 160, 0);
+      return amp * (0.6 * fast + 0.4 * slow);
+    }`,
+    desc: "Biphasic insulin secretion driven by carbohydrate appearance, using non-linear saturation."
+  },
 
-  glucose: `function(t,p,I){
-    const A = (${carbAppearance.toString()})(t,p);
-    const amp = I * 2.5 * Math.min(1, A / (A + 120));
-    const fast = (1 - Math.exp(-Math.max(0,t)/12)) * Math.exp(-Math.max(0,t)/60);
-    const slow = (1 - Math.exp(-Math.max(0,t)/40)) * Math.exp(-Math.max(0,t)/180);
-    return amp * (0.6 * fast + 0.4 * slow);
-  }`,
+  glucose: {
+    fn: `function(t,p,I){
+      const A = (${carbAppearance.toString()})(t,p);
+      const amp = I * 3.0 * (${hill.toString()})(A, 200, 1.3);
+      const fast = (1 - Math.exp(-Math.max(0,t)/12)) * Math.exp(-Math.max(0,t)/60);
+      const slow = (1 - Math.exp(-Math.max(0,t)/40)) * Math.exp(-Math.max(0,t)/180);
+      const rise = amp * (0.6 * fast + 0.4 * slow);
+      // Continuous crash (reactive hypoglycemia) proportional to peak insulin/glucose
+      const crash = 0.25 * amp * (${pk1.toString()})(t, 1/40, 1/180, 90);
+      return rise - crash;
+    }`,
+    desc: "Rise in blood glucose levels based on carbohydrate digestion and GI, followed by a continuous reactive 'crash' below baseline."
+  },
 
-  ghrelin: `function(t,p,I){ return (${ghrelinDrop.toString()})(t,p,I); }`,
+  ghrelin: {
+    fn: `function(t,p,I){ 
+      const kcal = 4 * (p.carbSugar + p.carbStarch) + 4 * p.protein + 9 * p.fat;
+      const depth = I * 0.9 * (${hill.toString()})(kcal, 400, 1.2);
+      const on = 1 - Math.exp(-t / 18);
+      const tail = Math.exp(-Math.max(t - 120, 0) / (100 + 0.1 * kcal));
+      return -depth * on * tail;
+    }`,
+    desc: "Saturating suppression of ghrelin proportional to total caloric load."
+  },
 
-  leptin: `function(t,p,I){ return (${leptinSmallSlow.toString()})(t,p,I); }`,
+  leptin: {
+    fn: `function(t,p,I){ return (${leptinSmallSlow.toString()})(t,p,I); }`,
+    desc: "Minor acute increase in satiety hormone leptin."
+  },
 
-  serotonin: `function(t,p,I){ return (${serotoninAfterMeal.toString()})(t,p,I); }`,
+  serotonin: {
+    fn: `function(t,p,I){ return (${serotoninAfterMeal.toString()})(t,p,I); }`,
+    desc: "Serotonin production via post-prandial tryptophan availability (carb-driven)."
+  },
 
-  dopamine: `function(t,p,I){ return (${dopaminePalatable.toString()})(t,p,I); }`,
+  dopamine: {
+    fn: `function(t,p,I){ return (${dopaminePalatable.toString()})(t,p,I); }`,
+    desc: "Immediate reward signal from palatable (sugar/fat) food."
+  },
 
-  gaba: `function(t,p,I){
-    const A = I * Math.min(0.2, 0.001*(p.carbSugar+p.carbStarch) + 0.002*p.fiberSol);
-    return A * (1 - Math.exp(-t/30));
-  }`,
+  gaba: {
+    fn: `function(t,p,I){
+      const A = I * Math.min(0.2, 0.001*(p.carbSugar+p.carbStarch) + 0.002*p.fiberSol);
+      return A * (1 - Math.exp(-t/30));
+    }`,
+    desc: "Calming GABAergic effect from gut fermentation and satiety."
+  },
 
-  melatonin: `function(){ return 0; }`, 
+  melatonin: {
+    fn: `function(){ return 0; }`,
+    desc: "No direct melatonin production from typical meals."
+  }, 
 };
 
 /* ====================== Interventions ====================== */
@@ -216,24 +248,36 @@ export const INTERVENTIONS: InterventionDef[] = [
     defaultDurationMin: 60,
     params: [],
     kernels: {
-      cortisol: `function(t,p,I){ 
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        return I * 0.45 * (1 - Math.exp(-tf/12)) * Math.exp(-tf/110);
-      }`,
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        return I * 0.25 * (1 - Math.exp(-tf/10)) * Math.exp(-tf/150);
-      }`,
-      melatonin: `function(t,p,I){
-        if(t<0) return 0;
-        return -I * 0.6 * Math.exp(-t/20);
-      }`,
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        return -I * 0.25 * Math.exp(-t/45);
-      }`,
+      cortisol: {
+        fn: `function(t,p,I){ 
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          return I * 0.45 * (1 - Math.exp(-tf/12)) * Math.exp(-tf/110);
+        }`,
+        desc: "Cortisol awakening response (CAR) to mobilize energy."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          return I * 0.25 * (1 - Math.exp(-tf/10)) * Math.exp(-tf/150);
+        }`,
+        desc: "Morning dopamine pulse to increase alertness and drive."
+      },
+      melatonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return -I * 0.6 * Math.exp(-t/20);
+        }`,
+        desc: "Rapid clearance of remaining nocturnal melatonin."
+      },
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return -I * 0.25 * Math.exp(-t/45);
+        }`,
+        desc: "Reduction in inhibitory GABA to support transition to wakefulness."
+      },
     },
     group: "Routine",
   },
@@ -245,38 +289,160 @@ export const INTERVENTIONS: InterventionDef[] = [
     defaultDurationMin: 480,
     params: [],
     kernels: {
-      melatonin: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        const dur = p.duration || 480;
-        if(tf <= dur) return I * 0.8 * (1 - Math.exp(-tf/60));
-        const rec = tf - dur;
-        return -I * 0.5 * Math.exp(-rec/30);
-      }`,
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        const dur = p.duration || 480;
-        if(tf <= dur) return I * 0.4 * (1 - Math.exp(-tf/45));
-        const rec = tf - dur;
-        return -I * 0.3 * Math.exp(-rec/40);
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        const dur = p.duration || 480;
-        if(tf <= dur) return -I * 0.3 * (1 - Math.exp(-tf/90));
-        const debt = tf - dur;
-        return I * 0.22 * Math.exp(-debt/90);
-      }`,
-      growthHormone: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        // Sleep-onset GH pulse
-        return I * 0.65 * (1 - Math.exp(-tf/30)) * Math.exp(-tf/120);
-      }`,
+      melatonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          const dur = p.duration || 480;
+          if(tf <= dur) return I * 0.8 * (1 - Math.exp(-tf/60));
+          const rec = tf - dur;
+          return -I * 0.5 * Math.exp(-rec/30);
+        }`,
+        desc: "Sustained melatonin release during the sleep window."
+      },
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          const dur = p.duration || 480;
+          if(tf <= dur) return I * 0.4 * (1 - Math.exp(-tf/45));
+          const rec = tf - dur;
+          return -I * 0.3 * Math.exp(-rec/40);
+        }`,
+        desc: "Increased inhibitory tone to maintain sleep state."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          const dur = p.duration || 480;
+          if(tf <= dur) return -I * 0.3 * (1 - Math.exp(-tf/90));
+          const debt = tf - dur;
+          return I * 0.22 * Math.exp(-debt/90);
+        }`,
+        desc: "Suppression of cortisol during early sleep, with rebound if sleep is cut short."
+      },
+      growthHormone: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          // Sleep-onset GH pulse
+          return I * 0.65 * (1 - Math.exp(-tf/30)) * Math.exp(-tf/120);
+        }`,
+        desc: "Deep sleep-associated growth hormone pulse."
+      },
     },
     group: "Routine",
+  },
+  {
+    key: "nap",
+    label: "Power Nap",
+    color: "#60a5fa",
+    icon: "😴",
+    defaultDurationMin: 25,
+    params: [
+      { key: "quality", label: "Refreshment", type: "slider", min: 0, max: 2, step: 0.1, default: 1 }
+    ],
+    kernels: {
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 25;
+          const active = Math.min(t, dur);
+          return I * p.quality * 0.2 * (1 - Math.exp(-active/10));
+        }`,
+        desc: "Short-term increase in inhibitory GABA for relaxation."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 25;
+          if(t<=dur) return -I * p.quality * 0.15 * (1 - Math.exp(-t/15));
+          return -I * p.quality * 0.1 * Math.exp(-(t-dur)/45);
+        }`,
+        desc: "Brief reduction in stress hormone levels."
+      },
+      energy: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 25;
+          if(t<=dur) return -I * 0.1;
+          const tf = t - dur;
+          return I * p.quality * 0.25 * Math.exp(-tf/180);
+        }`,
+        desc: "Post-nap alertness boost following initial sleep inertia."
+      }
+    },
+    group: "Routine",
+  },
+  {
+    key: "social",
+    label: "Social Interaction",
+    color: "#f472b6",
+    icon: "🗣️",
+    defaultDurationMin: 60,
+    params: [
+      { key: "intensity", label: "Intensity", type: "slider", min: 0, max: 2, step: 0.1, default: 1 }
+    ],
+    kernels: {
+      oxytocin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 60;
+          const active = Math.min(t, dur);
+          return I * p.intensity * 0.35 * (1 - Math.exp(-active/20));
+        }`,
+        desc: "Release of bonding hormone oxytocin during social engagement."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 60;
+          const active = Math.min(t, dur);
+          return I * p.intensity * 0.15 * (1 - Math.exp(-active/30));
+        }`,
+        desc: "Reward signal from social connection and positive interaction."
+      },
+      sensoryLoad: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 60;
+          const active = Math.min(t, dur);
+          return I * p.intensity * 0.2 * (active/dur);
+        }`,
+        desc: "Increase in cognitive/sensory demand from social processing."
+      }
+    },
+    group: "Lifestyle",
+  },
+  {
+    key: "electrolytes",
+    label: "Electrolytes / Hydration",
+    color: "#38bdf8",
+    icon: "💧",
+    defaultDurationMin: 15,
+    params: [
+      { key: "amount", label: "Volume (ml)", type: "slider", min: 0, max: 1000, step: 50, default: 250 }
+    ],
+    kernels: {
+      bloodPressure: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/20, 1/180, 10);
+          return I * (p.amount/500) * 0.1 * pk;
+        }`,
+        desc: "Transient increase in blood volume and pressure from hydration."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0, t);
+          return I * (p.amount/500) * 0.05 * (1 - Math.exp(-tf/30));
+        }`,
+        desc: "Mild increase in vagal tone from improved hydration status."
+      }
+    },
+    group: "Supplements",
   },
   {
     key: "food",
@@ -369,33 +535,46 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "🍸",
     defaultDurationMin: 60,
     params: [
-      { key: "units", label: "Standard Units", type: "slider", min: 0, max: 8, step: 0.5, default: 1.5 }
+      { key: "units", label: "Standard Units", type: "slider", min: 0, max: 10, step: 0.5, default: 1.5 }
     ],
     kernels: {
-      ethanol: `function(t,p,I){
-        if(t<0) return 0;
-        const k_a = 1/15;
-        const k_e = 1/90; // Zero-order proxy via slow first-order
-        return I * Math.min(1, p.units/5) * (${pk1.toString()})(t, k_a, k_e, 10);
-      }`,
-      acetaldehyde: `function(t,p,I){
-        if(t<0) return 0;
-        const k_a = 1/45;
-        const k_e = 1/240;
-        return I * Math.min(1, p.units/5) * (${pk1.toString()})(t, k_a, k_e, 30);
-      }`,
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        // Acute enhancement followed by suppression (rebound)
-        const acute = 0.4 * Math.exp(-t/120);
-        const rebound = t > 180 ? -0.2 * Math.exp(-(t-180)/240) : 0;
-        return I * Math.min(1, p.units/4) * (acute + rebound);
-      }`,
-      vagal: `function(t,p,I){
-        if(t<0) return 0;
-        // HRV suppression
-        return -I * 0.4 * Math.min(1, p.units/3) * (1 - Math.exp(-t/60));
-      }`
+      ethanol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const k_a = 1/15;
+          const k_e = 1/90; 
+          return I * (p.units/5) * (${pk1.toString()})(t, k_a, k_e, 10);
+        }`,
+        desc: "Blood ethanol concentration over time."
+      },
+      acetaldehyde: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const k_a = 1/45;
+          const k_e = 1/240;
+          return I * (p.units/5) * (${pk1.toString()})(t, k_a, k_e, 30);
+        }`,
+        desc: "Metabolic byproduct acetaldehyde, contributing to inflammation."
+      },
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/15, 1/90, 10);
+          // Rebound happens as ethanol clears (delayed negative compartment)
+          const rebound = 0.45 * (${pk1.toString()})(t, 1/60, 1/240, 180);
+          return I * (p.units/4) * (pk - rebound);
+        }`,
+        desc: "Acute GABAergic relaxation followed by a continuous compensatory glutamatergic rebound."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/30, 1/120, 20);
+          const suppress = 0.6 * (${hill.toString()})(p.units/3 * pk, 0.5, 1.4);
+          return -I * suppress;
+        }`,
+        desc: "Dose-dependent suppression of vagal tone (reduced HRV) by alcohol."
+      }
     },
     group: "Lifestyle",
   },
@@ -406,48 +585,65 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "🧘",
     defaultDurationMin: 20,
     params: [
-      { key: "intensity", label: "Focus Intensity", type: "slider", min: 0.2, max: 1.2, step: 0.1, default: 0.8 }
+      { key: "intensity", label: "Focus Intensity", type: "slider", min: 0, max: 2, step: 0.1, default: 0.8 }
     ],
     kernels: {
-      vagal: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 20;
-        const active = Math.min(t, dur);
-        const effect = I * 0.5 * (1 - Math.exp(-active/8));
-        const tail = t > dur ? Math.exp(-(t-dur)/45) : 1;
-        return effect * tail;
-      }`,
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 20;
-        return I * 0.25 * (1 - Math.exp(-Math.min(t, dur)/12));
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 20;
-        return -I * 0.15 * (1 - Math.exp(-Math.min(t, dur)/15));
-      }`
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 20;
+          const active = Math.min(t, dur);
+          const effect = I * p.intensity * 0.5 * (1 - Math.exp(-active/8));
+          const tail = t > dur ? Math.exp(-(t-dur)/45) : 1;
+          return effect * tail;
+        }`,
+        desc: "Significant increase in vagal tone through slow breathing and focus."
+      },
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 20;
+          return I * p.intensity * 0.25 * (1 - Math.exp(-Math.min(t, dur)/12));
+        }`,
+        desc: "Endogenous GABA release supporting a calm state."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 20;
+          return -I * p.intensity * 0.15 * (1 - Math.exp(-Math.min(t, dur)/15));
+        }`,
+        desc: "Acute reduction in circulating cortisol levels."
+      }
     },
     group: "Wellness",
   },
   {
     key: "ritalinIR10",
-    label: "Ritalin IR 10 mg",
+    label: "Ritalin IR",
     color: "#f472b6",
     icon: "💊",
     defaultDurationMin: 240,
-    params: [],
+    params: [
+       { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 40, step: 5, default: 10 }
+    ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const pk = (${pk1.toString()})(t, 1/30, 1/180, 20);
-        return I * 0.75 * pk;
-      }`,
-      norepi: `function(t,p,I){
-        if(t<0) return 0;
-        const pk = (${pk1.toString()})(t, 1/35, 1/200, 20);
-        return I * 0.5 * pk;
-      }`
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/30, 1/180, 20);
+          return I * (p.mg/10) * 0.75 * pk;
+        }`,
+        desc: "Rapid increase in synaptic dopamine via reuptake inhibition."
+      },
+      norepi: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/35, 1/200, 20);
+          return I * (p.mg/10) * 0.5 * pk;
+        }`,
+        desc: "Increase in norepinephrine, supporting focus and arousal."
+      }
     },
     group: "Stimulants",
   },
@@ -458,25 +654,34 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "🌿",
     defaultDurationMin: 360,
     params: [
-      { key: "theanine", label: "L-Theanine (mg)", type: "slider", min: 0, max: 400, step: 50, default: 200 },
-      { key: "magnesium", label: "Magnesium (mg)", type: "slider", min: 0, max: 500, step: 50, default: 200 }
+      { key: "theanine", label: "L-Theanine (mg)", type: "slider", min: 0, max: 600, step: 50, default: 200 },
+      { key: "magnesium", label: "Magnesium (mg)", type: "slider", min: 0, max: 800, step: 50, default: 200 }
     ],
     kernels: {
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        const pk = (${pk1.toString()})(t, 1/45, 1/300, 30);
-        return I * (p.theanine/400) * 0.3 * pk;
-      }`,
-      magnesium: `function(t,p,I){
-        if(t<0) return 0;
-        const pk = (${pk1.toString()})(t, 1/90, 1/600, 60);
-        return I * (p.magnesium/500) * 0.4 * pk;
-      }`,
-      bdnf: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0, t);
-        return I * 0.15 * (1 - Math.exp(-tf/120));
-      }`
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/45, 1/300, 30);
+          return I * (p.theanine/200) * 0.3 * pk;
+        }`,
+        desc: "L-Theanine driven GABAergic relaxation and 'calm focus'."
+      },
+      magnesium: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/90, 1/600, 60);
+          return I * (p.magnesium/200) * 0.4 * pk;
+        }`,
+        desc: "Systemic magnesium availability for enzymatic and neuronal health."
+      },
+      bdnf: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0, t);
+          return I * (p.magnesium/200) * 0.15 * (1 - Math.exp(-tf/120));
+        }`,
+        desc: "Support for Brain-Derived Neurotrophic Factor (BDNF) expression."
+      }
     },
     group: "Supplements",
   },
@@ -487,18 +692,23 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "💪",
     defaultDurationMin: 1440,
     params: [
-      { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 5000, step: 500, default: 5000 }
+      { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 10000, step: 500, default: 5000 }
     ],
     kernels: {
-      energy: `function(t,p,I){
-        if(t<0) return 0;
-        // Slow build, long baseline elevation
-        return I * (p.mg/5000) * 0.15 * (1 - Math.exp(-t/360));
-      }`,
-      mtor: `function(t,p,I){
-        if(t<0) return 0;
-        return I * 0.08 * (1 - Math.exp(-t/240));
-      }`
+      energy: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return I * (p.mg/5000) * 0.15 * (1 - Math.exp(-t/360));
+        }`,
+        desc: "Slow buildup of cellular phosphocreatine stores for energy ATP recycling."
+      },
+      mtor: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return I * (p.mg/5000) * 0.08 * (1 - Math.exp(-t/240));
+        }`,
+        desc: "Mild stimulation of mTOR pathway for muscle protein synthesis support."
+      }
     },
     group: "Supplements",
   },
@@ -508,20 +718,31 @@ export const INTERVENTIONS: InterventionDef[] = [
     color: "#ec4899",
     icon: "💊",
     defaultDurationMin: 1440,
-    params: [],
+    params: [
+      { key: "potency", label: "Potency", type: "slider", min: 0, max: 2, step: 0.1, default: 1 }
+    ],
     kernels: {
-      estrogen: `function(t,p,I){
-        if(t<0) return 0;
-        return I * 0.4 * (1 - Math.exp(-t/120));
-      }`,
-      progesterone: `function(t,p,I){
-        if(t<0) return 0;
-        return I * 0.3 * (1 - Math.exp(-t/120));
-      }`,
-      shbg: `function(t,p,I){
-        if(t<0) return 0;
-        return I * 0.25 * (1 - Math.exp(-t/360));
-      }`
+      estrogen: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return I * p.potency * 0.4 * (1 - Math.exp(-t/120));
+        }`,
+        desc: "Exogenous ethinyl estradiol or similar estrogenic support."
+      },
+      progesterone: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return I * p.potency * 0.3 * (1 - Math.exp(-t/120));
+        }`,
+        desc: "Exogenous progestin to maintain hormonal levels and inhibit ovulation."
+      },
+      shbg: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return I * p.potency * 0.25 * (1 - Math.exp(-t/360));
+        }`,
+        desc: "Increase in sex hormone-binding globulin (SHBG) from oral estrogen passage."
+      }
     },
     group: "Hormones",
   },
@@ -532,15 +753,17 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "🍬",
     defaultDurationMin: 720,
     params: [
-      { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 4000, step: 500, default: 2000 }
+      { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 8000, step: 500, default: 2000 }
     ],
     kernels: {
-      insulin: `function(t,p,I){
-        if(t<0) return 0;
-        // Sensitizer: negative contribution to circulating insulin (efficiency up)
-        const pk = (${pk1.toString()})(t, 1/60, 1/480, 45);
-        return -I * (p.mg/4000) * 0.2 * pk;
-      }`
+      insulin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/60, 1/480, 45);
+          return -I * (p.mg/2000) * 0.2 * pk;
+        }`,
+        desc: "Improvement in insulin sensitivity (modeled as negative delta to needed insulin)."
+      }
     },
     group: "Supplements",
   },
@@ -554,22 +777,30 @@ export const INTERVENTIONS: InterventionDef[] = [
       { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 4, step: 1, default: 1 }
     ],
     kernels: {
-      norepi: `function(t,p,I){
-        if(t<0) return 0;
-        // Alpha-2 agonist: suppresses tonic norepinephrine release
-        const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
-        return -I * (p.mg/4) * 0.4 * pk;
-      }`,
-      adrenaline: `function(t,p,I){
-        if(t<0) return 0;
-        const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
-        return -I * (p.mg/4) * 0.3 * pk;
-      }`,
-      bloodPressure: `function(t,p,I){
-        if(t<0) return 0;
-        const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
-        return -I * (p.mg/4) * 0.25 * pk;
-      }`
+      norepi: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
+          return -I * (p.mg/1) * 0.4 * pk;
+        }`,
+        desc: "Reduction in norepinephrine activity via alpha-2A receptor agonism."
+      },
+      adrenaline: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
+          return -I * (p.mg/1) * 0.3 * pk;
+        }`,
+        desc: "Suppression of peripheral adrenaline response."
+      },
+      bloodPressure: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
+          return -I * (p.mg/1) * 0.25 * pk;
+        }`,
+        desc: "Systemic reduction in blood pressure through central sympatholytic action."
+      }
     },
     group: "Prescriptions",
   },
@@ -579,24 +810,34 @@ export const INTERVENTIONS: InterventionDef[] = [
     color: "#6366f1",
     icon: "👥",
     defaultDurationMin: 90,
-    params: [],
+    params: [
+      { key: "socialIntensity", label: "Engagement", type: "slider", min: 0, max: 2, step: 0.1, default: 1 }
+    ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 90;
-        return I * 0.15 * (1 - Math.exp(-Math.min(t, dur)/20));
-      }`,
-      oxytocin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 90;
-        return I * 0.2 * (1 - Math.exp(-Math.min(t, dur)/30));
-      }`,
-      sensoryLoad: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 90;
-        // Reduces perceived load via social buffering
-        return -I * 0.1 * (1 - Math.exp(-Math.min(t, dur)/45));
-      }`
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 90;
+          return I * p.socialIntensity * 0.15 * (1 - Math.exp(-Math.min(t, dur)/20));
+        }`,
+        desc: "External accountability supporting sustained dopamine for focus."
+      },
+      oxytocin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 90;
+          return I * p.socialIntensity * 0.2 * (1 - Math.exp(-Math.min(t, dur)/30));
+        }`,
+        desc: "Mild oxytocin release from shared physical/virtual presence."
+      },
+      sensoryLoad: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 90;
+          return -I * p.socialIntensity * 0.1 * (1 - Math.exp(-Math.min(t, dur)/45));
+        }`,
+        desc: "Reduction in perceived sensory distraction through social regulation."
+      }
     },
     group: "Social",
   },
@@ -607,17 +848,24 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "🌱",
     defaultDurationMin: 1440,
     params: [
-      { key: "phase", label: "Cycle Phase", type: "select", options: [{value:"follicular", label:"Follicular (Pumpkin/Flax)"}, {value:"luteal", label:"Luteal (Sesame/Sunflower)"}], default: "follicular" }
+      { key: "phase", label: "Cycle Phase", type: "select", options: [{value:"follicular", label:"Follicular (Pumpkin/Flax)"}, {value:"luteal", label:"Luteal (Sesame/Sunflower)"}], default: "follicular" },
+      { key: "dose", label: "Dose", type: "slider", min: 0, max: 2, step: 0.1, default: 1 }
     ],
     kernels: {
-      estrogen: `function(t,p,I){
-        if(t<0) return 0;
-        return p.phase === "follicular" ? I * 0.05 : 0;
-      }`,
-      progesterone: `function(t,p,I){
-        if(t<0) return 0;
-        return p.phase === "luteal" ? I * 0.05 : 0;
-      }`
+      estrogen: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return p.phase === "follicular" ? I * p.dose * 0.05 : 0;
+        }`,
+        desc: "Mild phytoestrogenic support during follicular phase."
+      },
+      progesterone: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return p.phase === "luteal" ? I * p.dose * 0.05 : 0;
+        }`,
+        desc: "Mild progestogenic support during luteal phase."
+      }
     },
     group: "Hormones",
   },
@@ -628,25 +876,34 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "🏃‍♂️",
     defaultDurationMin: 60,
     params: [
-      { key: "intensity", label: "Effort", type: "slider", min: 0.2, max: 0.8, step: 0.1, default: 0.5 }
+      { key: "intensity", label: "Effort", type: "slider", min: 0, max: 1.5, step: 0.1, default: 0.5 }
     ],
     kernels: {
-      ampk: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 60;
-        return I * 0.3 * (1 - Math.exp(-Math.min(t, dur)/40));
-      }`,
-      glucose: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 60;
-        return -I * 0.15 * (1 - Math.exp(-Math.min(t, dur)/30));
-      }`,
-      vagal: `function(t,p,I){
-        if(t<=0) return 0;
-        const dur = p.duration || 60;
-        if(t<=dur) return -I * 0.05;
-        return I * 0.2 * Math.exp(-(t-dur)/30);
-      }`
+      ampk: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 60;
+          return I * p.intensity * 0.3 * (1 - Math.exp(-Math.min(t, dur)/40));
+        }`,
+        desc: "Activation of metabolic master switch AMPK during aerobic exercise."
+      },
+      glucose: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 60;
+          return -I * p.intensity * 0.15 * (1 - Math.exp(-Math.min(t, dur)/30));
+        }`,
+        desc: "Increased muscle glucose uptake during exercise."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<=0) return 0;
+          const dur = p.duration || 60;
+          if(t<=dur) return -I * p.intensity * 0.05;
+          return I * p.intensity * 0.2 * Math.exp(-(t-dur)/30);
+        }`,
+        desc: "Post-exercise parasympathetic rebound and HRV improvement."
+      }
     },
     group: "Movement",
   },
@@ -657,34 +914,45 @@ export const INTERVENTIONS: InterventionDef[] = [
     icon: "⚡",
     defaultDurationMin: 25,
     params: [
-      { key: "intensity", label: "Effort", type: "slider", min: 0.8, max: 1.5, step: 0.1, default: 1.1 }
+      { key: "intensity", label: "Effort", type: "slider", min: 0, max: 2, step: 0.1, default: 1.1 }
     ],
     kernels: {
-      adrenaline: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 25;
-        if(t<=dur) return I * 0.6 * Math.sin(Math.PI * t / dur);
-        return I * 0.2 * Math.exp(-(t-dur)/20);
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 25;
-        if(t<=dur) return I * 0.3 * (1 - Math.exp(-t/10));
-        return -I * 0.1 * Math.exp(-(t-dur)/60);
-      }`,
-      growthHormone: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 25;
-        // Acute stimulus for nighttime release
-        const tf = Math.max(0, t - dur);
-        return I * 0.4 * Math.exp(-tf/120);
-      }`,
-      inflammation: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = p.duration || 25;
-        if(t<=dur) return I * 0.15 * (t/dur);
-        return I * 0.15 * Math.exp(-(t-dur)/180);
-      }`
+      adrenaline: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 25;
+          if(t<=dur) return I * p.intensity * 0.6 * Math.sin(Math.PI * t / dur);
+          return I * p.intensity * 0.2 * Math.exp(-(t-dur)/20);
+        }`,
+        desc: "Intense surge in catecholamines during high-intensity intervals."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 25;
+          if(t<=dur) return I * p.intensity * 0.3 * (1 - Math.exp(-t/10));
+          return -I * p.intensity * 0.1 * Math.exp(-(t-dur)/60);
+        }`,
+        desc: "Acute stress response to high physiological demand."
+      },
+      growthHormone: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 25;
+          const tf = Math.max(0, t - dur);
+          return I * p.intensity * 0.4 * Math.exp(-tf/120);
+        }`,
+        desc: "Post-exercise growth hormone spike driven by lactic threshold."
+      },
+      inflammation: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = p.duration || 25;
+          if(t<=dur) return I * p.intensity * 0.15 * (t/dur);
+          return I * p.intensity * 0.15 * Math.exp(-(t-dur)/180);
+        }`,
+        desc: "Transient inflammatory markers from muscular microtrauma."
+      }
     },
     group: "Movement",
   },
@@ -700,42 +968,63 @@ export const INTERVENTIONS: InterventionDef[] = [
         label: "Dose (mg)",
         type: "slider",
         min: 0,
-        max: 300,
+        max: 500,
         step: 5,
         default: 90,
       },
     ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        // Typical Tmax ~ 30–120 min; half-life ~ 4–6 h → k_e ≈ ln2/(240–360)
-        const Cl = p.metabolicScalar || 1;
-        const Vol = p.clearanceScalar || 1;
-        
-        const k_a = 1/25;
-        const k_e = (1/330) * (Cl / Vol); // Clearance / Volume
-        
-        const pk = (${pk1.toString()})(t, k_a, k_e, 10);
-        const dose = Math.min(1, p.mg/200);
-        // Peak concentration inversely proportional to Volume
-        return I * 0.6 * dose * (1/Vol) * pk;
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const Cl = p.metabolicScalar || 1;
-        const Vol = p.clearanceScalar || 1;
-        
-        const k_a = 1/25;
-        const k_e = (1/240) * (Cl / Vol);
-        
-        const pk = (${pk1.toString()})(t, k_a, k_e, 10);
-        const dose = Math.min(1, p.mg/200);
-        return I * 0.2 * dose * (1/Vol) * pk;
-      }`,
-      melatonin: `function(){ 
-        // No direct acute melatonin suppression from caffeine alone modeled; blue light handles that.
-        return 0; 
-      }`,
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const Cl = p.metabolicScalar || 1;
+          const Vol = p.clearanceScalar || 1;
+          const k_a = 1/45; 
+          const k_e = (1/300) * (Cl / Vol); 
+          const pk = (${pk1.toString()})(t, k_a, k_e, 10);
+          return I * (p.mg/100) * 0.3 * (1/Vol) * pk;
+        }`,
+        desc: "Secondary dopamine increase via adenosine receptor antagonism."
+      },
+      norepi: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const Cl = p.metabolicScalar || 1;
+          const Vol = p.clearanceScalar || 1;
+          const k_a = 1/45;
+          const k_e = (1/300) * (Cl / Vol);
+          const pk = (${pk1.toString()})(t, k_a, k_e, 10);
+          return I * (p.mg/100) * 0.25 * (1/Vol) * pk;
+        }`,
+        desc: "Increase in norepinephrine, enhancing alertness and focus."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const Cl = p.metabolicScalar || 1;
+          const Vol = p.clearanceScalar || 1;
+          const k_a = 1/45;
+          const k_e = (1/300) * (Cl / Vol);
+          const pk = (${pk1.toString()})(t, k_a, k_e, 10);
+          return I * (p.mg/100) * 0.1 * (1/Vol) * pk;
+        }`,
+        desc: "Mild stimulation of the HPA axis, increasing cortisol."
+      },
+      melatonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const Cl = p.metabolicScalar || 1;
+          const Vol = p.clearanceScalar || 1;
+          const k_a = 1/45;
+          const k_e = (1/300) * (Cl / Vol);
+          const pk = (${pk1.toString()})(t, k_a, k_e, 10);
+          // PD model: 200mg is roughly IC50 for ~30-50% suppression
+          const conc = (p.mg / 200) * pk;
+          const suppression = 0.7 * (${hill.toString()})(conc, 0.5, 1.2);
+          return -I * suppression;
+        }`,
+        desc: "Non-linear suppression of melatonin production via adenosine and pineal interaction."
+      },
     },
     group: "Stimulants",
   },
@@ -751,26 +1040,34 @@ export const INTERVENTIONS: InterventionDef[] = [
         label: "Intensity (lux eq.)",
         type: "slider",
         min: 0,
-        max: 200,
+        max: 500,
         step: 5,
         default: 60,
       },
     ],
     kernels: {
-      melatonin: `function(t,p,I){
-        if(t<0) return 0;
-        // Very sensitive evening suppression; 50% suppression can occur <30 lux
-        const H = (${hill.toString()})(p.lux||0, 25, 1.6); // evening context assumed
-        return -I * 0.85 * H; 
-      }`,
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        return I * 0.12 * (1 - Math.exp(-t/15));
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        return I * 0.08 * (1 - Math.exp(-t/20));
-      }`,
+      melatonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const H = (${hill.toString()})(p.lux||0, 25, 1.6);
+          return -I * 0.85 * H; 
+        }`,
+        desc: "Suppression of pineal melatonin through ipRGC activation."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return I * (p.lux/100) * 0.2 * (1 - Math.exp(-t/15));
+        }`,
+        desc: "Minor dopamine boost associated with light-induced alertness."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          return I * (p.lux/100) * 0.15 * (1 - Math.exp(-t/20));
+        }`,
+        desc: "Slight cortisol increase contributing to the 'wake' signal."
+      },
     },
     group: "Light",
   },
@@ -785,74 +1082,95 @@ export const INTERVENTIONS: InterventionDef[] = [
         key: "lux",
         label: "Illuminance (klux eq.)",
         type: "slider",
-        min: 10,
-        max: 120,
+        min: 0,
+        max: 150,
         step: 5,
         default: 90,
       },
     ],
     kernels: {
-      melatonin: `function(t,p,I){
-        if(t<0) return 0;
-        const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
-        const window = function(target,width){
-          if(hr===null) return 0.5;
-          const span = Math.max(width, 0.5);
-          return Math.max(0, 1 - Math.abs(hr - target) / span);
-        };
-        const intensity = (${hill.toString()})(p.lux||0, 35, 1.4);
-        const morning = window(7, 4);
-        const evening = window(21, 3);
-        return -I * intensity * (0.55 * morning + 0.95 * evening);
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
-        const morning = hr===null ? 0.6 : Math.max(0, 1 - Math.abs(hr - 8) / 4);
-        const intensity = (${hill.toString()})(p.lux||0, 40, 1.6);
-        const tf = Math.max(0,t);
-        const rise = (1 - Math.exp(-tf/10)) * Math.exp(-tf/70);
-        return I * 0.22 * intensity * morning * rise;
-      }`,
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
-        const midday = hr===null ? 0.6 : Math.max(0, 1 - Math.abs(hr - 13.5) / 3.5);
-        const intensity = (${hill.toString()})(p.lux||0, 30, 1.3);
-        const tf = Math.max(0,t);
-        const pulse = (1 - Math.exp(-tf/12)) * Math.exp(-tf/150);
-        return I * 0.25 * intensity * midday * pulse;
-      }`,
-      serotonin: `function(t,p,I){
-        if(t<0) return 0;
-        const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
-        const midday = hr===null ? 0.6 : Math.max(0, 1 - Math.abs(hr - 12.5) / 5);
-        const intensity = (${hill.toString()})(p.lux||0, 25, 1.5);
-        return I * 0.35 * intensity * midday * (1 - Math.exp(-Math.max(0,t)/18));
-      }`,
-      energy: `function(t,p,I){
-        if(t<0) return 0;
-        const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
-        const day = hr===null ? 0.5 : Math.max(0, 1 - Math.abs(hr - 11) / 5);
-        const intensity = (${hill.toString()})(p.lux||0, 30, 1.5);
-        const build = (1 - Math.exp(-Math.max(0,t)/25));
-        return I * 0.28 * intensity * day * build;
-      }`,
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
-        const day = hr===null ? 0.4 : Math.max(0, 1 - Math.abs(hr - 14) / 4);
-        const intensity = (${hill.toString()})(p.lux||0, 35, 1.4);
-        return -I * 0.12 * intensity * day;
-      }`,
-      vagal: `function(t,p,I){
-        if(t<0) return 0;
-        const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
-        const morning = hr===null ? 0.5 : Math.max(0, 1 - Math.abs(hr - 9) / 3.5);
-        const recovery = Math.max(0, t - Math.max(1, p.duration||45));
-        const intensity = (${hill.toString()})(p.lux||0, 40, 1.4);
-        return I * 0.18 * intensity * morning * (1 - Math.exp(-recovery/40));
-      }`,
+      melatonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
+          const window = function(target,width){
+            if(hr===null) return 0.5;
+            const span = Math.max(width, 0.5);
+            return Math.max(0, 1 - Math.abs(hr - target) / span);
+          };
+          const intensity = (${hill.toString()})(p.lux||0, 35, 1.4);
+          const morning = window(7, 4);
+          const evening = window(21, 3);
+          return -I * intensity * (0.55 * morning + 0.95 * evening);
+        }`,
+        desc: "Phase-dependent suppression of melatonin to anchor the circadian clock."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
+          const morning = hr===null ? 0.6 : Math.max(0, 1 - Math.abs(hr - 8) / 4);
+          const intensity = (${hill.toString()})(p.lux||0, 40, 1.6);
+          const tf = Math.max(0,t);
+          const rise = (1 - Math.exp(-tf/10)) * Math.exp(-tf/70);
+          return I * 0.22 * intensity * morning * rise;
+        }`,
+        desc: "Enhanced morning cortisol rise through bright light exposure."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
+          const midday = hr===null ? 0.6 : Math.max(0, 1 - Math.abs(hr - 13.5) / 3.5);
+          const intensity = (${hill.toString()})(p.lux||0, 30, 1.3);
+          const tf = Math.max(0,t);
+          const pulse = (1 - Math.exp(-tf/12)) * Math.exp(-tf/150);
+          return I * 0.25 * intensity * midday * pulse;
+        }`,
+        desc: "Dopaminergic reward and alertness from high-intensity broad-spectrum light."
+      },
+      serotonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
+          const midday = hr===null ? 0.6 : Math.max(0, 1 - Math.abs(hr - 12.5) / 5);
+          const intensity = (${hill.toString()})(p.lux||0, 25, 1.5);
+          return I * 0.35 * intensity * midday * (1 - Math.exp(-Math.max(0,t)/18));
+        }`,
+        desc: "Increased serotonin production and availability during daylight."
+      },
+      energy: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
+          const day = hr===null ? 0.5 : Math.max(0, 1 - Math.abs(hr - 11) / 5);
+          const intensity = (${hill.toString()})(p.lux||0, 30, 1.5);
+          const build = (1 - Math.exp(-Math.max(0,t)/25));
+          return I * 0.28 * intensity * day * build;
+        }`,
+        desc: "General metabolic and cognitive energy boost from sun exposure."
+      },
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
+          const day = hr===null ? 0.4 : Math.max(0, 1 - Math.abs(hr - 14) / 4);
+          const intensity = (${hill.toString()})(p.lux||0, 35, 1.4);
+          return -I * 0.12 * intensity * day;
+        }`,
+        desc: "Slight reduction in inhibitory tone during active daylight hours."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const hr = (typeof self!=='undefined' && self.circadianHour) ? self.circadianHour() : null;
+          const morning = hr===null ? 0.5 : Math.max(0, 1 - Math.abs(hr - 9) / 3.5);
+          const recovery = Math.max(0, t - Math.max(1, p.duration||45));
+          const intensity = (${hill.toString()})(p.lux||0, 40, 1.4);
+          return I * 0.18 * intensity * morning * (1 - Math.exp(-recovery/40));
+        }`,
+        desc: "Improved autonomic balance and vagal tone recovery post-exposure."
+      },
     },
     group: "Light",
   },
@@ -867,7 +1185,7 @@ export const INTERVENTIONS: InterventionDef[] = [
         key: "mg",
         label: "Dose (mg)",
         type: "slider",
-        min: 0.5,
+        min: 0,
         max: 10,
         step: 0.5,
         default: 3,
@@ -884,63 +1202,87 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     ],
     kernels: {
-      melatonin: `function(t,p,I){
-        if(t<0) return 0;
-        const slow = p.release === "extended";
-        const k_a = slow ? 1/55 : 1/22;
-        const k_e = slow ? 1/420 : 1/120;
-        const pk = (${pk1.toString()})(t, k_a, k_e, 5);
-        const dose = Math.min(1, (p.mg||0)/5);
-        return I * 0.95 * dose * pk;
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const slow = p.release === "extended";
-        const k_a = slow ? 1/60 : 1/24;
-        const k_e = slow ? 1/360 : 1/150;
-        const pk = (${pk1.toString()})(t, k_a, k_e, 5);
-        const dose = Math.min(1, (p.mg||0)/5);
-        return -I * 0.35 * dose * pk;
-      }`,
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const slow = p.release === "extended";
-        const k_a = slow ? 1/65 : 1/30;
-        const k_e = slow ? 1/360 : 1/140;
-        const pk = (${pk1.toString()})(t, k_a, k_e, 5);
-        const dose = Math.min(1, (p.mg||0)/5);
-        return -I * 0.18 * dose * pk;
-      }`,
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        const slow = p.release === "extended";
-        const k_a = slow ? 1/50 : 1/20;
-        const k_e = slow ? 1/280 : 1/120;
-        const pk = (${pk1.toString()})(t, k_a, k_e, 5);
-        const dose = Math.min(1, (p.mg||0)/5);
-        return I * 0.4 * dose * pk;
-      }`,
-      vagal: `function(t,p,I){
-        if(t<0) return 0;
-        const slow = p.release === "extended";
-        const k_a = slow ? 1/55 : 1/24;
-        const k_e = slow ? 1/360 : 1/150;
-        const pk = (${pk1.toString()})(t, k_a, k_e, 5);
-        const dose = Math.min(1, (p.mg||0)/5);
-        const tf = Math.max(0,t);
-        const sustain = (1 - Math.exp(-Math.max(tf-60,0)/90));
-        return I * 0.28 * dose * pk * sustain;
-      }`,
+      melatonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const slow = p.release === "extended";
+          const k_a = slow ? 1/55 : 1/22;
+          const k_e = slow ? 1/420 : 1/120;
+          const pk = (${pk1.toString()})(t, k_a, k_e, 5);
+          const dose = p.mg/3;
+          return I * 0.6 * dose * pk;
+        }`,
+        desc: "Exogenous melatonin delivery following immediate or extended release PK."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const slow = p.release === "extended";
+          const k_a = slow ? 1/60 : 1/24;
+          const k_e = slow ? 1/360 : 1/150;
+          const pk = (${pk1.toString()})(t, k_a, k_e, 5);
+          const dose = p.mg/3;
+          return -I * 0.25 * dose * pk;
+        }`,
+        desc: "Suppression of nocturnal cortisol by melatonin."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const slow = p.release === "extended";
+          const k_a = slow ? 1/65 : 1/30;
+          const k_e = slow ? 1/360 : 1/140;
+          const pk = (${pk1.toString()})(t, k_a, k_e, 5);
+          const dose = p.mg/3;
+          return -I * 0.15 * dose * pk;
+        }`,
+        desc: "Reduction in evening dopaminergic drive."
+      },
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const slow = p.release === "extended";
+          const k_a = slow ? 1/50 : 1/20;
+          const k_e = slow ? 1/280 : 1/120;
+          const pk = (${pk1.toString()})(t, k_a, k_e, 5);
+          const dose = p.mg/3;
+          return I * 0.3 * dose * pk;
+        }`,
+        desc: "Synergistic increase in GABAergic inhibitory tone."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const slow = p.release === "extended";
+          const k_a = slow ? 1/55 : 1/24;
+          const k_e = slow ? 1/360 : 1/150;
+          const pk = (${pk1.toString()})(t, k_a, k_e, 5);
+          const dose = p.mg/3;
+          const tf = Math.max(0,t);
+          const sustain = (1 - Math.exp(-Math.max(tf-60,0)/90));
+          return I * 0.22 * dose * pk * sustain;
+        }`,
+        desc: "Improvement in nocturnal vagal tone."
+      },
     },
     group: "Supplements",
   },
   {
     key: "adderallIR10",
-    label: "Adderall IR 10 mg",
+    label: "Adderall IR",
     color: "#f97316",
     icon: "💊",
     defaultDurationMin: 360,
     params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 0,
+        max: 40,
+        step: 2.5,
+        default: 10,
+      },
       {
         key: "takenWithFood",
         label: "With food",
@@ -949,53 +1291,67 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        // Amphetamine IR: Tmax ~ 2–4 h; t1/2 ~ 10–12 h; food delays onset
-        const Cl = p.metabolicScalar || 1;
-        const Vol = p.clearanceScalar || 1;
-        
-        const onset = p.takenWithFood ? 45 : 20;
-        const k_a = 1/60;
-        const k_e = (1/720) * (Cl / Vol);
-        
-        const pk = (${pk1.toString()})(t, k_a, k_e, onset); 
-        return I * 0.8 * (1/Vol) * pk;
-      }`,
-      norepi: `function(t,p,I){
-        if(t<0) return 0;
-        const Cl = p.metabolicScalar || 1;
-        const Vol = p.clearanceScalar || 1;
-        
-        const onset = p.takenWithFood ? 45 : 20;
-        const k_a = 1/55;
-        const k_e = (1/700) * (Cl / Vol);
-        
-        const pk = (${pk1.toString()})(t, k_a, k_e, onset);
-        return I * 0.55 * (1/Vol) * pk;
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const Cl = p.metabolicScalar || 1;
-        const Vol = p.clearanceScalar || 1;
-
-        const onset = p.takenWithFood ? 45 : 20;
-        const k_a = 1/70;
-        const k_e = (1/800) * (Cl / Vol);
-        
-        const pk = (${pk1.toString()})(t, k_a, k_e, onset);
-        return I * 0.18 * (1/Vol) * pk;
-      }`,
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const Cl = p.metabolicScalar || 1;
+          const Vol = p.clearanceScalar || 1;
+          const onset = p.takenWithFood ? 45 : 20;
+          const k_a = 1/60;
+          const k_e = (1/660) * (Cl / Vol); // ~11h half-life
+          const pk = (${pk1.toString()})(t, k_a, k_e, onset); 
+          // Model crash as a slower, delayed negative pulse (fatigue/depletion)
+          const crash = 0.35 * (${pk1.toString()})(t, k_a/4, k_e/2, onset + 300);
+          return I * (p.mg/10) * 0.8 * (pk - crash);
+        }`,
+        desc: "Potent increase in synaptic dopamine followed by a continuous physiological 'crash'."
+      },
+      norepi: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const Cl = p.metabolicScalar || 1;
+          const Vol = p.clearanceScalar || 1;
+          const onset = p.takenWithFood ? 45 : 20;
+          const k_a = 1/55;
+          const k_e = (1/600) * (Cl / Vol);
+          const pk = (${pk1.toString()})(t, k_a, k_e, onset);
+          const crash = 0.3 * (${pk1.toString()})(t, k_a/4, k_e/2, onset + 300);
+          return I * (p.mg/10) * 0.55 * (pk - crash);
+        }`,
+        desc: "Significant increase in norepinephrine followed by a withdrawal rebound."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const Cl = p.metabolicScalar || 1;
+          const Vol = p.clearanceScalar || 1;
+          const onset = p.takenWithFood ? 45 : 20;
+          const k_a = 1/70;
+          const k_e = (1/720) * (Cl / Vol);
+          const pk = (${pk1.toString()})(t, k_a, k_e, onset);
+          return I * (p.mg/10) * 0.18 * (1/Vol) * pk;
+        }`,
+        desc: "Elevation of cortisol via sympathetic activation."
+      },
     },
     group: "Stimulants",
   },
   {
     key: "adderallXR15",
-    label: "Adderall XR 15 mg",
+    label: "Adderall XR",
     color: "#fb923c",
     icon: "💊",
     defaultDurationMin: 720,
     params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 0,
+        max: 60,
+        step: 5,
+        default: 15,
+      },
       {
         key: "takenWithFood",
         label: "With food",
@@ -1004,28 +1360,40 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        // MAS XR: bimodal release; food prolongs Tmax
-        const lag1 = p.takenWithFood ? 90 : 45;
-        const lag2 = lag1 + 240; // second pulse ~4 h later
-        const pk = (${pk_dual.toString()})(t, 1/45, 1/60, 1/720, lag1, lag2, 0.65);
-        return I * 0.9 * pk;
-      }`,
-      norepi: `function(t,p,I){
-        if(t<0) return 0;
-        const lag1 = p.takenWithFood ? 90 : 45;
-        const lag2 = lag1 + 240;
-        const pk = (${pk_dual.toString()})(t, 1/40, 1/55, 1/720, lag1, lag2, 0.65);
-        return I * 0.62 * pk;
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const lag1 = p.takenWithFood ? 90 : 45;
-        const lag2 = lag1 + 240;
-        const pk = (${pk_dual.toString()})(t, 1/60, 1/80, 1/800, lag1, lag2, 0.65);
-        return I * 0.2 * pk;
-      }`,
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const lag1 = p.takenWithFood ? 90 : 45;
+          const lag2 = lag1 + 240;
+          const k_e = 1/660;
+          const pk = (${pk_dual.toString()})(t, 1/45, 1/60, k_e, lag1, lag2, 0.65);
+          const crash = 0.3 * (${pk1.toString()})(t, 1/120, k_e/2, lag2 + 360);
+          return I * (p.mg/15) * 0.9 * (pk - crash);
+        }`,
+        desc: "Extended-release dopaminergic support with a late-day dopamine drop."
+      },
+      norepi: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const lag1 = p.takenWithFood ? 90 : 45;
+          const lag2 = lag1 + 240;
+          const k_e = 1/600;
+          const pk = (${pk_dual.toString()})(t, 1/40, 1/55, k_e, lag1, lag2, 0.65);
+          const crash = 0.25 * (${pk1.toString()})(t, 1/120, k_e/2, lag2 + 360);
+          return I * (p.mg/15) * 0.62 * (pk - crash);
+        }`,
+        desc: "Sustained norepinephrine elevation followed by evening fatigue."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const lag1 = p.takenWithFood ? 90 : 45;
+          const lag2 = lag1 + 240;
+          const pk = (${pk_dual.toString()})(t, 1/60, 1/80, 1/720, lag1, lag2, 0.65);
+          return I * (p.mg/15) * 0.2 * pk;
+        }`,
+        desc: "Moderate, sustained cortisol elevation from sympathetic drive."
+      },
     },
     group: "Stimulants",
   },
@@ -1040,41 +1408,52 @@ export const INTERVENTIONS: InterventionDef[] = [
         key: "intensity",
         label: "Intensity",
         type: "slider",
-        min: 0.2,
-        max: 1,
+        min: 0,
+        max: 2,
         step: 0.1,
         default: 0.5,
       },
     ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||30);
-        const inRide = Math.max(0, Math.min(t, dur));
-        const effort = I * p.intensity;
-        // smooth on/off within the bout
-        return effort * 0.16 * Math.sin(Math.PI * inRide / dur);
-      }`,
-      serotonin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||30);
-        const active = Math.min(t, dur);
-        return I * 0.22 * (1 - Math.exp(-active/20));
-      }`,
-      cortisol: `function(t,p,I){
-        const dur = Math.max(1, p.duration||30);
-        const active = Math.min(t, dur);
-        const during = I * p.intensity * -0.06 * Math.sin(Math.PI * active / dur);
-        const rec = t>dur ? -0.12 * Math.exp(-(t-dur)/40) : 0;
-        return during + rec;
-      }`,
-      vagal: `function(t,p,I){
-        const dur = Math.max(1, p.duration||30);
-        if(t<=0) return 0;
-        if(t<=dur) return -I * 0.08 * p.intensity; // vagal withdrawal during
-        const rec = t - dur;
-        return I * 0.22 * (1 - Math.exp(-rec/30)); // rebound after
-      }`,
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||30);
+          const inRide = Math.max(0, Math.min(t, dur));
+          const effort = I * p.intensity;
+          return effort * 0.16 * Math.sin(Math.PI * inRide / dur);
+        }`,
+        desc: "Moderate dopamine pulse from physical movement and environmental change."
+      },
+      serotonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||30);
+          const active = Math.min(t, dur);
+          return I * p.intensity * 0.22 * (1 - Math.exp(-active/20));
+        }`,
+        desc: "Mild serotonin release associated with rhythmic aerobic activity."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          const dur = Math.max(1, p.duration||30);
+          const active = Math.min(t, dur);
+          const during = I * p.intensity * -0.06 * Math.sin(Math.PI * active / dur);
+          const rec = t>dur ? -0.12 * Math.exp(-(t-dur)/40) : 0;
+          return during + rec;
+        }`,
+        desc: "Reduction in cortisol through low-intensity movement."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          const dur = Math.max(1, p.duration||30);
+          if(t<=0) return 0;
+          if(t<=dur) return -I * p.intensity * 0.08; 
+          const rec = t - dur;
+          return I * p.intensity * 0.22 * (1 - Math.exp(-rec/30));
+        }`,
+        desc: "Post-walk autonomic recovery and vagal tone improvement."
+      },
     },
     group: "Movement",
   },
@@ -1089,49 +1468,72 @@ export const INTERVENTIONS: InterventionDef[] = [
         key: "intensity",
         label: "Intensity",
         type: "slider",
-        min: 0.4,
-        max: 1.2,
+        min: 0,
+        max: 2,
         step: 0.1,
         default: 0.7,
       },
     ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||45);
-        const on = Math.max(0, Math.min(t, dur));
-        return I * 0.26 * p.intensity * Math.sin(Math.PI * on / dur);
-      }`,
-      norepi: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||45);
-        const inRide = t<=dur;
-        const ride = inRide ? Math.sin(Math.PI * Math.max(0, t) / dur) : Math.exp(-(t-dur)/120);
-        return I * 0.32 * p.intensity * ride;
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||45);
-        const tf = Math.max(0,t);
-        const during = tf<=dur ? 0.18 * p.intensity * (1 - Math.exp(-tf/15)) : 0;
-        const rec = tf>dur ? -0.16 * Math.exp(-(tf-dur)/45) : 0;
-        return I * (during + rec);
-      }`,
-      vagal: `function(t,p,I){
-        if(t<=0) return 0;
-        const dur = Math.max(1, p.duration||45);
-        if(t<=dur) return -I * 0.12 * p.intensity;
-        const rec = t - dur;
-        return I * 0.25 * (1 - Math.exp(-rec/28));
-      }`,
-      // Optional insulin sensitivity carryover (glucose disposal ↑ for 12–48h); expose as separate channel if desired
-      insulin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||45);
-        if(t<=dur) return I * (-0.12 * p.intensity); // during: circulating insulin needs ↓
-        const rec = t - dur;
-        return I * 0.22 * (1 - Math.exp(-rec/60)) * Math.exp(-rec/900); // carryover up to ~15 h
-      }`,
+      glucose: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||45);
+          const active = Math.min(t, dur);
+          return -I * p.intensity * 0.18 * (1 - Math.exp(-active/20));
+        }`,
+        desc: "Significant reduction in blood glucose due to muscular uptake during aerobic effort."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||45);
+          const on = Math.max(0, Math.min(t, dur));
+          return I * p.intensity * 0.26 * Math.sin(Math.PI * on / dur);
+        }`,
+        desc: "Dopamine release from sustained aerobic effort and speed."
+      },
+      norepi: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||45);
+          const inRide = t<=dur;
+          const ride = inRide ? Math.sin(Math.PI * Math.max(0, t) / dur) : Math.exp(-(t-dur)/120);
+          return I * p.intensity * 0.32 * ride;
+        }`,
+        desc: "Norepinephrine rise proportional to cardiovascular demand."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||45);
+          const tf = Math.max(0,t);
+          const during = tf<=dur ? 0.18 * p.intensity * (1 - Math.exp(-tf/15)) : 0;
+          const rec = tf>dur ? -0.16 * Math.exp(-(tf-dur)/45) : 0;
+          return I * (during + rec);
+        }`,
+        desc: "Initial cortisol rise during effort, followed by post-exercise drop."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<=0) return 0;
+          const dur = Math.max(1, p.duration||45);
+          if(t<=dur) return -I * p.intensity * 0.12;
+          const rec = t - dur;
+          return I * p.intensity * 0.25 * (1 - Math.exp(-rec/28));
+        }`,
+        desc: "Parasympathetic suppression during ride, followed by rebound."
+      },
+      insulin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||45);
+          if(t<=dur) return I * p.intensity * (-0.12);
+          const rec = t - dur;
+          return I * p.intensity * 0.22 * (1 - Math.exp(-rec/60)) * Math.exp(-rec/900);
+        }`,
+        desc: "Acute reduction in insulin requirement and improved sensitivity."
+      },
     },
     group: "Movement",
   },
@@ -1146,41 +1548,70 @@ export const INTERVENTIONS: InterventionDef[] = [
         key: "intensity",
         label: "Intensity",
         type: "slider",
-        min: 0.5,
-        max: 1.5,
+        min: 0,
+        max: 2,
         step: 0.1,
         default: 0.9,
       },
     ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||60);
-        const on = Math.max(0, Math.min(t, dur));
-        return I * 0.3 * p.intensity * Math.sin(Math.PI * on / dur);
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||60);
-        const tf = Math.max(0,t);
-        const during = tf<=dur ? 0.28 * p.intensity * (1 - Math.exp(-tf/12)) : 0;
-        const rec = tf>dur ? -0.18 * Math.exp(-(tf-dur)/60) : 0;
-        return I * (during + rec);
-      }`,
-      adrenaline: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||60);
-        if(t<=dur) return I * 0.28 * p.intensity * Math.sin(Math.PI * t / dur);
-        const rec = t - dur;
-        return I * 0.12 * Math.exp(-rec/45);
-      }`,
-      insulin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||60);
-        if(t<=dur) return I * (-0.15 * p.intensity);
-        const rec = t - dur;
-        return I * 0.25 * (1 - Math.exp(-rec/70)) * Math.exp(-rec/840);
-      }`,
+      growthHormone: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0, t - (p.duration||60));
+          return I * p.intensity * 0.45 * Math.exp(-tf/90);
+        }`,
+        desc: "Post-exercise growth hormone pulse stimulated by high-intensity loading."
+      },
+      ghrelin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          // Model metabolic demand / post-exercise hunger that also signals GH release
+          // Peaks a few hours after lifting
+          return I * p.intensity * 0.3 * (${pk1.toString()})(t, 1/120, 1/480, 180);
+        }`,
+        desc: "Delayed metabolic signaling (via ghrelin) that amplifies nocturnal repair and growth hormone spikes."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||60);
+          const on = Math.max(0, Math.min(t, dur));
+          return I * p.intensity * 0.3 * Math.sin(Math.PI * on / dur);
+        }`,
+        desc: "Dopamine surge from heavy loading and accomplishment."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||60);
+          const tf = Math.max(0,t);
+          const during = tf<=dur ? 0.28 * p.intensity * (1 - Math.exp(-tf/12)) : 0;
+          const rec = tf>dur ? -0.18 * Math.exp(-(tf-dur)/60) : 0;
+          return I * (during + rec);
+        }`,
+        desc: "Cortisol elevation due to mechanical and systemic stress."
+      },
+      adrenaline: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||60);
+          if(t<=dur) return I * p.intensity * 0.28 * Math.sin(Math.PI * t / dur);
+          const rec = t - dur;
+          return I * p.intensity * 0.12 * Math.exp(-rec/45);
+        }`,
+        desc: "Adrenaline release supporting peak power and strength."
+      },
+      insulin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||60);
+          if(t<=dur) return I * p.intensity * (-0.15);
+          const rec = t - dur;
+          return I * p.intensity * 0.25 * (1 - Math.exp(-rec/70)) * Math.exp(-rec/840);
+        }`,
+        desc: "Acute increase in non-insulin dependent glucose disposal (GLUT4)."
+      },
     },
     group: "Movement",
   },
@@ -1190,56 +1621,76 @@ export const INTERVENTIONS: InterventionDef[] = [
     color: "#f472b6",
     icon: "💞",
     defaultDurationMin: 30,
-    params: [],
+    params: [
+      { key: "intensity", label: "Intensity", type: "slider", min: 0, max: 2, step: 0.1, default: 1 }
+    ],
     kernels: {
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(5, p.duration||30);
-        const tf = Math.max(0,t);
-        const active = Math.min(tf, dur);
-        const during = tf<=dur ? I * 0.28 * Math.sin(Math.PI * active / dur) : 0;
-        const rec = tf>dur ? -I * 0.18 * Math.exp(-(tf-dur)/25) : 0;
-        return during + rec;
-      }`,
-      oxytocin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(5, p.duration||30);
-        const tf = Math.max(0,t);
-        if(tf<=dur) return I * 0.35 * (1 - Math.exp(-tf/6));
-        const rec = tf - dur;
-        return I * 0.35 * Math.exp(-rec/150);
-      }`,
-      prolactin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(5, p.duration||30);
-        const tf = Math.max(0,t);
-        if(tf<=dur) return I * 0.08 * (tf / dur);
-        const rec = tf - dur;
-        return I * 0.42 * (1 - Math.exp(-rec/6)) * Math.exp(-rec/120);
-      }`,
-      serotonin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(5, p.duration||30);
-        const tf = Math.max(0,t);
-        if(tf<=dur) return I * 0.15 * (tf / dur);
-        const rec = tf - dur;
-        return I * 0.26 * (1 - Math.exp(-rec/18)) * Math.exp(-rec/160);
-      }`,
-      cortisol: `function(t,p,I){
-        const dur = Math.max(5, p.duration||30);
-        const tf = Math.max(0,t);
-        if(tf===0) return 0;
-        if(tf<=dur) return -I * 0.06 * Math.sin(Math.PI * tf / dur);
-        const rec = tf - dur;
-        return -I * 0.16 * Math.exp(-rec/80);
-      }`,
-      vagal: `function(t,p,I){
-        if(t<=0) return 0;
-        const dur = Math.max(5, p.duration||30);
-        if(t<=dur) return -I * 0.05 * Math.sin(Math.PI * t / dur);
-        const rec = t - dur;
-        return I * 0.3 * (1 - Math.exp(-rec/22)) * Math.exp(-rec/210);
-      }`,
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(5, p.duration||30);
+          const tf = Math.max(0,t);
+          const active = Math.min(tf, dur);
+          const during = tf<=dur ? I * p.intensity * 0.28 * Math.sin(Math.PI * active / dur) : 0;
+          const rec = tf>dur ? -I * p.intensity * 0.18 * Math.exp(-(tf-dur)/25) : 0;
+          return during + rec;
+        }`,
+        desc: "Intense dopaminergic surge during arousal, followed by refractory drop."
+      },
+      oxytocin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(5, p.duration||30);
+          const tf = Math.max(0,t);
+          if(tf<=dur) return I * p.intensity * 0.35 * (1 - Math.exp(-tf/6));
+          const rec = tf - dur;
+          return I * p.intensity * 0.35 * Math.exp(-rec/150);
+        }`,
+        desc: "Sustained oxytocin release, particularly high post-activity."
+      },
+      prolactin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(5, p.duration||30);
+          const tf = Math.max(0,t);
+          if(tf<=dur) return I * p.intensity * 0.08 * (tf / dur);
+          const rec = tf - dur;
+          return I * p.intensity * 0.42 * (1 - Math.exp(-rec/6)) * Math.exp(-rec/120);
+        }`,
+        desc: "Post-orgasmic prolactin surge, contributing to the refractory period."
+      },
+      serotonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(5, p.duration||30);
+          const tf = Math.max(0,t);
+          if(tf<=dur) return I * p.intensity * 0.15 * (tf / dur);
+          const rec = tf - dur;
+          return I * p.intensity * 0.26 * (1 - Math.exp(-1 * rec/18)) * Math.exp(-rec/160);
+        }`,
+        desc: "Post-activity serotonin rise supporting mood and relaxation."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          const dur = Math.max(5, p.duration||30);
+          const tf = Math.max(0,t);
+          if(tf===0) return 0;
+          if(tf<=dur) return -I * p.intensity * 0.06 * Math.sin(Math.PI * tf / dur);
+          const rec = tf - dur;
+          return -I * p.intensity * 0.16 * Math.exp(-rec/80);
+        }`,
+        desc: "Anxiolytic reduction in cortisol during and after activity."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<=0) return 0;
+          const dur = Math.max(5, p.duration||30);
+          if(t<=dur) return -I * p.intensity * 0.05 * Math.sin(Math.PI * t / dur);
+          const rec = t - dur;
+          return I * p.intensity * 0.3 * (1 - Math.exp(-rec/22)) * Math.exp(-rec/210);
+        }`,
+        desc: "Strong parasympathetic rebound post-activity."
+      },
     },
     group: "Intimacy",
   },
@@ -1254,49 +1705,73 @@ export const INTERVENTIONS: InterventionDef[] = [
         key: "intensity",
         label: "Cold load",
         type: "slider",
-        min: 0.4,
-        max: 1.4,
+        min: 0,
+        max: 2,
         step: 0.1,
         default: 0.9,
       },
     ],
     kernels: {
-      norepi: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||8);
-        const on = Math.max(0, Math.min(t, dur));
-        const surge = Math.sin(Math.PI * on / dur);
-        const rebound = t>dur ? Math.exp(-(t-dur)/25) : 0;
-        return I * p.intensity * (0.75 * surge + 0.45 * rebound);
-      }`,
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        const ramp = (1 - Math.exp(-tf/4));
-        return I * 0.22 * p.intensity * ramp * Math.exp(-tf/70);
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||8);
-        const on = Math.max(0, Math.min(t, dur));
-        const acute = 0.16 * Math.sin(Math.PI * on / dur);
-        const rec = t>dur ? -0.14 * Math.exp(-(t-dur)/50) : 0;
-        return I * p.intensity * (acute + rec);
-      }`,
-      energy: `function(t,p,I){
-        if(t<0) return 0;
-        const tf = Math.max(0,t);
-        const build = (1 - Math.exp(-tf/8));
-        const tail = Math.exp(-tf/160);
-        return I * 0.3 * p.intensity * build * tail;
-      }`,
-      vagal: `function(t,p,I){
-        if(t<=0) return 0;
-        const dur = Math.max(1, p.duration||8);
-        if(t<=dur) return -I * 0.2 * p.intensity;
-        const rec = t - dur;
-        return I * 0.32 * p.intensity * (1 - Math.exp(-rec/28));
-      }`,
+      adrenaline: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||8);
+          const surge = t <= dur ? Math.sin(Math.PI * t / dur) : 0;
+          return I * p.intensity * 0.8 * surge;
+        }`,
+        desc: "Immediate, intense adrenaline spike from cold shock response."
+      },
+      norepi: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||8);
+          const on = Math.max(0, Math.min(t, dur));
+          const surge = Math.sin(Math.PI * on / dur);
+          const rebound = t>dur ? Math.exp(-(t-dur)/25) : 0;
+          return I * p.intensity * (0.75 * surge + 0.45 * rebound);
+        }`,
+        desc: "Massive norepinephrine surge (up to 200-300%) from cold shock."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          const ramp = (1 - Math.exp(-tf/4));
+          return I * p.intensity * 0.22 * ramp * Math.exp(-tf/70);
+        }`,
+        desc: "Steady, prolonged rise in dopamine following initial exposure."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||8);
+          const on = Math.max(0, Math.min(t, dur));
+          const acute = 0.16 * Math.sin(Math.PI * on / dur);
+          const rec = t>dur ? -0.14 * Math.exp(-(t-dur)/50) : 0;
+          return I * p.intensity * (acute + rec);
+        }`,
+        desc: "Acute stress response followed by adaptive cortisol reduction."
+      },
+      energy: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const tf = Math.max(0,t);
+          const build = (1 - Math.exp(-tf/8));
+          const tail = Math.exp(-tf/160);
+          return I * p.intensity * 0.3 * build * tail;
+        }`,
+        desc: "Increased alertness and metabolic rate from thermogenesis."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<=0) return 0;
+          const dur = Math.max(1, p.duration||8);
+          if(t<=dur) return -I * p.intensity * 0.2;
+          const rec = t - dur;
+          return I * p.intensity * 0.32 * (1 - Math.exp(-rec/28));
+        }`,
+        desc: "Cold-induced vagal stimulation post-exposure."
+      },
     },
     group: "Temperature",
   },
@@ -1311,58 +1786,85 @@ export const INTERVENTIONS: InterventionDef[] = [
         key: "intensity",
         label: "Heat load",
         type: "slider",
-        min: 0.5,
-        max: 1.3,
+        min: 0,
+        max: 2,
         step: 0.1,
         default: 0.8,
       },
     ],
     kernels: {
-      serotonin: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||20);
-        const on = Math.max(0, Math.min(t, dur));
-        const build = 1 - Math.exp(-on/8);
-        const rec = t>dur ? Math.exp(-(t-dur)/60) : 1;
-        return I * 0.32 * p.intensity * build * rec;
-      }`,
-      dopamine: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||20);
-        const inSauna = Math.max(0, Math.min(t, dur));
-        const pulse = Math.sin(Math.PI * inSauna / dur);
-        const rec = t>dur ? Math.exp(-(t-dur)/90) : 1;
-        return I * 0.2 * p.intensity * pulse * rec;
-      }`,
-      cortisol: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||20);
-        const on = Math.max(0, Math.min(t, dur));
-        const acute = 0.12 * Math.sin(Math.PI * on / dur);
-        const rec = t>dur ? -0.15 * Math.exp(-(t-dur)/70) : 0;
-        return I * p.intensity * (acute + rec);
-      }`,
-      gaba: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||20);
-        if(t<=dur) return I * 0.18 * p.intensity * (1 - Math.exp(-t/6));
-        const rec = t - dur;
-        return I * 0.25 * p.intensity * (1 - Math.exp(-rec/20));
-      }`,
-      vagal: `function(t,p,I){
-        if(t<=0) return 0;
-        const dur = Math.max(1, p.duration||20);
-        if(t<=dur) return -I * 0.08 * p.intensity;
-        const rec = t - dur;
-        return I * 0.34 * p.intensity * (1 - Math.exp(-rec/24));
-      }`,
-      energy: `function(t,p,I){
-        if(t<0) return 0;
-        const dur = Math.max(1, p.duration||20);
-        if(t<=dur) return I * 0.12 * p.intensity;
-        const rec = t - dur;
-        return -I * 0.18 * p.intensity * Math.exp(-rec/80);
-      }`,
+      adrenaline: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||20);
+          const surge = t <= dur ? Math.sin(Math.PI * t / dur) : 0;
+          return I * p.intensity * 0.35 * surge;
+        }`,
+        desc: "Increase in heart rate and adrenaline due to heat-induced cardiovascular demand."
+      },
+      serotonin: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||20);
+          const on = Math.max(0, Math.min(t, dur));
+          const build = 1 - Math.exp(-on/8);
+          const rec = t>dur ? Math.exp(-(t-dur)/60) : 1;
+          return I * p.intensity * 0.32 * build * rec;
+        }`,
+        desc: "Heat-induced serotonin release supporting mood and relaxation."
+      },
+      dopamine: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||20);
+          const inSauna = Math.max(0, Math.min(t, dur));
+          const pulse = Math.sin(Math.PI * inSauna / dur);
+          const rec = t>dur ? Math.exp(-(t-dur)/90) : 1;
+          return I * p.intensity * 0.2 * pulse * rec;
+        }`,
+        desc: "Mild dopamine reward signal from therapeutic heat stress."
+      },
+      cortisol: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||20);
+          const on = Math.max(0, Math.min(t, dur));
+          const acute = 0.12 * Math.sin(Math.PI * on / dur);
+          const rec = t>dur ? -0.15 * Math.exp(-(t-dur)/70) : 0;
+          return I * p.intensity * (acute + rec);
+        }`,
+        desc: "Acute heat stress response followed by systemic relaxation."
+      },
+      gaba: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||20);
+          if(t<=dur) return I * p.intensity * 0.18 * (1 - Math.exp(-t/6));
+          const rec = t - dur;
+          return I * p.intensity * 0.25 * (1 - Math.exp(-rec/20));
+        }`,
+        desc: "Increased GABAergic inhibitory tone for deep relaxation."
+      },
+      vagal: {
+        fn: `function(t,p,I){
+          if(t<=0) return 0;
+          const dur = Math.max(1, p.duration||20);
+          if(t<=dur) return -I * p.intensity * 0.08;
+          const rec = t - dur;
+          return I * p.intensity * 0.34 * (1 - Math.exp(-rec/24));
+        }`,
+        desc: "Post-sauna vagal tone improvement through thermoregulatory recovery."
+      },
+      energy: {
+        fn: `function(t,p,I){
+          if(t<0) return 0;
+          const dur = Math.max(1, p.duration||20);
+          if(t<=dur) return I * p.intensity * 0.12;
+          const rec = t - dur;
+          return -I * p.intensity * 0.18 * Math.exp(-rec/80);
+        }`,
+        desc: "Initial alertness followed by post-heat lethargy/relaxation."
+      },
     },
     group: "Temperature",
   },
