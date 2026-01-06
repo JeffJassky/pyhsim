@@ -1,5 +1,8 @@
 // types/neurostate.ts
 
+import type { Physiology, Subject } from '@/models/subject';
+export type { Physiology, Subject };
+
 /* ===========================
    Core time + units
 =========================== */
@@ -43,6 +46,9 @@ export type HormoneSignal =
   | "vip"
   | "testosterone"
   | "estrogen"
+  | "progesterone"
+  | "lh"
+  | "fsh"
   | "thyroid" // proxy (metabolic tone);
   | "growthHormone"
   | "glp1";
@@ -51,7 +57,24 @@ export type MetabolicProxy =
   | "glucose" // sim proxy
   | "energy" // composite
   | "vagal" // vagal tone proxy (HRV-derived if available)
-  | "ketone";
+  | "ketone"
+  | "hrv"
+  | "bloodPressure"
+  | "ethanol"
+  | "acetaldehyde"
+  | "inflammation"
+  | "bdnf"
+  | "magnesium"
+  | "sensoryLoad"
+  | "shbg"
+  | "ferritin"
+  | "dheas"
+  | "alt"
+  | "ast"
+  | "egfr"
+  | "vitaminD3"
+  | "mtor"
+  | "ampk";
 
 export type Signal = NeuroSignal | HormoneSignal | MetabolicProxy;
 
@@ -78,6 +101,9 @@ export const SIGNALS_ALL: readonly Signal[] = [
   "vip",
   "testosterone",
   "estrogen",
+  "progesterone",
+  "lh",
+  "fsh",
   "thyroid",
   "growthHormone",
   "glp1",
@@ -85,6 +111,23 @@ export const SIGNALS_ALL: readonly Signal[] = [
   "energy",
   "vagal",
   "ketone",
+  "hrv",
+  "bloodPressure",
+  "ethanol",
+  "acetaldehyde",
+  "inflammation",
+  "bdnf",
+  "magnesium",
+  "sensoryLoad",
+  "shbg",
+  "ferritin",
+  "dheas",
+  "alt",
+  "ast",
+  "egfr",
+  "vitaminD3",
+  "mtor",
+  "ampk",
 ] as const;
 
 /** A point-in-time vector for all (or some) signals */
@@ -101,7 +144,7 @@ export interface SignalSeries {
    Baselines
 =========================== */
 
-export type BaselineFn = (minuteOfDay: Minute) => SignalValue;
+export type BaselineFn = (minuteOfDay: Minute, ctx: BaselineContext) => SignalValue;
 
 export type BaselineMap = Partial<Record<Signal, BaselineFn>>;
 
@@ -262,6 +305,8 @@ export interface WorkerComputeRequest {
     sleepMinutes?: number;
     profileBaselines?: ProfileBaselineAdjustments;
     profileCouplings?: ProfileCouplingAdjustments;
+    subject?: Subject;
+    physiology?: Physiology;
   };
 }
 
@@ -593,6 +638,8 @@ export interface BaselineContext {
   amplitudeScale?: number;
   sleepDebt?: number;
   zeitgeber?: { lightLux?: number; meal?: boolean; exercise?: number };
+  subject?: Subject;
+  physiology?: Physiology;
 }
 
 export type DelaySpec =

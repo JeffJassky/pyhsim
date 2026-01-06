@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia';
 import type { ProfileKey, ProfileStateSnapshot } from '@/models/profiles';
 import { PROFILE_LIBRARY } from '@/models';
+import { DEFAULT_SUBJECT, type Subject } from '@/models/subject';
 
 export interface ProfilesStoreState {
   profiles: Record<ProfileKey, ProfileStateSnapshot>;
+  subject: Subject;
 }
 
 export const useProfilesStore = defineStore('profiles', {
@@ -15,6 +17,7 @@ export const useProfilesStore = defineStore('profiles', {
       };
       return acc;
     }, {} as Record<ProfileKey, ProfileStateSnapshot>),
+    subject: { ...DEFAULT_SUBJECT },
   }),
   actions: {
     toggleProfile(key: ProfileKey, enabled: boolean) {
@@ -24,6 +27,9 @@ export const useProfilesStore = defineStore('profiles', {
     updateParam(key: ProfileKey, paramKey: string, value: number) {
       if (!this.profiles[key]) return;
       this.profiles[key].params[paramKey] = value;
+    },
+    updateSubject(patch: Partial<Subject>) {
+      this.subject = { ...this.subject, ...patch };
     },
   },
 });

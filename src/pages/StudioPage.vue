@@ -237,6 +237,8 @@ const viewSignalSets = {
     'orexin',
     'glutamate',
     'endocannabinoid',
+    'bdnf',
+    'sensoryLoad',
   ],
   endocrine: [
     'cortisol',
@@ -250,12 +252,23 @@ const viewSignalSets = {
     'oxytocin',
     'prolactin',
     'growthHormone',
+    'testosterone',
+    'estrogen',
+    'progesterone',
+    'lh',
+    'fsh',
+    'shbg',
+    'dheas',
+    'vitaminD3',
   ],
-  metabolic: ['glucose', 'ketone', 'energy', 'vagal'],
+  metabolic: ['glucose', 'ketone', 'energy', 'vagal', 'hrv', 'bloodPressure', 'ethanol', 'acetaldehyde'],
   clock: ['melatonin', 'vasopressin', 'vip', 'orexin', 'histamine', 'serotonin', 'cortisol'],
-  fuel: ['insulin', 'glucagon', 'glp1', 'ghrelin', 'leptin', 'glucose', 'ketone', 'energy'],
-  recovery: ['gaba', 'melatonin', 'growthHormone', 'prolactin', 'oxytocin', 'vagal', 'cortisol'],
-  emotional: ['dopamine', 'serotonin', 'endocannabinoid', 'adrenaline', 'cortisol', 'oxytocin'],
+  fuel: ['insulin', 'glucagon', 'glp1', 'ghrelin', 'leptin', 'glucose', 'ketone', 'energy', 'mtor', 'ampk', 'ferritin'],
+  recovery: ['gaba', 'melatonin', 'growthHormone', 'prolactin', 'oxytocin', 'vagal', 'hrv', 'cortisol', 'inflammation'],
+  emotional: ['dopamine', 'serotonin', 'endocannabinoid', 'adrenaline', 'cortisol', 'oxytocin', 'sensoryLoad'],
+  reproductive: ['testosterone', 'estrogen', 'progesterone', 'lh', 'fsh', 'shbg'],
+  biomarkers: ['inflammation', 'bdnf', 'magnesium', 'vitaminD3', 'ferritin', 'hrv', 'bloodPressure'],
+  liverKidney: ['alt', 'ast', 'egfr', 'ethanol', 'acetaldehyde', 'inflammation'],
 } as const;
 
 const buildSpecs = (keys: readonly Signal[]): ChartSeriesSpec[] =>
@@ -289,6 +302,9 @@ const clockSpecs = buildSpecs(viewSignalSets.clock);
 const fuelSpecs = buildSpecs(viewSignalSets.fuel);
 const recoverySpecs = buildSpecs(viewSignalSets.recovery);
 const emotionalSpecs = buildSpecs(viewSignalSets.emotional);
+const reproductiveSpecs = buildSpecs(viewSignalSets.reproductive);
+const biomarkerSpecs = buildSpecs(viewSignalSets.biomarkers);
+const liverKidneySpecs = buildSpecs(viewSignalSets.liverKidney);
 
 const toChartData = (record: Record<string, Float32Array | number[]> | undefined) => {
   const result: Record<string, number[]> = {};
@@ -356,7 +372,9 @@ type ChartGroupKey =
   | 'clock'
   | 'fuel'
   | 'recovery'
-  | 'emotional';
+  | 'emotional'
+  | 'biomarkers'
+  | 'liverKidney';
 
 type RootTabKey = 'physiology' | 'application';
 
@@ -513,6 +531,19 @@ const chartGroups: Record<ChartGroupKey, ChartGroup> = {
         'Audit sleep hygiene, heat/sauna, or breathwork sessions by seeing whether you generated the restorative chemistry you were targeting.',
     },
   },
+  reproductive: {
+    key: 'reproductive',
+    label: 'Reproductive Health',
+    icon: '🧬',
+    specs: reproductiveSpecs,
+    data: signalSeriesData,
+    info: {
+      physiology:
+        'Sex hormones (testosterone, estrogen, progesterone) and regulatory hormones (LH, FSH) control reproductive cycles and secondary characteristics.',
+      application:
+        'Use this to track hormone cycles across the month (for females) or diurnal testosterone rhythms (for males).',
+    },
+  },
   emotional: {
     key: 'emotional',
     label: 'Emotional Regulation',
@@ -526,6 +557,32 @@ const chartGroups: Record<ChartGroupKey, ChartGroup> = {
         'Use this perspective to understand why certain routines calm or energize you emotionally and to plan deliberate mood adjustments.',
     },
   },
+  biomarkers: {
+    key: 'biomarkers',
+    label: 'Biomarkers',
+    icon: '🧪',
+    specs: biomarkerSpecs,
+    data: signalSeriesData,
+    info: {
+      physiology:
+        'Key blood and tissue markers (inflammation, BDNF, magnesium, ferritin) that provide a window into systemic health and cognitive potential.',
+      application:
+        'Monitor long-term health markers and ensure your interventions are supporting brain health and lowering systemic inflammation.',
+    },
+  },
+  liverKidney: {
+    key: 'liverKidney',
+    label: 'Liver & Kidney',
+    icon: '🧪',
+    specs: liverKidneySpecs,
+    data: signalSeriesData,
+    info: {
+      physiology:
+        'Proxies for hepatic and renal stress (ALT, AST, eGFR) along with ethanol metabolism signals.',
+      application:
+        'Track the impact of supplements, toxins, and high metabolic demand on your core filtration and detox organs.',
+    },
+  },
 };
 
 const rootTabOptions: RootTabOption[] = [
@@ -533,7 +590,16 @@ const rootTabOptions: RootTabOption[] = [
     key: 'physiology',
     label: 'Physiology',
     icon: '🧬',
-    groupKeys: ['scnCoupling', 'neuroArousal', 'endocrine', 'metabolic', 'autonomic', 'organDynamics'],
+    groupKeys: [
+      'scnCoupling',
+      'neuroArousal',
+      'endocrine',
+      'metabolic',
+      'autonomic',
+      'organDynamics',
+      'biomarkers',
+      'liverKidney',
+    ],
     info:
       'Explore biologically-accurate groupings that trace the flow from the master clock, through neurotransmitters and hormones, into organ-level outputs.',
   },
@@ -541,9 +607,9 @@ const rootTabOptions: RootTabOption[] = [
     key: 'application',
     label: 'Application',
     icon: '🧭',
-    groupKeys: ['clock', 'fuel', 'recovery', 'emotional', 'experience'],
+    groupKeys: ['clock', 'fuel', 'recovery', 'emotional', 'reproductive', 'experience'],
     info:
-      'Cut the system into pragmatic views—clock alignment, fueling, recovery, emotional regulation, and subjective experience—to plan real-world routines.',
+      'Cut the system into pragmatic views—clock alignment, fueling, recovery, emotional regulation, and reproductive health—to plan real-world routines.',
   },
 ];
 

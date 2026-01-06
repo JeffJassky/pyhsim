@@ -65,7 +65,14 @@
         </div>
         <svg viewBox="0 0 100 30" preserveAspectRatio="none">
           <defs>
-            <linearGradient :id="gradientId(spec)" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient
+              :id="gradientId(spec)"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="30"
+              gradientUnits="userSpaceOnUse"
+            >
               <stop offset="0%" :stop-color="gradientStops(spec)[0]" />
               <stop offset="100%" :stop-color="gradientStops(spec)[1]" />
             </linearGradient>
@@ -75,6 +82,13 @@
             fill="none"
             :stroke="strokeUrl(spec)"
             stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <polygon
+            :points="fillPoints(spec.key)"
+            :fill="strokeUrl(spec)"
+            fill-opacity="0.12"
           />
         </svg>
         <div class="series__playhead" :style="{ left: playheadPercent }" />
@@ -107,8 +121,7 @@ const fillColor = (spec: ChartSeriesSpec) => TENDENCY_COLORS[spec.tendency ?? 'n
 const gradientStops = (spec: ChartSeriesSpec) =>
   TENDENCY_LINE_GRADIENTS[spec.tendency ?? 'neutral'];
 
-const gradientIdBase = Math.random().toString(36).slice(2);
-const gradientId = (spec: ChartSeriesSpec) => `${gradientIdBase}-${spec.key}`;
+const gradientId = (spec: ChartSeriesSpec) => `grad-${spec.key}`;
 const strokeUrl = (spec: ChartSeriesSpec) => `url(#${gradientId(spec)})`;
 
 const latestValue = (key: string) => {
@@ -125,8 +138,17 @@ const points = (key: string) => {
   const data = props.seriesData[key] ?? [];
   if (!data.length) return '';
   return data
-    .map((value, idx) => `${(idx / Math.max(1, data.length - 1)) * 100},${30 - value * 20}`)
+    .map((value, idx) => `${(idx / Math.max(1, data.length - 1)) * 100},${28 - value * 22}`)
     .join(' ');
+};
+
+const fillPoints = (key: string) => {
+  const data = props.seriesData[key] ?? [];
+  if (!data.length) return '';
+  const pts = data
+    .map((value, idx) => `${(idx / Math.max(1, data.length - 1)) * 100},${28 - value * 22}`)
+    .join(' ');
+  return `0,30 ${pts} 100,30`;
 };
 
 const playheadPercent = computed(() => `${(props.playheadMin / (24 * 60)) * 100}%`);

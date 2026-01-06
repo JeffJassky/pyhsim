@@ -11,6 +11,7 @@ import type {
   SignalDef,
   SignalGroup,
 } from '@/types';
+import { DEFAULT_SUBJECT, getMenstrualHormones } from './subject';
 
 const MINUTES_IN_DAY = 24 * 60;
 const minutes = (hours: number) => hours * 60;
@@ -24,6 +25,14 @@ const wrapMinute = (minute: Minute) => {
   let m = minute % MINUTES_IN_DAY;
   if (m < 0) m += MINUTES_IN_DAY;
   return m as Minute;
+};
+
+const getDayOfCycle = (minute: Minute, cycleLength: number, startDay: number = 0) => {
+  // Assuming minute 0 is start of simulation.
+  // We need a way to offset this if the user starts mid-cycle.
+  // For now, assuming sim start = cycle day 0.
+  const day = Math.floor(minute / MINUTES_IN_DAY) + startDay; 
+  return day % cycleLength;
 };
 
 const fnBaseline = (fn: (minute: Minute, ctx: BaselineContext) => number): BaselineSpec => ({
@@ -555,12 +564,17 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Monitor under chronic stress or dieting to avoid metabolic slowdown.',
     },
     display: { tendency: 'higher' },
-    baseline: fnBaseline((minute) => {
+    baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
       const ramp = sigmoid((m - minutes(2.5)) / 80);
       const midday = gaussian(m, 7.5, 360);
       const nightDip = gaussian(m, 16.5, 300);
-      const tone = 0.22 + 0.4 * ramp + 0.35 * midday - 0.25 * nightDip;
+      let tone = 0.22 + 0.4 * ramp + 0.35 * midday - 0.25 * nightDip;
+      
+      // Scale by metabolic capacity if available (default 1.0)
+      const scale = ctx.physiology?.metabolicCapacity ?? 1.0;
+      tone *= scale;
+
       return Math.max(0.05, tone);
     }),
     couplings: [
@@ -744,12 +758,15 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Tie subjectively productive hours to the objective drivers shown here to design better schedules.',
     },
     display: { tendency: 'higher' },
-    baseline: fnBaseline((minute) => {
+    baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
       const morning = gaussian(m, 2.5, 180);
       const afternoon = gaussian(m, 6, 260);
       const slump = gaussian(m, 14, 200);
-      return 0.3 + 0.4 * (morning + afternoon) - 0.15 * slump;
+      const tone = 0.3 + 0.4 * (morning + afternoon) - 0.15 * slump;
+      
+      const metabolicScale = ctx.physiology?.metabolicCapacity ?? 1.0;
+      return tone * (0.8 + 0.2 * metabolicScale);
     }),
     couplings: [
       {
@@ -825,7 +842,25 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Use as a low-frequency trend (labs) rather than acute chart.',
     },
     display: { tendency: 'higher' },
-    baseline: fnBaseline(() => 0.3),
+    baseline: fnBaseline((minute, ctx) => {
+      const subject = ctx.subject ?? DEFAULT_SUBJECT;
+      
+      // Age decline: ~1% per year after 30
+      const ageFactor = Math.max(0.5, 1 - Math.max(0, subject.age - 30) * 0.01);
+
+      let val = 0;
+      if (subject.sex === 'male') {
+         // Diurnal rhythm for males: peak in morning
+         const m = wrapMinute(minute);
+         const circadian = 0.4 + 0.2 * gaussian(m, 8, 240);
+         val = circadian * ageFactor;
+      } else {
+        // Lower, steady baseline for females
+        val = 0.05 * ageFactor;
+      }
+      // console.log(`[Baseline:testosterone] ${minute}min -> ${val.toFixed(3)} (sex: ${subject.sex})`);
+      return val;
+    }),
     metadata: { version: '1.0.0' },
   },
   {
@@ -838,7 +873,316 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Track phases or hormone therapy contextually.',
     },
     display: { tendency: 'higher' },
+    baseline: fnBaseline((minute, ctx) => {
+      const subject = ctx.subject ?? DEFAULT_SUBJECT;
+      if (subject.sex === 'male') {
+        return 0.05; // Low constant for males
+      }
+      const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
+      const val = getMenstrualHormones(day, subject.cycleLength).estrogen;
+      if (minute === 0) console.log(`[Baseline:estrogen] Day ${day} -> ${val.toFixed(3)}`);
+      return val;
+    }),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'progesterone',
+    label: 'Progesterone',
+    group: 'Endocrine',
+    semantics: DEFAULT_SEMANTICS.Endocrine,
+    description: {
+      physiology: 'Progesterone rises in the luteal phase, raising body temp and promoting GABAergic calm.',
+      application: 'Expect higher sleep drive and slightly reduced insulin sensitivity during the luteal peak.',
+    },
+    display: { tendency: 'mid' },
+    baseline: fnBaseline((minute, ctx) => {
+      const subject = ctx.subject ?? DEFAULT_SUBJECT;
+      if (subject.sex === 'male') return 0.02;
+      const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
+      return getMenstrualHormones(day, subject.cycleLength).progesterone;
+    }),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'lh',
+    label: 'LH',
+    group: 'Endocrine',
+    semantics: DEFAULT_SEMANTICS.Endocrine,
+    description: {
+      physiology: 'Luteinizing Hormone spikes to trigger ovulation.',
+      application: 'Marker of ovulation timing.',
+    },
+    display: { tendency: 'neutral' },
+    baseline: fnBaseline((minute, ctx) => {
+      const subject = ctx.subject ?? DEFAULT_SUBJECT;
+      if (subject.sex === 'male') return 0.1;
+      const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
+      return getMenstrualHormones(day, subject.cycleLength).lh;
+    }),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'fsh',
+    label: 'FSH',
+    group: 'Endocrine',
+    semantics: DEFAULT_SEMANTICS.Endocrine,
+    description: {
+      physiology: 'Follicle Stimulating Hormone recruits ovarian follicles.',
+      application: 'Correlates with early follicular phase.',
+    },
+    display: { tendency: 'neutral' },
+    baseline: fnBaseline((minute, ctx) => {
+      const subject = ctx.subject ?? DEFAULT_SUBJECT;
+      if (subject.sex === 'male') return 0.1;
+      const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
+      return getMenstrualHormones(day, subject.cycleLength).fsh;
+    }),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'hrv',
+    label: 'HRV',
+    group: 'Autonomic',
+    semantics: DEFAULT_SEMANTICS.Autonomic,
+    description: {
+      physiology: 'Heart Rate Variability reflects the balance between sympathetic and parasympathetic branches.',
+      application: 'Track as a primary marker of recovery and autonomic readiness.',
+    },
+    display: { tendency: 'higher' },
+    baseline: fnBaseline(() => 0.4),
+    couplings: [
+      { source: 'vagal', mapping: linear(0.5), description: 'Vagal tone drives the HF component of HRV.' },
+      { source: 'adrenaline', mapping: linear(-0.3), description: 'Sympathetic activation suppresses HRV.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'bloodPressure',
+    label: 'Blood Pressure',
+    group: 'Autonomic',
+    semantics: DEFAULT_SEMANTICS.Autonomic,
+    description: {
+      physiology: 'Systemic arterial pressure driven by cardiac output and peripheral resistance.',
+      application: 'Monitor spikes from stimulants, stress, or intense lifting.',
+    },
+    display: { tendency: 'lower' },
     baseline: fnBaseline(() => 0.3),
+    couplings: [
+      { source: 'adrenaline', mapping: linear(0.4), description: 'Adrenaline increases heart rate and vasoconstriction.' },
+      { source: 'cortisol', mapping: linear(0.15), description: 'Cortisol increases vascular sensitivity to catecholamines.' },
+      { source: 'vagal', mapping: linear(-0.2), description: 'Vagal activity lowers blood pressure via bradycardia.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'ethanol',
+    label: 'Ethanol',
+    group: 'Metabolic',
+    semantics: DEFAULT_SEMANTICS.Metabolic,
+    description: {
+      physiology: 'Circulating alcohol awaiting hepatic metabolism.',
+      application: 'Simulate the clearing time and its impact on sleep architecture.',
+    },
+    display: { tendency: 'lower' },
+    baseline: fnBaseline(() => 0),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'acetaldehyde',
+    label: 'Acetaldehyde',
+    group: 'Metabolic',
+    semantics: DEFAULT_SEMANTICS.Metabolic,
+    description: {
+      physiology: 'Primary toxic metabolite of ethanol; drives hangovers and oxidative stress.',
+      application: 'Track the "hangover tail" after alcohol consumption.',
+    },
+    display: { tendency: 'lower' },
+    baseline: fnBaseline(() => 0),
+    couplings: [
+      { source: 'ethanol', mapping: linear(0.3), description: 'Conversion of ethanol by ADH.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'inflammation',
+    label: 'Inflammation (CRP)',
+    group: 'Metabolic',
+    semantics: DEFAULT_SEMANTICS.Metabolic,
+    description: {
+      physiology: 'Acute phase reactants (CRP, IL-6) signaling systemic immune activation.',
+      application: 'Monitor recovery from overtraining, poor sleep, or chronic stress.',
+    },
+    display: { tendency: 'lower' },
+    baseline: fnBaseline(() => 0.1),
+    couplings: [
+      { source: 'cortisol', mapping: linear(-0.2), description: 'Cortisol is a potent endogenous anti-inflammatory.' },
+      { source: 'adrenaline', mapping: linear(0.08), description: 'Acute stress can trigger transient inflammatory cytokine release.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'bdnf',
+    label: 'BDNF',
+    group: 'Neuro',
+    semantics: DEFAULT_SEMANTICS.Neuro,
+    description: {
+      physiology: 'Brain-Derived Neurotrophic Factor supports neuronal survival and synaptic plasticity.',
+      application: 'Track how exercise, sleep, and certain nootropics support brain health.',
+    },
+    display: { tendency: 'higher' },
+    baseline: fnBaseline(() => 0.3),
+    couplings: [
+      { source: 'growthHormone', mapping: linear(0.15), description: 'GH and IGF-1 support BDNF expression.' },
+      { source: 'cortisol', mapping: linear(-0.1), description: 'Chronic high cortisol suppresses hippocampal BDNF.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'magnesium',
+    label: 'Magnesium status',
+    group: 'Metabolic',
+    semantics: DEFAULT_SEMANTICS.Metabolic,
+    description: {
+      physiology: 'Intracellular magnesium levels; critical for >300 enzymatic reactions.',
+      application: 'Assess status in context of ADHD management and stress recovery.',
+    },
+    display: { tendency: 'higher' },
+    baseline: fnBaseline(() => 0.6),
+    couplings: [
+      { source: 'adrenaline', mapping: linear(-0.05), description: 'Stress-induced catecholamine release increases magnesium excretion.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'sensoryLoad',
+    label: 'Sensory Load',
+    group: 'Subjective',
+    semantics: DEFAULT_SEMANTICS.Subjective,
+    description: {
+      physiology: 'Accumulated sensory input processing demand; particularly relevant for Autism profiles.',
+      application: 'Use to predict "overload" or meltdowns when combined with high arousal.',
+    },
+    display: { tendency: 'lower' },
+    baseline: fnBaseline(() => 0.1),
+    couplings: [
+      { source: 'adrenaline', mapping: linear(0.2), description: 'Hyper-arousal increases sensory sensitivity.' },
+      { source: 'gaba', mapping: linear(-0.15), description: 'GABAergic inhibition helps filter sensory input.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'shbg',
+    label: 'SHBG',
+    group: 'Endocrine',
+    semantics: DEFAULT_SEMANTICS.Endocrine,
+    description: {
+      physiology: 'Sex Hormone Binding Globulin; regulates free vs bound hormone fractions.',
+      application: 'Important for understanding bioavailable testosterone and estrogen.',
+    },
+    display: { tendency: 'mid' },
+    baseline: fnBaseline(() => 0.4),
+    couplings: [
+      { source: 'insulin', mapping: linear(-0.12), description: 'High insulin levels suppress hepatic SHBG production.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'ferritin',
+    label: 'Ferritin / Iron',
+    group: 'Metabolic',
+    semantics: DEFAULT_SEMANTICS.Metabolic,
+    description: {
+      physiology: 'Iron stores critical for oxygen transport and mitochondrial energy production.',
+      application: 'Track energy dips related to menstrual blood loss or dietary intake.',
+    },
+    display: { tendency: 'higher' },
+    baseline: fnBaseline(() => 0.5),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'dheas',
+    label: 'DHEA-S',
+    group: 'Endocrine',
+    semantics: DEFAULT_SEMANTICS.Endocrine,
+    description: {
+      physiology: 'Adrenal androgen and neurosteroid; counter-regulatory to cortisol.',
+      application: 'Assess the Cortisol/DHEA ratio as a marker of HPA axis resilience.',
+    },
+    display: { tendency: 'higher' },
+    baseline: fnBaseline(() => 0.4),
+    couplings: [
+      { source: 'cortisol', mapping: linear(-0.08), description: 'Adrenal steal or chronic stress can divert precursors away from DHEA.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'alt',
+    label: 'ALT (Liver)',
+    group: 'Organ',
+    semantics: DEFAULT_SEMANTICS.Organ,
+    description: { physiology: 'Liver enzyme; marker of hepatic stress or turnover.', application: 'Monitor during high metabolic load or toxin exposure.' },
+    display: { tendency: 'lower' },
+    baseline: fnBaseline(() => 0.2),
+    couplings: [
+      { source: 'acetaldehyde', mapping: linear(0.15), description: 'Toxic metabolites stress hepatic tissue.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'ast',
+    label: 'AST (Liver)',
+    group: 'Organ',
+    semantics: DEFAULT_SEMANTICS.Organ,
+    description: { physiology: 'Liver/Heart enzyme; marker of tissue turnover.', application: 'Track alongside ALT for liver health assessment.' },
+    display: { tendency: 'lower' },
+    baseline: fnBaseline(() => 0.2),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'egfr',
+    label: 'eGFR (Kidney)',
+    group: 'Organ',
+    semantics: DEFAULT_SEMANTICS.Organ,
+    description: { physiology: 'Estimated Glomerular Filtration Rate; marker of kidney function.', application: 'Monitor during high protein intake or chronic stress.' },
+    display: { tendency: 'higher' },
+    baseline: fnBaseline(() => 0.8),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'vitaminD3',
+    label: 'Vitamin D3',
+    group: 'Endocrine',
+    semantics: DEFAULT_SEMANTICS.Endocrine,
+    description: { physiology: 'Steroid hormone precursor critical for immunity and calcium metabolism.', application: 'Long-term baseline tracker.' },
+    display: { tendency: 'higher' },
+    baseline: fnBaseline(() => 0.4),
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'mtor',
+    label: 'mTOR',
+    group: 'Metabolic',
+    semantics: DEFAULT_SEMANTICS.Metabolic,
+    description: { physiology: 'Master regulator of cell growth and protein synthesis.', application: 'Visualize anabolic "building" windows vs recovery.' },
+    display: { tendency: 'neutral' },
+    baseline: fnBaseline(() => 0.3),
+    couplings: [
+      { source: 'insulin', mapping: linear(0.4), description: 'Insulin/IGF-1 signaling activates the mTOR pathway.' },
+    ],
+    metadata: { version: '1.0.0' },
+  },
+  {
+    key: 'ampk',
+    label: 'AMPK',
+    group: 'Metabolic',
+    semantics: DEFAULT_SEMANTICS.Metabolic,
+    description: { physiology: 'Energy sensor that triggers catabolic pathways and autophagy.', application: 'Visualize "cleaning" and energy conservation windows.' },
+    display: { tendency: 'neutral' },
+    baseline: fnBaseline(() => 0.3),
+    couplings: [
+      { source: 'insulin', mapping: linear(-0.35), description: 'Insulin inhibits AMPK as it signals energy abundance.' },
+      { source: 'glucagon', mapping: linear(0.2), description: 'Glucagon signals energy deficit, activating AMPK.' },
+    ],
     metadata: { version: '1.0.0' },
   },
 ];
@@ -850,7 +1194,13 @@ export const SIGNAL_LIBRARY = Object.fromEntries(
 const baselineFnFromSpec = (spec: BaselineSpec): BaselineFn => {
   switch (spec.kind) {
     case 'function':
-      return (minute: Minute) => spec.fn(minute, {});
+      return (minute: Minute, ctx: BaselineContext) => {
+        const val = spec.fn(minute, ctx);
+        if (isNaN(val)) {
+          console.error(`[BaselineFn] NaN produced for ${spec.kind} at ${minute}min`);
+        }
+        return val;
+      };
     case 'flat':
       return () => spec.value;
     case 'gaussianMix':

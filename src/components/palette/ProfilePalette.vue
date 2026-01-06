@@ -1,5 +1,96 @@
 <template>
   <div class="profile-palette">
+    <!-- Physiology Section -->
+    <div class="profile-card">
+      <div class="profile-card__header">
+        <div class="profile-card__title-bar">
+          <h4>My Physiology</h4>
+        </div>
+        <p>Set biological baselines for metabolism and hormones.</p>
+      </div>
+      <div class="profile-card__params">
+        
+        <!-- Biological Sex -->
+        <div class="profile-param">
+          <div class="profile-param__label">
+            <span>Biological Sex</span>
+            <span>{{ subject.sex }}</span>
+          </div>
+          <div class="profile-param__select-wrapper">
+            <select :value="subject.sex" @change="updateSubject('sex', $event)">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Age -->
+        <div class="profile-param">
+          <div class="profile-param__label">
+            <span>Age</span>
+            <span>{{ subject.age }} yr</span>
+          </div>
+          <input
+            type="range"
+            min="18"
+            max="90"
+            step="1"
+            :value="subject.age"
+            @input="updateSubject('age', $event)"
+          />
+        </div>
+
+        <!-- Weight -->
+        <div class="profile-param">
+          <div class="profile-param__label">
+            <span>Weight</span>
+            <span>{{ subject.weight }} kg</span>
+          </div>
+          <input
+            type="range"
+            min="40"
+            max="150"
+            step="1"
+            :value="subject.weight"
+            @input="updateSubject('weight', $event)"
+          />
+        </div>
+
+        <!-- Female Cycle Params -->
+        <template v-if="subject.sex === 'female'">
+          <div class="profile-param">
+            <div class="profile-param__label">
+              <span>Cycle Length</span>
+              <span>{{ subject.cycleLength }} days</span>
+            </div>
+            <input
+              type="range"
+              min="21"
+              max="35"
+              step="1"
+              :value="subject.cycleLength"
+              @input="updateSubject('cycleLength', $event)"
+            />
+          </div>
+          <div class="profile-param">
+            <div class="profile-param__label">
+              <span>Current Day</span>
+              <span>Day {{ subject.cycleDay }}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              :max="subject.cycleLength"
+              step="1"
+              :value="subject.cycleDay"
+              @input="updateSubject('cycleDay', $event)"
+            />
+          </div>
+        </template>
+
+      </div>
+    </div>
+
     <div v-for="profile in profiles" :key="profile.key" class="profile-card">
       <div class="profile-card__header">
         <div class="profile-card__title-bar">
@@ -47,10 +138,12 @@ import { computed } from 'vue';
 import { PROFILE_LIBRARY } from '@/models';
 import { useProfilesStore } from '@/stores/profiles';
 import type { ProfileKey } from '@/models/profiles';
+import type { Subject } from '@/models/subject';
 
 const profilesStore = useProfilesStore();
 const profiles = PROFILE_LIBRARY;
 const state = computed(() => profilesStore.profiles);
+const subject = computed(() => profilesStore.subject);
 
 const toggle = (key: ProfileKey, event: Event) => {
   const target = event.target as HTMLInputElement | null;
@@ -61,6 +154,16 @@ const update = (key: ProfileKey, paramKey: string, event: Event) => {
   const target = event.target as HTMLInputElement | null;
   if (!target) return;
   profilesStore.updateParam(key, paramKey, Number(target.value));
+};
+
+const updateSubject = (key: keyof Subject, event: Event) => {
+  const target = event.target as HTMLInputElement | HTMLSelectElement | null;
+  if (!target) return;
+  let value: string | number = target.value;
+  if (key !== 'sex') {
+    value = Number(value);
+  }
+  profilesStore.updateSubject({ [key]: value });
 };
 </script>
 
@@ -118,6 +221,16 @@ const update = (key: ProfileKey, paramKey: string, event: Event) => {
 
 input[type='range'] {
   width: 100%;
+}
+
+.profile-param__select-wrapper select {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 0.85rem;
 }
 
 .switch {

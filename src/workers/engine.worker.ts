@@ -1,4 +1,5 @@
 import type {
+  BaselineContext,
   BaselineFn,
   CouplingMap,
   DelaySpec,
@@ -6,6 +7,7 @@ import type {
   KernelFn,
   Minute,
   ParamValues,
+  Physiology,
   ProfileBaselineAdjustments,
   ProfileCouplingAdjustments,
   ResponseSpec,
@@ -53,7 +55,8 @@ function computeItemEffect(
   signal: Signal,
   kernels: Partial<Record<Signal, KernelFn>>,
   minute: number,
-  item: ItemForWorker
+  item: ItemForWorker,
+  physiology?: Physiology
 ) {
   const kernel = kernels[signal];
   if (!kernel) return 0;
@@ -61,12 +64,26 @@ function computeItemEffect(
   const paramsWithDuration: ParamValues = {
     ...item.meta.params,
     duration: item.durationMin,
+    clearanceScalar: physiology?.drugClearance ?? 1.0,
+    metabolicScalar: physiology?.metabolicCapacity ?? 1.0,
   };
-  return kernel(t, paramsWithDuration, item.meta.intensity);
+  const I = typeof item.meta.intensity === 'number' ? item.meta.intensity : 1.0;
+  return kernel(t, paramsWithDuration, I);
 }
 
 self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const { gridMins, items, defs, options } = event.data;
+
+  console.debug('[EngineWorker] Received Request:', {
+    gridLength: gridMins.length,
+    itemCount: items.length,
+    hasSubject: !!options?.subject,
+    hasPhysiology: !!options?.physiology,
+  });
+
+  if (options?.subject) {
+    console.debug(`[EngineWorker] Subject Context: ${options.subject.sex}, Age ${options.subject.age}, Day ${options.subject.cycleDay}`);
+  }
 
   const baselineFns: Partial<Record<Signal, BaselineFn>> = { ...SIGNAL_BASELINES };
   const baselineAdjustments: ProfileBaselineAdjustments = options?.profileBaselines ?? {};
@@ -80,6 +97,13 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const minutesPerDay = 24 * 60;
   const clampMin = options?.clampMin ?? -1;
   const clampMax = options?.clampMax ?? 1.2;
+  
+  const baselineContext: BaselineContext = {
+    chronotypeShiftMin: wakeOffsetMin,
+    sleepDebt: 0,
+    subject: options?.subject,
+    physiology: options?.physiology,
+  };
 
   const series: Record<Signal, Float32Array> = {} as Record<Signal, Float32Array>;
 
@@ -105,13 +129,16 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
       const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
       const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
       const shiftedMinute = (((adjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
-      let value = (baselineFns[signal]?.((shiftedMinute as Minute)) ?? 0) * amplitude;
+      
+      const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
+      let value = baseVal * amplitude;
+      
       value = applySleepAdjustment(signal, value, sleepQuality);
       for (const item of items) {
         const def = defsMap.get(item.meta.key);
         if (!def) continue;
         const kernelSet = getKernelSet(def.key, def.kernels);
-        value += computeItemEffect(signal, kernelSet, minute as number, item);
+        value += computeItemEffect(signal, kernelSet, minute as number, item, options?.physiology);
       }
       const modifiers = couplings[signal];
       if (modifiers?.length) {
@@ -132,16 +159,29 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
           value += contribution;
         }
       }
-      series[signal][idx] = clamp(value, clampMin, clampMax);
+      let finalVal = clamp(value, clampMin, clampMax);
+      if (isNaN(finalVal) || !isFinite(finalVal)) {
+        console.error(`[EngineWorker] Invalid value generated for ${signal} at idx ${idx}:`, finalVal);
+        finalVal = 0;
+      }
+      series[signal][idx] = finalVal;
     }
     for (const signal of includeSignals) {
       lastStepValues[signal] = series[signal][idx];
     }
   });
 
+  // Sample data check
+  const samples: any = {};
+  SIGNALS_ALL.slice(0, 5).forEach(s => {
+    if (series[s]) samples[s] = series[s][0].toFixed(3);
+  });
+  console.debug('[EngineWorker] Computed. First Sample:', samples);
+
   const payload: WorkerComputeResponse = { series };
   (self as any).postMessage(payload, Object.values(series).map((buffer) => buffer.buffer));
 };
+
 function applySleepAdjustment(signal: Signal, value: number, quality: number) {
   switch (signal) {
     case 'cortisol':

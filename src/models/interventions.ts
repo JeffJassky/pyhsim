@@ -173,16 +173,20 @@ function dopaminePalatable(t: number, p: any, I: number) {
 
 export const FOOD_KERNELS: KernelSet = {
   insulin: `function(t,p,I){ 
-    return (${insulinSecretionFromMeal.toString()})(t,p,I);
+    const A = (${carbAppearance.toString()})(t,p);
+    // Increase amplitude for better visibility
+    const amp = I * 1.5 * Math.min(1, A / (A + 100));
+    const fast = (${gammaPulse.toString()})(t, 5, 35, 0); 
+    const slow = (${gammaPulse.toString()})(t, 18, 160, 0);
+    return amp * (0.6 * fast + 0.4 * slow);
   }`,
 
   glucose: `function(t,p,I){
-    // Use carb appearance directly as a proxy for glycemic drive, then filter with slightly slower time constants
     const A = (${carbAppearance.toString()})(t,p);
-    const amp = I * Math.min(1, A / (A + 160));
-    const fast = (1 - Math.exp(-Math.max(0,t)/10)) * Math.exp(-Math.max(0,t)/70);
-    const slow = (1 - Math.exp(-Math.max(0,t)/35)) * Math.exp(-Math.max(0,t)/200);
-    return amp * (0.5*fast + 0.5*slow);
+    const amp = I * 2.5 * Math.min(1, A / (A + 120));
+    const fast = (1 - Math.exp(-Math.max(0,t)/12)) * Math.exp(-Math.max(0,t)/60);
+    const slow = (1 - Math.exp(-Math.max(0,t)/40)) * Math.exp(-Math.max(0,t)/180);
+    return amp * (0.6 * fast + 0.4 * slow);
   }`,
 
   ghrelin: `function(t,p,I){ return (${ghrelinDrop.toString()})(t,p,I); }`,
@@ -194,13 +198,11 @@ export const FOOD_KERNELS: KernelSet = {
   dopamine: `function(t,p,I){ return (${dopaminePalatable.toString()})(t,p,I); }`,
 
   gaba: `function(t,p,I){
-    // Mild post-prandial calming signal; stronger later day (circadianHour optional)
-    const evening = (typeof self!=='undefined' && self.circadianHour) ? (self.circadianHour() >= 18 ? 1 : 0) : 0;
-    const A = I * evening * Math.min(0.2, 0.001*(p.carbSugar+p.carbStarch) + 0.002*p.fiberSol);
+    const A = I * Math.min(0.2, 0.001*(p.carbSugar+p.carbStarch) + 0.002*p.fiberSol);
     return A * (1 - Math.exp(-t/30));
   }`,
 
-  melatonin: `function(){ return 0; }`, // Meal itself: no direct acute melatonin effect modeled
+  melatonin: `function(){ return 0; }`, 
 };
 
 /* ====================== Interventions ====================== */
@@ -216,23 +218,21 @@ export const INTERVENTIONS: InterventionDef[] = [
     kernels: {
       cortisol: `function(t,p,I){ 
         if(t<0) return 0;
-        // CAR (cortisol awakening response): fast rise, decays over ~1–2 h
         const tf = Math.max(0,t);
-        return I * 0.35 * (1 - Math.exp(-tf/12)) * Math.exp(-tf/110);
+        return I * 0.45 * (1 - Math.exp(-tf/12)) * Math.exp(-tf/110);
       }`,
       dopamine: `function(t,p,I){
         if(t<0) return 0;
         const tf = Math.max(0,t);
-        return I * 0.22 * (1 - Math.exp(-tf/10)) * Math.exp(-tf/150);
+        return I * 0.25 * (1 - Math.exp(-tf/10)) * Math.exp(-tf/150);
       }`,
       melatonin: `function(t,p,I){
         if(t<0) return 0;
-        // Rapid suppression on waking
-        return -I * 0.5 * Math.exp(-t/25);
+        return -I * 0.6 * Math.exp(-t/20);
       }`,
       gaba: `function(t,p,I){
         if(t<0) return 0;
-        return -I * 0.2 * Math.exp(-t/45);
+        return -I * 0.25 * Math.exp(-t/45);
       }`,
     },
     group: "Routine",
@@ -248,34 +248,32 @@ export const INTERVENTIONS: InterventionDef[] = [
       melatonin: `function(t,p,I){
         if(t<0) return 0;
         const tf = Math.max(0,t);
-        const dur = p.duration || 0;
-        if(tf <= dur) return I * 0.7 * (1 - Math.exp(-tf/60));
+        const dur = p.duration || 480;
+        if(tf <= dur) return I * 0.8 * (1 - Math.exp(-tf/60));
         const rec = tf - dur;
-        return -I * 0.4 * Math.exp(-rec/45);
+        return -I * 0.5 * Math.exp(-rec/30);
       }`,
       gaba: `function(t,p,I){
         if(t<0) return 0;
         const tf = Math.max(0,t);
-        const dur = p.duration || 0;
-        if(tf <= dur) return I * 0.35 * (1 - Math.exp(-tf/45));
+        const dur = p.duration || 480;
+        if(tf <= dur) return I * 0.4 * (1 - Math.exp(-tf/45));
         const rec = tf - dur;
-        return -I * 0.25 * Math.exp(-rec/40);
+        return -I * 0.3 * Math.exp(-rec/40);
       }`,
       cortisol: `function(t,p,I){
         if(t<0) return 0;
         const tf = Math.max(0,t);
-        const dur = p.duration || 0;
-        if(tf <= dur) return -I * 0.25 * (1 - Math.exp(-tf/90));
+        const dur = p.duration || 480;
+        if(tf <= dur) return -I * 0.3 * (1 - Math.exp(-tf/90));
         const debt = tf - dur;
-        return I * 0.18 * Math.exp(-debt/90);
+        return I * 0.22 * Math.exp(-debt/90);
       }`,
-      dopamine: `function(t,p,I){
+      growthHormone: `function(t,p,I){
         if(t<0) return 0;
         const tf = Math.max(0,t);
-        const dur = p.duration || 0;
-        if(tf <= dur) return -I * 0.2 * (1 - Math.exp(-tf/60));
-        const rebound = tf - dur;
-        return I * 0.22 * (1 - Math.exp(-rebound/45)) * Math.exp(-rebound/180);
+        // Sleep-onset GH pulse
+        return I * 0.65 * (1 - Math.exp(-tf/30)) * Math.exp(-tf/120);
       }`,
     },
     group: "Routine",
@@ -365,6 +363,332 @@ export const INTERVENTIONS: InterventionDef[] = [
     group: "Food",
   },
   {
+    key: "alcohol",
+    label: "Alcohol",
+    color: "#f87171",
+    icon: "🍸",
+    defaultDurationMin: 60,
+    params: [
+      { key: "units", label: "Standard Units", type: "slider", min: 0, max: 8, step: 0.5, default: 1.5 }
+    ],
+    kernels: {
+      ethanol: `function(t,p,I){
+        if(t<0) return 0;
+        const k_a = 1/15;
+        const k_e = 1/90; // Zero-order proxy via slow first-order
+        return I * Math.min(1, p.units/5) * (${pk1.toString()})(t, k_a, k_e, 10);
+      }`,
+      acetaldehyde: `function(t,p,I){
+        if(t<0) return 0;
+        const k_a = 1/45;
+        const k_e = 1/240;
+        return I * Math.min(1, p.units/5) * (${pk1.toString()})(t, k_a, k_e, 30);
+      }`,
+      gaba: `function(t,p,I){
+        if(t<0) return 0;
+        // Acute enhancement followed by suppression (rebound)
+        const acute = 0.4 * Math.exp(-t/120);
+        const rebound = t > 180 ? -0.2 * Math.exp(-(t-180)/240) : 0;
+        return I * Math.min(1, p.units/4) * (acute + rebound);
+      }`,
+      vagal: `function(t,p,I){
+        if(t<0) return 0;
+        // HRV suppression
+        return -I * 0.4 * Math.min(1, p.units/3) * (1 - Math.exp(-t/60));
+      }`
+    },
+    group: "Lifestyle",
+  },
+  {
+    key: "meditation",
+    label: "Meditation / Breathwork",
+    color: "#60a5fa",
+    icon: "🧘",
+    defaultDurationMin: 20,
+    params: [
+      { key: "intensity", label: "Focus Intensity", type: "slider", min: 0.2, max: 1.2, step: 0.1, default: 0.8 }
+    ],
+    kernels: {
+      vagal: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 20;
+        const active = Math.min(t, dur);
+        const effect = I * 0.5 * (1 - Math.exp(-active/8));
+        const tail = t > dur ? Math.exp(-(t-dur)/45) : 1;
+        return effect * tail;
+      }`,
+      gaba: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 20;
+        return I * 0.25 * (1 - Math.exp(-Math.min(t, dur)/12));
+      }`,
+      cortisol: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 20;
+        return -I * 0.15 * (1 - Math.exp(-Math.min(t, dur)/15));
+      }`
+    },
+    group: "Wellness",
+  },
+  {
+    key: "ritalinIR10",
+    label: "Ritalin IR 10 mg",
+    color: "#f472b6",
+    icon: "💊",
+    defaultDurationMin: 240,
+    params: [],
+    kernels: {
+      dopamine: `function(t,p,I){
+        if(t<0) return 0;
+        const pk = (${pk1.toString()})(t, 1/30, 1/180, 20);
+        return I * 0.75 * pk;
+      }`,
+      norepi: `function(t,p,I){
+        if(t<0) return 0;
+        const pk = (${pk1.toString()})(t, 1/35, 1/200, 20);
+        return I * 0.5 * pk;
+      }`
+    },
+    group: "Stimulants",
+  },
+  {
+    key: "nootropicStack",
+    label: "Nootropic Stack",
+    color: "#10b981",
+    icon: "🌿",
+    defaultDurationMin: 360,
+    params: [
+      { key: "theanine", label: "L-Theanine (mg)", type: "slider", min: 0, max: 400, step: 50, default: 200 },
+      { key: "magnesium", label: "Magnesium (mg)", type: "slider", min: 0, max: 500, step: 50, default: 200 }
+    ],
+    kernels: {
+      gaba: `function(t,p,I){
+        if(t<0) return 0;
+        const pk = (${pk1.toString()})(t, 1/45, 1/300, 30);
+        return I * (p.theanine/400) * 0.3 * pk;
+      }`,
+      magnesium: `function(t,p,I){
+        if(t<0) return 0;
+        const pk = (${pk1.toString()})(t, 1/90, 1/600, 60);
+        return I * (p.magnesium/500) * 0.4 * pk;
+      }`,
+      bdnf: `function(t,p,I){
+        if(t<0) return 0;
+        const tf = Math.max(0, t);
+        return I * 0.15 * (1 - Math.exp(-tf/120));
+      }`
+    },
+    group: "Supplements",
+  },
+  {
+    key: "creatine",
+    label: "Creatine",
+    color: "#6366f1",
+    icon: "💪",
+    defaultDurationMin: 1440,
+    params: [
+      { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 5000, step: 500, default: 5000 }
+    ],
+    kernels: {
+      energy: `function(t,p,I){
+        if(t<0) return 0;
+        // Slow build, long baseline elevation
+        return I * (p.mg/5000) * 0.15 * (1 - Math.exp(-t/360));
+      }`,
+      mtor: `function(t,p,I){
+        if(t<0) return 0;
+        return I * 0.08 * (1 - Math.exp(-t/240));
+      }`
+    },
+    group: "Supplements",
+  },
+  {
+    key: "contraceptive",
+    label: "Oral Contraceptive",
+    color: "#ec4899",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [],
+    kernels: {
+      estrogen: `function(t,p,I){
+        if(t<0) return 0;
+        return I * 0.4 * (1 - Math.exp(-t/120));
+      }`,
+      progesterone: `function(t,p,I){
+        if(t<0) return 0;
+        return I * 0.3 * (1 - Math.exp(-t/120));
+      }`,
+      shbg: `function(t,p,I){
+        if(t<0) return 0;
+        return I * 0.25 * (1 - Math.exp(-t/360));
+      }`
+    },
+    group: "Hormones",
+  },
+  {
+    key: "inositol",
+    label: "Inositol",
+    color: "#8b5cf6",
+    icon: "🍬",
+    defaultDurationMin: 720,
+    params: [
+      { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 4000, step: 500, default: 2000 }
+    ],
+    kernels: {
+      insulin: `function(t,p,I){
+        if(t<0) return 0;
+        // Sensitizer: negative contribution to circulating insulin (efficiency up)
+        const pk = (${pk1.toString()})(t, 1/60, 1/480, 45);
+        return -I * (p.mg/4000) * 0.2 * pk;
+      }`
+    },
+    group: "Supplements",
+  },
+  {
+    key: "guanfacine",
+    label: "Guanfacine (Intuniv)",
+    color: "#a78bfa",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [
+      { key: "mg", label: "Dose (mg)", type: "slider", min: 0, max: 4, step: 1, default: 1 }
+    ],
+    kernels: {
+      norepi: `function(t,p,I){
+        if(t<0) return 0;
+        // Alpha-2 agonist: suppresses tonic norepinephrine release
+        const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
+        return -I * (p.mg/4) * 0.4 * pk;
+      }`,
+      adrenaline: `function(t,p,I){
+        if(t<0) return 0;
+        const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
+        return -I * (p.mg/4) * 0.3 * pk;
+      }`,
+      bloodPressure: `function(t,p,I){
+        if(t<0) return 0;
+        const pk = (${pk1.toString()})(t, 1/120, 1/1200, 60);
+        return -I * (p.mg/4) * 0.25 * pk;
+      }`
+    },
+    group: "Prescriptions",
+  },
+  {
+    key: "bodyDoubling",
+    label: "Body Doubling / Co-working",
+    color: "#6366f1",
+    icon: "👥",
+    defaultDurationMin: 90,
+    params: [],
+    kernels: {
+      dopamine: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 90;
+        return I * 0.15 * (1 - Math.exp(-Math.min(t, dur)/20));
+      }`,
+      oxytocin: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 90;
+        return I * 0.2 * (1 - Math.exp(-Math.min(t, dur)/30));
+      }`,
+      sensoryLoad: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 90;
+        // Reduces perceived load via social buffering
+        return -I * 0.1 * (1 - Math.exp(-Math.min(t, dur)/45));
+      }`
+    },
+    group: "Social",
+  },
+  {
+    key: "seedCycling",
+    label: "Seed Cycling",
+    color: "#fbbf24",
+    icon: "🌱",
+    defaultDurationMin: 1440,
+    params: [
+      { key: "phase", label: "Cycle Phase", type: "select", options: [{value:"follicular", label:"Follicular (Pumpkin/Flax)"}, {value:"luteal", label:"Luteal (Sesame/Sunflower)"}], default: "follicular" }
+    ],
+    kernels: {
+      estrogen: `function(t,p,I){
+        if(t<0) return 0;
+        return p.phase === "follicular" ? I * 0.05 : 0;
+      }`,
+      progesterone: `function(t,p,I){
+        if(t<0) return 0;
+        return p.phase === "luteal" ? I * 0.05 : 0;
+      }`
+    },
+    group: "Hormones",
+  },
+  {
+    key: "liss",
+    label: "LISS Cardio",
+    color: "#10b981",
+    icon: "🏃‍♂️",
+    defaultDurationMin: 60,
+    params: [
+      { key: "intensity", label: "Effort", type: "slider", min: 0.2, max: 0.8, step: 0.1, default: 0.5 }
+    ],
+    kernels: {
+      ampk: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 60;
+        return I * 0.3 * (1 - Math.exp(-Math.min(t, dur)/40));
+      }`,
+      glucose: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 60;
+        return -I * 0.15 * (1 - Math.exp(-Math.min(t, dur)/30));
+      }`,
+      vagal: `function(t,p,I){
+        if(t<=0) return 0;
+        const dur = p.duration || 60;
+        if(t<=dur) return -I * 0.05;
+        return I * 0.2 * Math.exp(-(t-dur)/30);
+      }`
+    },
+    group: "Movement",
+  },
+  {
+    key: "hiit",
+    label: "HIIT Session",
+    color: "#ef4444",
+    icon: "⚡",
+    defaultDurationMin: 25,
+    params: [
+      { key: "intensity", label: "Effort", type: "slider", min: 0.8, max: 1.5, step: 0.1, default: 1.1 }
+    ],
+    kernels: {
+      adrenaline: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 25;
+        if(t<=dur) return I * 0.6 * Math.sin(Math.PI * t / dur);
+        return I * 0.2 * Math.exp(-(t-dur)/20);
+      }`,
+      cortisol: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 25;
+        if(t<=dur) return I * 0.3 * (1 - Math.exp(-t/10));
+        return -I * 0.1 * Math.exp(-(t-dur)/60);
+      }`,
+      growthHormone: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 25;
+        // Acute stimulus for nighttime release
+        const tf = Math.max(0, t - dur);
+        return I * 0.4 * Math.exp(-tf/120);
+      }`,
+      inflammation: `function(t,p,I){
+        if(t<0) return 0;
+        const dur = p.duration || 25;
+        if(t<=dur) return I * 0.15 * (t/dur);
+        return I * 0.15 * Math.exp(-(t-dur)/180);
+      }`
+    },
+    group: "Movement",
+  },
+  {
     key: "caffeine",
     label: "Caffeine",
     color: "#c59f6f",
@@ -385,18 +709,28 @@ export const INTERVENTIONS: InterventionDef[] = [
       dopamine: `function(t,p,I){
         if(t<0) return 0;
         // Typical Tmax ~ 30–120 min; half-life ~ 4–6 h → k_e ≈ ln2/(240–360)
-        const k_a = 1/25, k_e = 1/330;
+        const Cl = p.metabolicScalar || 1;
+        const Vol = p.clearanceScalar || 1;
+        
+        const k_a = 1/25;
+        const k_e = (1/330) * (Cl / Vol); // Clearance / Volume
+        
         const pk = (${pk1.toString()})(t, k_a, k_e, 10);
         const dose = Math.min(1, p.mg/200);
-        return I * 0.6 * dose * pk;
+        // Peak concentration inversely proportional to Volume
+        return I * 0.6 * dose * (1/Vol) * pk;
       }`,
       cortisol: `function(t,p,I){
         if(t<0) return 0;
-        // Acute cortisol rise around Tmax, decaying within a few hours
-        const k_a = 1/25, k_e = 1/240;
+        const Cl = p.metabolicScalar || 1;
+        const Vol = p.clearanceScalar || 1;
+        
+        const k_a = 1/25;
+        const k_e = (1/240) * (Cl / Vol);
+        
         const pk = (${pk1.toString()})(t, k_a, k_e, 10);
         const dose = Math.min(1, p.mg/200);
-        return I * 0.2 * dose * pk;
+        return I * 0.2 * dose * (1/Vol) * pk;
       }`,
       melatonin: `function(){ 
         // No direct acute melatonin suppression from caffeine alone modeled; blue light handles that.
@@ -618,21 +952,39 @@ export const INTERVENTIONS: InterventionDef[] = [
       dopamine: `function(t,p,I){
         if(t<0) return 0;
         // Amphetamine IR: Tmax ~ 2–4 h; t1/2 ~ 10–12 h; food delays onset
+        const Cl = p.metabolicScalar || 1;
+        const Vol = p.clearanceScalar || 1;
+        
         const onset = p.takenWithFood ? 45 : 20;
-        const pk = (${pk1.toString()})(t, 1/60, 1/720, onset); // slower absorption, long elimination
-        return I * 0.8 * pk;
+        const k_a = 1/60;
+        const k_e = (1/720) * (Cl / Vol);
+        
+        const pk = (${pk1.toString()})(t, k_a, k_e, onset); 
+        return I * 0.8 * (1/Vol) * pk;
       }`,
       norepi: `function(t,p,I){
         if(t<0) return 0;
+        const Cl = p.metabolicScalar || 1;
+        const Vol = p.clearanceScalar || 1;
+        
         const onset = p.takenWithFood ? 45 : 20;
-        const pk = (${pk1.toString()})(t, 1/55, 1/700, onset);
-        return I * 0.55 * pk;
+        const k_a = 1/55;
+        const k_e = (1/700) * (Cl / Vol);
+        
+        const pk = (${pk1.toString()})(t, k_a, k_e, onset);
+        return I * 0.55 * (1/Vol) * pk;
       }`,
       cortisol: `function(t,p,I){
         if(t<0) return 0;
+        const Cl = p.metabolicScalar || 1;
+        const Vol = p.clearanceScalar || 1;
+
         const onset = p.takenWithFood ? 45 : 20;
-        const pk = (${pk1.toString()})(t, 1/70, 1/800, onset);
-        return I * 0.18 * pk;
+        const k_a = 1/70;
+        const k_e = (1/800) * (Cl / Vol);
+        
+        const pk = (${pk1.toString()})(t, k_a, k_e, onset);
+        return I * 0.18 * (1/Vol) * pk;
       }`,
     },
     group: "Stimulants",

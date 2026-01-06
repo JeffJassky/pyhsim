@@ -5,6 +5,9 @@ export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 export const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
 
+export const gaussian = (x: number, center: number, width: number) =>
+  Math.exp(-Math.pow((x - center) / width, 2));
+
 export const softplus = (x: number) => Math.log1p(Math.exp(x));
 
 export const tanh = (x: number) => Math.tanh(x);

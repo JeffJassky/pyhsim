@@ -13,6 +13,7 @@ import { SIGNAL_BASELINES, INTERVENTIONS } from '@/models';
 import { buildWorkerRequest, toMinuteOfDay } from '@/core/serialization';
 import { useProfilesStore } from './profiles';
 import { buildProfileAdjustments } from '@/models/profiles';
+import { derivePhysiology } from '@/models/subject';
 
 interface EngineStoreState extends EngineState {
   busy: boolean;
@@ -58,11 +59,28 @@ export const useEngineStore = defineStore('engine', {
       if (!worker) {
         worker = new Worker(new URL('../workers/engine.worker.ts', import.meta.url), { type: 'module' });
         worker.onmessage = (event: MessageEvent<WorkerComputeResponse>) => {
-          this.series = event.data.series;
+          const { series } = event.data;
+          console.debug('[EngineStore] Received series from worker. Keys:', Object.keys(series));
+          
+          // Data validation check
+          const sampleKey = 'dopamine';
+          if (series[sampleKey as any]) {
+            const sample = series[sampleKey as any];
+            let hasData = false;
+            for (let i = 0; i < Math.min(10, sample.length); i++) {
+              if (sample[i] !== 0) hasData = true;
+            }
+            if (!hasData) {
+              console.warn(`[EngineStore] Warning: Sample signal '${sampleKey}' appears to be all zeros in first 10 samples.`);
+            }
+          }
+
+          this.series = series;
           this.busy = false;
           this.lastComputedAt = Date.now();
         };
         worker.onerror = (event) => {
+          console.error('[EngineStore] Worker Error:', event.message);
           this.error = event.message;
           this.busy = false;
         };
@@ -86,12 +104,29 @@ export const useEngineStore = defineStore('engine', {
           : undefined;
       const profilesStore = useProfilesStore();
       const profileAdjustments = buildProfileAdjustments(profilesStore.profiles);
+      // Ensure subject is a plain object by explicit construction
+      const s = profilesStore.subject;
+      const subject = {
+        age: s.age,
+        weight: s.weight,
+        height: s.height,
+        sex: s.sex,
+        cycleLength: s.cycleLength,
+        lutealPhaseLength: s.lutealPhaseLength,
+        cycleDay: s.cycleDay,
+      };
+      const physiology = derivePhysiology(subject);
+      
+      console.debug('[EngineStore] Posting request to worker...');
+
       const request = buildWorkerRequest(gridCopy, clonedItems, clonedDefs, {
         options: {
           wakeOffsetMin,
           sleepMinutes,
           profileBaselines: profileAdjustments.baselines,
           profileCouplings: profileAdjustments.couplings,
+          subject,
+          physiology,
         },
       });
       this.busy = true;

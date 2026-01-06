@@ -19,7 +19,7 @@ export const useEngine = () => {
     { deep: true, immediate: true }
   );
   watch(
-    () => profiles.profiles,
+    () => [profiles.profiles, profiles.subject],
     () => compute(),
     { deep: true }
   );
