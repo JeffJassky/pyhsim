@@ -53,7 +53,7 @@
           </div>
         </div>
         <div class="series__overlay series__overlay--value">
-          {{ latestValue(spec.key).toFixed(2) }}
+          {{ latestValue(spec.key).toFixed(2) }} <span class="unit">{{ spec.unit }}</span>
         </div>
         <div class="series__bands">
           <div
@@ -78,7 +78,7 @@
             </linearGradient>
           </defs>
           <polyline
-            :points="points(spec.key)"
+            :points="points(spec)"
             fill="none"
             :stroke="strokeUrl(spec)"
             stroke-width="1.5"
@@ -86,7 +86,7 @@
             stroke-linejoin="round"
           />
           <polygon
-            :points="fillPoints(spec.key)"
+            :points="fillPoints(spec)"
             :fill="strokeUrl(spec)"
             fill-opacity="0.12"
           />
@@ -134,19 +134,34 @@ const latestValue = (key: string) => {
   return data[idx] ?? 0;
 };
 
-const points = (key: string) => {
-  const data = props.seriesData[key] ?? [];
+const normalize = (val: number, spec: ChartSeriesSpec) => {
+  const min = spec.yMin ?? 0;
+  const max = spec.yMax ?? 1;
+  const range = max - min;
+  if (range === 0) return 0.5;
+  // We allow clamping for the visual line so it stays in the box
+  return Math.max(0, Math.min(1, (val - min) / range));
+};
+
+const points = (spec: ChartSeriesSpec) => {
+  const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
   return data
-    .map((value, idx) => `${(idx / Math.max(1, data.length - 1)) * 100},${28 - value * 22}`)
+    .map((value, idx) => {
+      const norm = normalize(value, spec);
+      return `${(idx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
+    })
     .join(' ');
 };
 
-const fillPoints = (key: string) => {
-  const data = props.seriesData[key] ?? [];
+const fillPoints = (spec: ChartSeriesSpec) => {
+  const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
   const pts = data
-    .map((value, idx) => `${(idx / Math.max(1, data.length - 1)) * 100},${28 - value * 22}`)
+    .map((value, idx) => {
+      const norm = normalize(value, spec);
+      return `${(idx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
+    })
     .join(' ');
   return `0,30 ${pts} 100,30`;
 };
@@ -290,6 +305,12 @@ svg {
   top: 4px;
   right: 6px;
   opacity: 0.5;
+}
+
+.unit {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  margin-left: 1px;
 }
 
 .series__info-button {

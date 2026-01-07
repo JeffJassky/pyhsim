@@ -1,5 +1,5 @@
 <template>
-  <AppShell always-show-sidebar>
+  <AppShell always-show-sidebar :show-right-sidebar="showChat">
     <template #sidebar>
       <Panel title="Profiles" icon="🧬">
         <ProfilePalette />
@@ -8,6 +8,9 @@
         <InterventionSearch v-model="search" />
         <InterventionPalette :defs="filteredDefs" @select="handleCreate" />
       </Panel>
+    </template>
+    <template #right-sidebar>
+      <AIChatPanel />
     </template>
     <section class="studio-grid">
       <Panel ref="timelinePanelRef" title="Timeline" icon="📅">
@@ -24,6 +27,16 @@
       </Panel>
 
       <Panel :title="panelTitle" :icon="panelIcon">
+        <template #toolbar>
+          <button
+            class="ghost"
+            :style="{ opacity: showChat ? 1 : 0.5 }"
+            title="Toggle Bio-Pilot AI"
+            @click="showChat = !showChat"
+          >
+            🤖
+          </button>
+        </template>
         <nav class="chart-tabs-nav" role="tablist" aria-label="View families">
           <button
             v-for="tab in rootTabOptions"
@@ -108,6 +121,7 @@ import ProfilePalette from '@/components/palette/ProfilePalette.vue';
 import TimelineView from '@/components/timeline/TimelineView.vue';
 import SignalChart from '@/components/charts/SignalChart.vue';
 import FloatingInspector from '@/components/inspector/FloatingInspector.vue';
+import AIChatPanel from '@/components/ai/AIChatPanel.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
 import { useMetersStore } from '@/stores/meters';
@@ -155,6 +169,7 @@ const filteredDefs = computed(() =>
 const selectedItem = computed(() => timeline.items.find((item) => item.id === timeline.selectedId));
 const selectedDef = computed(() => library.defs.find((def) => def.key === selectedItem.value?.meta.key));
 const inspectorVisible = ref(false);
+const showChat = ref(false);
 
 const defaultParams = (def: InterventionDef) =>
   Object.fromEntries(def.params.map((param) => [param.key, param.default ?? 0]));
@@ -279,6 +294,9 @@ const buildSpecs = (keys: readonly Signal[]): ChartSeriesSpec[] =>
       return {
         key: def.key,
         label: def.label,
+        unit: def.semantics.unit,
+        yMin: def.semantics.referenceRange?.min,
+        yMax: def.semantics.referenceRange?.max,
         color: def.display.color,
         tendency: def.display.tendency,
         info: {

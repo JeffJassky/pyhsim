@@ -24,14 +24,14 @@ This is the core "Biohacker" market. These users are already invested in expensi
 ## 2. Neurodivergent Management (ADHD & Autism)
 This is a high-need market where the application provides a "manual for the brain."
 
-*   **Sub-markets:** Adults with ADHD, parents of children on the spectrum.
-*   **The Problem:** "Executive Dysfunction." Understanding how medication (like Adderall modeled in `interventions.ts`) interacts with sleep, food, and stress is life-changing.
-*   **Why they pay:** For **Predictability and Stability**. If the app can predict a "crash" at 4:00 PM due to a specific medication/food interaction, the user can intervene before it happens. This reduces the emotional and professional cost of neurodivergence.
+*   **Sub-markets:** Adults with ADHD, parents of children on the spectrum, and individuals managing the "Neuro-Trifecta" (comorbid EDS, POTS, and MCAS).
+*   **The Problem:** "Executive Dysfunction" and "Autonomic Instability." Understanding how medication (like Adderall) interacts with sleep, food, and stress—and how those in turn trigger POTS flares or MCAS reactions—is life-changing.
+*   **Why they pay:** For **Predictability and Stability**. If the app can predict a "crash" at 4:00 PM due to a medication/food interaction or a POTS-induced energy drop from dehydration, the user can intervene before it happens.
 
 **Gap Analysis & Future Roadmap:**
-*   **Missing Signals:** Brain-Derived Neurotrophic Factor (BDNF), Magnesium status (often low in ADHD), and "Sensory Load" (an environmental signal rather than biological).
-*   **Missing Interventions:** Methylphenidate (Ritalin/Concerta) kernels, Guanfacine (Alpha-2 agonist), and "Body Doubling" or "Deep Work" sessions as neurotransmitter boosters.
-*   **Critical Add:** **Magnesium/Zinc Synergies.** ADHD users often supplement these; modeling their role in dopamine synthesis would be a major differentiator.
+*   **Missing Signals:** Brain-Derived Neurotrophic Factor (BDNF), Magnesium status, "Sensory Load," and Autonomic indicators (Blood Pressure volatility, Histamine/Mast Cell activation).
+*   **Missing Interventions:** Methylphenidate (Ritalin/Concerta) kernels, Guanfacine (Alpha-2 agonist), Electrolyte loading (for POTS management), and H1/H2 blockers.
+*   **Critical Add:** **Magnesium/Zinc & Sodium Synergies.** ADHD users often need dopamine support; POTS users require precise sodium/fluid balance. Modeling the interplay of electrolytes, histamine, and neurochemistry is a major differentiator.
 
 **10x Value Features (Low Effort / High Impact):**
 *   **Anticipatory Alerts:** Notifications that say: "Simulation predicts a focus drop in 30 mins. Consider a high-protein snack now to buffer the crash." (Closing the loop from simulation to action).

@@ -1,9 +1,21 @@
 <template>
   <div class="param">
-    <label>
-      {{ paramDef.label }}
-      <small v-if="paramDef.unit">{{ paramDef.unit }}</small>
-    </label>
+    <div class="header">
+      <label>
+        {{ paramDef.label }}
+        <small v-if="paramDef.unit">{{ paramDef.unit }}</small>
+      </label>
+      <input
+        v-if="paramDef.type === 'slider'"
+        type="number"
+        class="number-readout"
+        :value="value"
+        :min="paramDef.min"
+        :max="paramDef.max"
+        :step="paramDef.step ?? 'any'"
+        @input="onInput"
+      />
+    </div>
     <component
       :is="inputType"
       v-bind="inputProps"
@@ -74,10 +86,34 @@ const onInput = (event: Event) => {
   gap: 0.25rem;
 }
 
-label {
+.header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
   font-size: 0.8rem;
   text-transform: uppercase;
+  color: #aaa;
+}
+
+.number-readout {
+  width: 60px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 0.1rem 0.25rem;
+  text-align: right;
+}
+
+.number-readout:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 </style>

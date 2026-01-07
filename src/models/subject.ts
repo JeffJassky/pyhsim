@@ -32,7 +32,12 @@ export interface Physiology {
   
   // Scoping factors (0.0 - 2.0 typically) relative to "standard" 70kg male
   metabolicCapacity: number; 
-  drugClearance: number;     
+  drugClearance: number;
+
+  // Advanced Physiology for PBPK
+  leanBodyMass: number; // kg
+  liverBloodFlow: number; // L/min
+  estimatedGFR: number; // mL/min
 }
 
 /**
@@ -54,15 +59,37 @@ export function calculateTBW(subject: Subject): number {
   }
 }
 
+/**
+ * Boer Formula for Lean Body Mass (LBM)
+ */
+export function calculateLBM(subject: Subject): number {
+  if (subject.sex === 'male') {
+    return 0.407 * subject.weight + 0.267 * subject.height - 19.2;
+  } else {
+    return 0.252 * subject.weight + 0.473 * subject.height - 48.3;
+  }
+}
+
 export function derivePhysiology(subject: Subject): Physiology {
   const bmr = calculateBMR(subject);
   const tbw = calculateTBW(subject);
+  const lbm = calculateLBM(subject);
   const bmi = subject.weight / Math.pow(subject.height / 100, 2);
   const bsa = Math.sqrt((subject.height * subject.weight) / 3600); // Mosteller formula
 
   // Standard reference: 30yo Male, 70kg, 175cm -> BMR ~1660, TBW ~42L
   const REF_BMR = 1660;
   const REF_TBW = 42;
+
+  // Liver Blood Flow (L/min) - Approx 1.5 L/min scaled by BSA
+  // Standard BSA ~1.9 m^2? 70kg/175cm -> 1.84 m^2
+  const liverBloodFlow = 1.5 * (bsa / 1.85);
+
+  // GFR (Cockcroft-Gault)
+  // ((140 - age) * weight) / (72 * Cr)
+  // Assume Cr = 1.0 (normal)
+  let gfr = ((140 - subject.age) * subject.weight) / 72.0;
+  if (subject.sex === 'female') gfr *= 0.85;
 
   return {
     bmr,
@@ -71,6 +98,9 @@ export function derivePhysiology(subject: Subject): Physiology {
     bsa,
     metabolicCapacity: bmr / REF_BMR,
     drugClearance: tbw / REF_TBW, // Simplified assumption: clearance scales with fluid volume/liver size
+    leanBodyMass: lbm,
+    liverBloodFlow,
+    estimatedGFR: gfr,
   };
 }
 

@@ -60,6 +60,7 @@ export type MetabolicProxy =
   | "ketone"
   | "hrv"
   | "bloodPressure"
+  | "oxygen"
   | "ethanol"
   | "acetaldehyde"
   | "inflammation"
@@ -247,7 +248,75 @@ export interface KernelSpec {
 /** Signal-specific kernels for an intervention */
 export type KernelSet = Partial<Record<Signal, KernelSpec>>;
 
+/** Clearance specification for physiology-dependent PK */
+export interface ClearanceSpec {
+  /** Hepatic (liver) metabolism component */
+  hepatic?: {
+    baseCL_mL_min: number;  // Base clearance in mL/min for reference 70kg male
+    CYP?: string;           // Primary CYP enzyme (e.g., "CYP1A2", "CYP3A4")
+  };
+  /** Renal (kidney) excretion component */
+  renal?: {
+    baseCL_mL_min: number;  // Base renal clearance in mL/min
+  };
+}
+
+/** Volume of distribution specification for physiology-dependent PK */
+export interface VolumeSpec {
+  kind: "weight" | "tbw" | "lbm" | "sex-adjusted";
+  base_L_kg?: number;       // For weight-based: Vd = base * weight
+  fraction?: number;        // For tbw-based: Vd = TBW * fraction
+  male_L_kg?: number;       // For sex-adjusted (male)
+  female_L_kg?: number;     // For sex-adjusted (female)
+}
+
 /** Library item definition */
+export interface PharmacologyDef {
+  molecule: {
+    name: string;
+    molarMass: number; // g/mol
+    pK_a?: number;
+    logP?: number;
+  };
+  pk?: {
+    model: "1-compartment" | "2-compartment" | "michaelis-menten" | "activity-dependent";
+    bioavailability?: number; // 0..1
+    absorptionRate?: number; // 1/min
+    // Static parameters (fallback when physiology not available)
+    halfLifeMin?: number;
+    timeToPeakMin?: number;
+    // Michaelis-Menten specific
+    Vmax?: number; // mg/dL per minute
+    Km?: number;   // mg/dL
+    // Two-compartment model parameters
+    /** Inter-compartmental transfer rate central→peripheral (1/min) */
+    k_12?: number;
+    /** Inter-compartmental transfer rate peripheral→central (1/min) */
+    k_21?: number;
+    /** Peripheral compartment volume (L/kg or L) */
+    V_peripheral?: number;
+    // Dynamic physiology-dependent parameters
+    clearance?: ClearanceSpec;
+    volume?: VolumeSpec;
+  };
+  pd?: Array<{
+    target: string; // e.g. "Adenosine_A2a"
+    mechanism: "agonist" | "antagonist" | "PAM" | "NAM";
+    Ki?: number; // nM
+    EC50?: number; // nM
+    effectGain?: number; // Mapping to engine units (e.g. 50.0)
+    /** Efficacy parameter (Black & Leff operational model)
+     * - Full agonist: tau = 10 (default)
+     * - Partial agonist: tau = 1-3
+     * - Super agonist: tau > 10
+     * Higher tau = approaches Emax at lower occupancy */
+    tau?: number;
+    /** Cooperativity factor for allosteric modulators (PAM/NAM)
+     * Default: 3.0 for PAM, 0.3 for NAM */
+    alpha?: number;
+  }>;
+}
+
 export interface InterventionDef {
   key: InterventionKey;
   label: string;
@@ -256,6 +325,7 @@ export interface InterventionDef {
   defaultDurationMin: number;
   params: ParamDef[];
   kernels: KernelSet; // per-signal kernels (as strings)
+  pharmacology?: PharmacologyDef;
   /** Optional grouping for UI (e.g., "Food", "Light", "Movement") */
   group?: string;
   /** Optional explainers for tooltips */
@@ -310,8 +380,18 @@ export interface WorkerComputeRequest {
     sleepMinutes?: number;
     profileBaselines?: ProfileBaselineAdjustments;
     profileCouplings?: ProfileCouplingAdjustments;
+    /** Receptor density adjustments from profiles (e.g., D2: -0.2 means 20% reduction) */
+    receptorDensities?: Record<string, number>;
+    /** Transporter activity adjustments from profiles (e.g., DAT: 0.4 means 40% increase) */
+    transporterActivities?: Record<string, number>;
+    /** Enzyme activity adjustments from profiles */
+    enzymeActivities?: Record<string, number>;
     subject?: Subject;
     physiology?: Physiology;
+    /** Enable ODE-based homeostatic feedback (glucose-insulin, sleep pressure, HPA) */
+    enableHomeostasis?: boolean;
+    /** Initial homeostasis state for multi-day simulations */
+    initialHomeostasisState?: HomeostasisStateSnapshot;
   };
 }
 
@@ -319,6 +399,8 @@ export type BaselineMapSerialized = Partial<Record<Signal, string>>; // stringif
 
 export interface WorkerComputeResponse {
   series: Record<Signal, Float32Array>;
+  /** Final homeostasis state after simulation (for chaining multi-day scenarios) */
+  finalHomeostasisState?: HomeostasisStateSnapshot;
 }
 
 /* ===========================
@@ -396,6 +478,44 @@ export interface MeterVector {
 }
 
 /* ===========================
+   Homeostasis State Persistence
+=========================== */
+
+/**
+ * Serializable snapshot of homeostasis state for persistence
+ * This allows scenarios to save/restore the physiological state
+ */
+export interface HomeostasisStateSnapshot {
+  // Glucose-Insulin Axis
+  glucosePool: number;
+  insulinPool: number;
+  hepaticGlycogen: number;
+
+  // Sleep Pressure
+  adenosinePressure: number;
+
+  // HPA Axis
+  crhPool: number;
+  cortisolIntegral: number;
+  adrenalineReserve: number;
+
+  // Neurotransmitter Pools
+  dopamineVesicles: number;
+  norepinephrineVesicles: number;
+  serotoninPrecursor: number;
+  acetylcholineTone: number;
+  gabaPool: number;
+  glutamatePool: number;
+
+  // Growth Factors
+  bdnfExpression: number;
+  ghReserve: number;
+
+  // Receptor States (tolerance/sensitization)
+  receptorStates: Record<string, number>;
+}
+
+/* ===========================
    Scenarios & presets
 =========================== */
 
@@ -415,6 +535,8 @@ export interface Scenario {
   };
   /** Freeform notes / markdown */
   notes?: string;
+  /** Saved homeostasis state for multi-day scenarios */
+  homeostasisState?: HomeostasisStateSnapshot;
 }
 
 /* ===========================
@@ -502,6 +624,7 @@ export type SeriesTendency = "higher" | "lower" | "mid" | "neutral";
 export interface ChartSeriesSpec {
   key: ChartSeriesKey;
   label: string;
+  unit?: string;
   color?: string;
   tendency?: SeriesTendency;
   yMin?: number;
@@ -555,8 +678,14 @@ export interface SignalDef {
   label: string;
   group: SignalGroup;
   semantics: {
-    unit: string;
-    normalized?: { mean: number; sd: number };
+    unit: string; // "a.u." or "mg/dL", etc.
+    // The engine runs in absolute units.
+    // The UI can normalize using this range for "0..1" equivalent charts.
+    referenceRange: {
+      min: number; // e.g. 70 (mg/dL)
+      max: number; // e.g. 140 (mg/dL)
+    };
+    normalized?: { mean: number; sd: number }; // Deprecated? Kept for legacy compat.
     isLatent?: boolean;
     observable?: {
       transform?:

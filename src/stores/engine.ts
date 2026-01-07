@@ -9,7 +9,8 @@ import type {
 } from '@/types';
 import { SIGNALS_ALL } from '@/types';
 import { rangeMinutes } from '@/utils/time';
-import { SIGNAL_BASELINES, INTERVENTIONS } from '@/models';
+import { SIGNAL_BASELINES } from '@/models';
+import { buildInterventionLibrary } from '@/models/interventions';
 import { buildWorkerRequest, toMinuteOfDay } from '@/core/serialization';
 import { useProfilesStore } from './profiles';
 import { buildProfileAdjustments } from '@/models/profiles';
@@ -86,9 +87,7 @@ export const useEngineStore = defineStore('engine', {
         };
       }
       const items = payload?.items ?? [];
-      const defs = payload?.defs ?? INTERVENTIONS;
       const clonedItems = JSON.parse(JSON.stringify(items));
-      const clonedDefs = JSON.parse(JSON.stringify(defs));
       const gridCopy = [...this.gridMins] as Minute[];
       const wakeItem = items.find((item) => item.meta.key === 'wake');
       const sleepItem = items.find((item) => item.meta.key === 'sleep');
@@ -116,6 +115,10 @@ export const useEngineStore = defineStore('engine', {
         cycleDay: s.cycleDay,
       };
       const physiology = derivePhysiology(subject);
+
+      // Build intervention library with dynamic PK parameters based on subject/physiology
+      const defs = payload?.defs ?? buildInterventionLibrary(subject, physiology);
+      const clonedDefs = JSON.parse(JSON.stringify(defs));
       
       console.debug('[EngineStore] Posting request to worker...');
 
@@ -125,6 +128,9 @@ export const useEngineStore = defineStore('engine', {
           sleepMinutes,
           profileBaselines: profileAdjustments.baselines,
           profileCouplings: profileAdjustments.couplings,
+          receptorDensities: profileAdjustments.receptorDensities,
+          transporterActivities: profileAdjustments.transporterActivities,
+          enzymeActivities: profileAdjustments.enzymeActivities,
           subject,
           physiology,
         },

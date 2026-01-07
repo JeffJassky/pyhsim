@@ -2,7 +2,10 @@
   <div v-if="item && def" class="inspector">
     <h3>{{ def.label }}</h3>
     <p>{{ def.notes }}</p>
-    <IntensityControl :value="local.intensity" @update:value="updateIntensity" />
+    <IntensityControl
+      :value="local.intensity"
+      @update:value="updateIntensity"
+    />
     <ParamEditor
       v-for="param in def.params"
       :key="param.key"

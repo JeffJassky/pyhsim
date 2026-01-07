@@ -3,7 +3,10 @@
     class="app-shell"
     :class="{ 'app-shell--sidebar-lock': alwaysShowSidebar }"
   >
-    <div class="app-shell__body">
+    <div
+      class="app-shell__body"
+      :class="{ 'has-right-sidebar': showRightSidebar && !isMobile }"
+    >
       <button
         v-if="isMobile"
         class="app-shell__mobile-toggle"
@@ -27,6 +30,9 @@
       <main class="app-shell__main">
         <slot />
       </main>
+      <aside v-if="showRightSidebar && !isMobile" class="app-shell__sidebar app-shell__sidebar--right">
+        <slot name="right-sidebar" />
+      </aside>
       <div
         v-if="isMobile && isSidebarOpen"
         class="app-shell__overlay"
@@ -42,8 +48,9 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 withDefaults(
   defineProps<{
     alwaysShowSidebar?: boolean;
+    showRightSidebar?: boolean;
   }>(),
-  { alwaysShowSidebar: false }
+  { alwaysShowSidebar: false, showRightSidebar: false }
 );
 
 const isSidebarOpen = ref(false);
@@ -101,6 +108,11 @@ onBeforeUnmount(() => {
   padding: 1rem 2rem;
   overflow: hidden;
   position: relative;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.app-shell__body.has-right-sidebar {
+  grid-template-columns: 280px minmax(0, 1fr) 300px;
 }
 
 .app-shell__sidebar,
