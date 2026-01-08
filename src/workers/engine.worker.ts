@@ -257,10 +257,57 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   gridMins.forEach((minute, idx) => {
     const adjustedMinute = (((minute - wakeOffsetMin) % minutesPerDay) + minutesPerDay) % minutesPerDay;
 
-    // --- Step Homeostasis System ---
+    // 1. First, calculate all analytical values (Baseline + Kernels + Couplings) for this step
+    const analyticalValues: Partial<Record<Signal, number>> = {};
+    for (const signal of includeSignals) {
+      const baselineAdj = baselineAdjustments[signal];
+      const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
+      const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
+      const shiftedMinute = (((adjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+
+      const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
+      let val = baseVal * amplitude;
+
+      val = applySleepAdjustment(signal, val, sleepQuality);
+      
+      // Kernels
+      for (const item of items) {
+        const def = defsMap.get(item.meta.key);
+        if (!def) continue;
+        const kernelSet = getKernelSet(def.key, def.kernels);
+        val += computeItemEffect(signal, kernelSet, minute as number, item, options?.physiology, options?.subject);
+      }
+
+      // Couplings
+      const modifiers = couplings[signal];
+      if (modifiers?.length) {
+        for (const modifier of modifiers) {
+          if (!includeSignalSet.has(modifier.source)) continue;
+          
+          // If homeostasis is enabled, skip couplings that are handled by the ODE system
+          if (enableHomeostasis && modifier.isManagedByHomeostasis) continue;
+
+          const driver = getCouplingDriver(
+            modifier.source,
+            series,
+            idx,
+            modifier.delay,
+            gridStep,
+            lastStepValues
+          );
+          let contribution = applyResponseSpec(modifier.mapping, driver);
+          if (modifier.saturation) {
+            contribution = applyResponseSpec(modifier.saturation, contribution);
+          }
+          val += contribution;
+        }
+      }
+      analyticalValues[signal] = val;
+    }
+
+    // 2. Step Homeostasis System using the current analytical values
     let homeostasisCorrections: Record<string, number> = {};
     if (enableHomeostasis && idx > 0) {
-      // Determine if currently in a sleep item
       const isAsleep = items.some(item => {
         const def = defsMap.get(item.meta.key);
         return def?.key === 'sleep' &&
@@ -268,49 +315,42 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
                minute <= item.startMin + item.durationMin;
       });
 
-      // Gather inputs from previous analytical values
-      // Transporter activity affects effective neurotransmitter levels
-      // Higher DAT/NET/SERT = faster clearance = lower effective levels
       const effectiveDopamine = (lastStepValues['dopamine'] ?? 50) / datActivity;
       const effectiveNorepi = (lastStepValues['norepi'] ?? 30) / netActivity;
       const effectiveSerotonin = (lastStepValues['serotonin'] ?? 50) / sertActivity;
 
       const homeostasisInputs: HomeostasisInputs = {
-        // Baselines from analytical signals
-        baselineCortisol: lastStepValues['cortisol'] ?? 12,
-        baselineGlucose: lastStepValues['glucose'] ?? 90,
+        baselineCortisol: analyticalValues['cortisol'] ?? 12,
+        baselineGlucose: analyticalValues['glucose'] ?? 90,
         baselineDopamine: effectiveDopamine,
         baselineSerotonin: effectiveSerotonin,
         baselineNorepi: effectiveNorepi,
-        baselineGaba: lastStepValues['gaba'] ?? 50,
-        baselineGlutamate: lastStepValues['glutamate'] ?? 50,
-        baselineAcetylcholine: lastStepValues['acetylcholine'] ?? 50,
-        baselineEnergy: lastStepValues['energy'] ?? 100,
-        baselineMelatonin: lastStepValues['melatonin'] ?? 20,
-        baselineBdnf: lastStepValues['bdnf'] ?? 50,
-        baselineGrowthHormone: lastStepValues['growthHormone'] ?? 50,
-        baselineAdrenaline: lastStepValues['adrenaline'] ?? 50,
+        baselineGaba: analyticalValues['gaba'] ?? 50,
+        baselineGlutamate: analyticalValues['glutamate'] ?? 50,
+        baselineAcetylcholine: analyticalValues['acetylcholine'] ?? 50,
+        baselineEnergy: analyticalValues['energy'] ?? 100,
+        baselineMelatonin: analyticalValues['melatonin'] ?? 20,
+        baselineBdnf: analyticalValues['bdnf'] ?? 50,
+        baselineGrowthHormone: analyticalValues['growthHormone'] ?? 50,
+        baselineAdrenaline: analyticalValues['adrenaline'] ?? 50,
 
-        // Intervention effects
         glucoseAppearance: getInterventionEffect('glucose', minute as number),
-        caffeineLevel: getInterventionEffect('dopamine', minute as number), // Proxy for caffeine
+        caffeineLevel: getInterventionEffect('dopamine', minute as number),
         exerciseIntensity: getInterventionEffect('adrenaline', minute as number) / 100,
         stressLevel: Math.max(0, (lastStepValues['cortisol'] ?? 12) - 15) / 20,
-        alcoholLevel: getInterventionEffect('gaba', minute as number) * 0.02, // Proxy for alcohol via GABA
-        meditationEffect: 0, // TODO: Add meditation intervention detection
+        alcoholLevel: getInterventionEffect('gaba', minute as number) * 0.02,
+        meditationEffect: 0,
 
-        // Neurotransmitter dynamics - firing rate adjusted for transporter activity
         dopamineFiringRate: Math.min(1, Math.max(0, effectiveDopamine / 100)),
         serotoninFiringRate: Math.min(1, Math.max(0, effectiveSerotonin / 100)),
         norepiFiringRate: Math.min(1, Math.max(0, effectiveNorepi / 100)),
         stimulantEffect: getStimulantEffect(minute as number, items, defsMap),
         tryptophanAvailability: getTryptophanAvailability(minute as number, items, defsMap),
-        gabaBoost: getInterventionEffect('gaba', minute as number) / 50, // Normalize to 0..1
+        gabaBoost: getInterventionEffect('gaba', minute as number) / 50,
         glutamateBlock: getInterventionEffect('glutamate', minute as number) < 0
           ? Math.abs(getInterventionEffect('glutamate', minute as number)) / 50
           : 0,
 
-        // State
         isAsleep,
         minuteOfDay: adjustedMinute,
       };
@@ -326,103 +366,40 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
       homeostasisCorrections = corrections;
     }
 
+    // 3. Apply corrections and clearances to get final values
     for (const signal of includeSignals) {
-      const baselineAdj = baselineAdjustments[signal];
-      const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
-      const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
-      const shiftedMinute = (((adjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+      let value = analyticalValues[signal] ?? 0;
 
-      const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
-      let value = baseVal * amplitude;
-
-      value = applySleepAdjustment(signal, value, sleepQuality);
-      for (const item of items) {
-        const def = defsMap.get(item.meta.key);
-        if (!def) continue;
-        const kernelSet = getKernelSet(def.key, def.kernels);
-        value += computeItemEffect(signal, kernelSet, minute as number, item, options?.physiology, options?.subject);
-      }
-      const modifiers = couplings[signal];
-      if (modifiers?.length) {
-        for (const modifier of modifiers) {
-          if (!includeSignalSet.has(modifier.source)) continue;
-          const driver = getCouplingDriver(
-            modifier.source,
-            series,
-            idx,
-            modifier.delay,
-            gridStep,
-            lastStepValues
-          );
-          let contribution = applyResponseSpec(modifier.mapping, driver);
-          if (modifier.saturation) {
-            contribution = applyResponseSpec(modifier.saturation, contribution);
-          }
-          value += contribution;
-        }
-      }
-
-      // Apply homeostasis corrections for regulated signals
       if (enableHomeostasis && homeostasisCorrections[signal] !== undefined) {
         value += homeostasisCorrections[signal];
       }
 
-      // Apply transporter-based clearance effects
-      // Higher transporter activity = faster synaptic clearance = lower signal levels
-      // This is the primary mechanism for ADHD's hypodopaminergia
-      if (signal === 'dopamine' && datActivity !== 1) {
-        // DAT clears dopamine from synapse; more DAT = less dopamine
-        value /= datActivity;
-      }
-      if (signal === 'norepi' && netActivity !== 1) {
-        // NET clears norepinephrine; more NET = less NE
-        value /= netActivity;
-      }
-      if (signal === 'serotonin' && sertActivity !== 1) {
-        // SERT clears serotonin; more SERT = less 5-HT
-        value /= sertActivity;
-      }
+      if (signal === 'dopamine' && datActivity !== 1) value /= datActivity;
+      if (signal === 'norepi' && netActivity !== 1) value /= netActivity;
+      if (signal === 'serotonin' && sertActivity !== 1) value /= sertActivity;
 
-      // Apply enzyme-based clearance effects
-      // These model how enzyme deficiencies affect neurotransmitter levels
       if (signal === 'histamine' && histamineEnzymeGain !== 0) {
-        // DAO deficiency → slower histamine clearance → elevated histamine
         value *= (1 + histamineEnzymeGain);
       }
       if ((signal === 'dopamine' || signal === 'norepi' || signal === 'serotonin') && monoamineClearanceRate !== 1) {
-        // MAO activity affects monoamine degradation
-        // Lower MAO = slower clearance = higher levels
-        const maoClearanceFactor = 1 / Math.max(0.5, monoamineClearanceRate);
-        value *= maoClearanceFactor;
+        value *= 1 / Math.max(0.5, monoamineClearanceRate);
       }
       if ((signal === 'dopamine' || signal === 'norepi' || signal === 'adrenaline') && catecholamineClearanceRate !== 1) {
-        // COMT activity affects catecholamine degradation
-        // Lower COMT = slower clearance = higher levels
-        const comtClearanceFactor = 1 / Math.max(0.5, catecholamineClearanceRate);
-        value *= comtClearanceFactor;
+        value *= 1 / Math.max(0.5, catecholamineClearanceRate);
       }
 
-      // We now allow absolute units (e.g. 100 mg/dL) to flow through.
-      let finalVal = value; 
-      
-      // Safety: Physiological concentrations cannot be negative.
-      // We allow negative values only for 'Organ' scores (heatmap) which range -1..1.
-      // We check against a known list of organ keys or assume standard signals are positive.
+      let finalVal = value;
       const isOrganScore = [
         'brain','eyes','heart','lungs','liver','pancreas','stomach',
         'si','colon','adrenals','thyroid','muscle','adipose','skin'
       ].includes(signal);
 
-      if (!isOrganScore) {
-        finalVal = Math.max(0, finalVal);
-      }
+      if (!isOrganScore) finalVal = Math.max(0, finalVal);
       
-      if (isNaN(finalVal) || !isFinite(finalVal)) {
-        console.error(`[EngineWorker] Invalid value generated for ${signal} at idx ${idx}:`, finalVal);
-        finalVal = 0;
-      }
+      if (isNaN(finalVal) || !isFinite(finalVal)) finalVal = 0;
       series[signal][idx] = finalVal;
     }
+
     for (const signal of includeSignals) {
       lastStepValues[signal] = series[signal][idx];
     }

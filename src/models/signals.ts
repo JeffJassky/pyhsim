@@ -1056,6 +1056,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       {
         source: "cortisol",
         mapping: linear(0.5),
+        isManagedByHomeostasis: true,
         description:
           "Cortisol stimulates hepatic gluconeogenesis, raising glucose.",
       },
@@ -1068,6 +1069,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       {
         source: "insulin",
         mapping: linear(-1.5),
+        isManagedByHomeostasis: true,
         description:
           "Insulin clears glucose into tissues, lowering circulating levels.",
       },

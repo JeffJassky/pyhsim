@@ -4,7 +4,7 @@
       v-for="spec in seriesSpecs"
       :key="spec.key"
       class="series"
-      :class="{ 'series--premium': spec.isPremium }"
+      :class="{ 'series--premium': isLocked(spec.key) }"
       @click="onChartClick"
     >
       <div
@@ -54,7 +54,7 @@
           </div>
         </div>
         <div class="series__overlay series__overlay--value">
-          <template v-if="!spec.isPremium || (seriesData[spec.key] && seriesData[spec.key].length > 0)">
+          <template v-if="!isLocked(spec.key)">
             {{ latestValue(spec.key).toFixed(2) }} <span class="unit">{{ spec.unit }}</span>
           </template>
           <span v-else class="premium-tag">
@@ -106,8 +106,9 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { ChartSeriesSpec, ResponseSpec } from '@/types';
+import type { ChartSeriesSpec, ResponseSpec, Signal } from '@/types';
 import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/colors';
+import { SIGNAL_LIBRARY } from '@/models';
 
 const props = withDefaults(
   defineProps<{
@@ -125,6 +126,11 @@ const emit = defineEmits<{ playhead: [number] }>();
 const infoOpenKey = ref<string | null>(null);
 
 const MINUTES_IN_DAY = 24 * 60;
+
+const isLocked = (key: string) => {
+  const data = props.seriesData[key];
+  return SIGNAL_LIBRARY[key as Signal]?.isPremium && (!data || data.length === 0);
+};
 
 // Convert a minute-of-day to display percentage, offset by dayStartMin
 const minToPercent = (minute: number) => {

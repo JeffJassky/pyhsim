@@ -365,9 +365,9 @@ const viewSignalSets = {
 const enabledSignals = computed(() => profiles.enabledSignals);
 const subscriptionTier = computed(() => profiles.subscriptionTier);
 
-const buildSpecs = (keys: readonly Signal[]): ChartSeriesSpec[] =>
+const buildSpecs = (keys: readonly Signal[], filterByEnabled = false): ChartSeriesSpec[] =>
   keys
-    .filter((key) => enabledSignals.value[key] !== false)
+    .filter((key) => !filterByEnabled || enabledSignals.value[key] !== false)
     .map((key) => {
       const def = SIGNAL_LIBRARY[key];
       if (!def) return null;
@@ -508,7 +508,7 @@ const goalSpecs = computed(() => {
   const relevantKeys = (Object.values(SIGNAL_LIBRARY) as any[])
     .filter(sig => sig.goals?.some((g: Goal) => goals.includes(g)))
     .map(sig => sig.key as Signal);
-  return buildSpecs(relevantKeys);
+  return buildSpecs(relevantKeys, true);
 });
 
 const autoSpecs = computed(() => {

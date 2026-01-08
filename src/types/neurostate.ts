@@ -493,6 +493,7 @@ export interface HomeostasisStateSnapshot {
   // Glucose-Insulin Axis
   glucosePool: number;
   insulinPool: number;
+  insulinAction: number;
   hepaticGlycogen: number;
 
   // Sleep Pressure
@@ -500,6 +501,7 @@ export interface HomeostasisStateSnapshot {
 
   // HPA Axis
   crhPool: number;
+  cortisolPool: number;
   cortisolIntegral: number;
   adrenalineReserve: number;
 
@@ -815,6 +817,8 @@ export interface CouplingSpec {
   saturation?: ResponseSpec;
   delay?: DelaySpec;
   description: string;
+  /** If true, the engine ignores this analytical coupling because it's handled by the ODE system. */
+  isManagedByHomeostasis?: boolean;
 }
 
 export type CouplingMap = Partial<Record<Signal, CouplingSpec[]>>;

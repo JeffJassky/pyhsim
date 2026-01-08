@@ -22,6 +22,7 @@ export interface HomeostasisState {
   // Glucose-Insulin Axis
   glucosePool: number;      // mg/dL - circulating glucose
   insulinPool: number;      // µIU/mL - circulating insulin
+  insulinAction: number;    // "X" compartment in Minimal Model
   hepaticGlycogen: number;  // Relative glycogen stores 0..1
 
   // Sleep Pressure (Process S)
@@ -29,6 +30,7 @@ export interface HomeostasisState {
 
   // HPA Axis State
   crhPool: number;          // Hypothalamic CRH tone
+  cortisolPool: number;     // Circulating cortisol pool (µg/dL)
   cortisolIntegral: number; // Integrated cortisol exposure (allostatic load)
   adrenalineReserve: number; // Adrenal medulla reserve 0..1
 
@@ -69,9 +71,11 @@ export interface HomeostasisParams {
 export const DEFAULT_HOMEOSTASIS_STATE: HomeostasisState = {
   glucosePool: 90,
   insulinPool: 8,
+  insulinAction: 0,
   hepaticGlycogen: 0.7,
   adenosinePressure: 0.2,
   crhPool: 1.0,
+  cortisolPool: 12,
   cortisolIntegral: 0,
   adrenalineReserve: 0.9,
   dopamineVesicles: 0.8,
@@ -570,167 +574,171 @@ export function stepHomeostasis(
   newState: HomeostasisState;
   corrections: Record<string, number>;
 } {
-  // --- Glucose-Insulin System ---
-  const giState = [
-    state.glucosePool,
-    0, // Remote insulin action compartment (X)
-    state.insulinPool,
-    state.hepaticGlycogen,
-  ];
+  // Use a smaller internal time step for numerical stability (e.g. 1 minute)
+  const internalDt = 1.0;
+  const numSteps = Math.max(1, Math.round(dt / internalDt));
+  const actualInternalDt = dt / numSteps;
 
-  const giInputs = {
-    glucoseAppearance: inputs.glucoseAppearance ?? 0,
-    exerciseUptake: (inputs.exerciseIntensity ?? 0) * 0.5,
-    stressHormones: inputs.stressLevel ?? 0,
-    exogenousInsulin: 0,
-  };
+  let currentState = { ...state };
 
-  const newGI = rk4Step(
-    giState,
-    0,
-    dt,
-    (s, t, inp) => glucoseInsulinDerivatives(s, t, inp, params),
-    giInputs
-  );
+  for (let i = 0; i < numSteps; i++) {
+    const giState = [
+      currentState.glucosePool,
+      currentState.insulinAction,
+      currentState.insulinPool,
+      currentState.hepaticGlycogen,
+    ];
 
-  // --- Sleep Pressure ---
-  const sleepInputs: SleepInputs = {
-    isAsleep: inputs.isAsleep ?? false,
-    caffeineLevel: inputs.caffeineLevel ?? 0,
-    lightExposure: 0,
-  };
+    const giInputs = {
+      glucoseAppearance: inputs.glucoseAppearance ?? 0,
+      exerciseUptake: (inputs.exerciseIntensity ?? 0) * 0.5,
+      stressHormones: inputs.stressLevel ?? 0,
+      exogenousInsulin: 0,
+    };
 
-  const dS = sleepPressureDerivative(state.adenosinePressure, sleepInputs, params);
-  const newAdenosine = clamp(state.adenosinePressure + dS * dt, 0, 1);
+    const newGI = rk4Step(
+      giState,
+      0,
+      actualInternalDt,
+      (s, t, inp) => glucoseInsulinDerivatives(s, t, inp, params),
+      giInputs
+    );
 
-  // --- HPA Axis ---
-  const hour = inputs.minuteOfDay / 60;
-  const circadianDrive = 0.5 + 0.5 * Math.cos((hour - 8) * Math.PI / 12);
+    // Sleep pressure
+    const sleepInputs: SleepInputs = {
+      isAsleep: inputs.isAsleep ?? false,
+      caffeineLevel: inputs.caffeineLevel ?? 0,
+      lightExposure: 0,
+    };
+    const dS = sleepPressureDerivative(currentState.adenosinePressure, sleepInputs, params);
+    const newAdenosine = clamp(currentState.adenosinePressure + dS * actualInternalDt, 0, 1);
 
-  const hpaInputs: HPAInputs = {
-    stressInput: inputs.stressLevel ?? 0,
-    circadianDrive,
-    inflammatorySignal: 0,
-  };
+    // HPA
+    const hour = (inputs.minuteOfDay + i * actualInternalDt) / 60;
+    const circadianDrive = 0.5 + 0.5 * Math.cos((hour - 8) * Math.PI / 12);
+    const hpaInputs: HPAInputs = {
+      stressInput: inputs.stressLevel ?? 0,
+      circadianDrive,
+      inflammatorySignal: 0,
+    };
+    const hpaState = [currentState.crhPool, currentState.cortisolPool, currentState.cortisolIntegral];
+    const newHPA = rk4Step(
+      hpaState,
+      0,
+      actualInternalDt,
+      (s, _t, _inp) => hpaDerivatives(s, hpaInputs, params),
+      {}
+    );
 
-  const hpaState = [state.crhPool, inputs.baselineCortisol ?? 12, state.cortisolIntegral];
-  const newHPA = rk4Step(
-    hpaState,
-    0,
-    dt,
-    (s, _t, _inp) => hpaDerivatives(s, hpaInputs, params),
-    {}
-  );
+    // Adrenaline Reserve
+    const adrenalineStress = (inputs.stressLevel ?? 0) + (inputs.exerciseIntensity ?? 0) * 0.5;
+    const adrenalineRecovery = 0.002 * (1 - currentState.adrenalineReserve);
+    const adrenalineDepletion = 0.005 * adrenalineStress * currentState.adrenalineReserve;
+    const newAdrenalineReserve = clamp(
+      currentState.adrenalineReserve + (adrenalineRecovery - adrenalineDepletion) * actualInternalDt,
+      0.2, 1.0
+    );
 
-  // --- Adrenaline Reserve (HPA exhaustion) ---
-  // Chronic stress depletes adrenal reserve
-  const adrenalineStress = (inputs.stressLevel ?? 0) + (inputs.exerciseIntensity ?? 0) * 0.5;
-  const adrenalineRecovery = 0.002 * (1 - state.adrenalineReserve);
-  const adrenalineDepletion = 0.005 * adrenalineStress * state.adrenalineReserve;
-  const newAdrenalineReserve = clamp(
-    state.adrenalineReserve + (adrenalineRecovery - adrenalineDepletion) * dt,
-    0.2, 1.0
-  );
+    // Update intermediate state
+    currentState = {
+      ...currentState,
+      glucosePool: clamp(newGI[0], 40, 400),
+      insulinAction: newGI[1],
+      insulinPool: clamp(newGI[2], 0, 200),
+      hepaticGlycogen: clamp(newGI[3], 0, 1),
+      adenosinePressure: newAdenosine,
+      crhPool: clamp(newHPA[0], 0, 5),
+      cortisolPool: newHPA[1],
+      cortisolIntegral: newHPA[2],
+      adrenalineReserve: newAdrenalineReserve,
+    };
+  }
 
-  // --- Dopamine Vesicle Pool ---
+  // Final derivative-based updates for neurotransmitters (simpler models)
   const daFiringRate = clamp(
     (inputs.dopamineFiringRate ?? 0.5) + (inputs.stimulantEffect ?? 0) * 0.3,
     0, 1
   );
-  const daDopamine = vesiclePoolDerivative(state.dopamineVesicles, {
+  const daDopamine = vesiclePoolDerivative(currentState.dopamineVesicles, {
     firingRate: daFiringRate,
     precursorAvailability: 0.8,
     drugEffect: inputs.stimulantEffect ?? 0,
   });
-  const newDopamineVesicles = clamp(state.dopamineVesicles + daDopamine * dt, 0.1, 1);
+  const newDopamineVesicles = clamp(currentState.dopamineVesicles + daDopamine * dt, 0.1, 1);
 
-  // --- Norepinephrine Vesicle Pool ---
   const neFiringRate = clamp(
     (inputs.norepiFiringRate ?? 0.5) + (inputs.stimulantEffect ?? 0) * 0.2,
     0, 1
   );
-  const daNorepi = vesiclePoolDerivative(state.norepinephrineVesicles, {
+  const daNorepi = vesiclePoolDerivative(currentState.norepinephrineVesicles, {
     firingRate: neFiringRate,
     precursorAvailability: 0.8,
     drugEffect: inputs.stimulantEffect ?? 0,
   });
-  const newNorepiVesicles = clamp(state.norepinephrineVesicles + daNorepi * dt, 0.1, 1);
+  const newNorepiVesicles = clamp(currentState.norepinephrineVesicles + daNorepi * dt, 0.1, 1);
 
-  // --- Serotonin Precursor Pool ---
   const serotoninFiring = clamp(inputs.serotoninFiringRate ?? 0.5, 0, 1);
   const tryptophan = inputs.tryptophanAvailability ?? 0.7;
-  const dSerotonin = vesiclePoolDerivative(state.serotoninPrecursor, {
+  const dSerotonin = vesiclePoolDerivative(currentState.serotoninPrecursor, {
     firingRate: serotoninFiring,
     precursorAvailability: tryptophan,
     drugEffect: 0,
   });
-  const newSerotoninPrecursor = clamp(state.serotoninPrecursor + dSerotonin * dt, 0.1, 1);
+  const newSerotoninPrecursor = clamp(currentState.serotoninPrecursor + dSerotonin * dt, 0.1, 1);
 
-  // --- GABA Pool (Adenosine-GABA interaction) ---
-  // Adenosine enhances GABAergic inhibition
-  const gabaBoost = (inputs.gabaBoost ?? 0) + newAdenosine * 0.3 + (inputs.alcoholLevel ?? 0) * 0.02;
-  const gabaRecovery = 0.003 * (0.7 - state.gabaPool);
-  const gabaActivity = 0.002 * gabaBoost * (1 - state.gabaPool);
-  const newGabaPool = clamp(state.gabaPool + (gabaRecovery + gabaActivity) * dt, 0.3, 1.0);
+  const gabaBoost = (inputs.gabaBoost ?? 0) + currentState.adenosinePressure * 0.3 + (inputs.alcoholLevel ?? 0) * 0.02;
+  const gabaRecovery = 0.003 * (0.7 - currentState.gabaPool);
+  const gabaActivity = 0.002 * gabaBoost * (1 - currentState.gabaPool);
+  const newGabaPool = clamp(currentState.gabaPool + (gabaRecovery + gabaActivity) * dt, 0.3, 1.0);
 
-  // --- Glutamate Pool (E/I Balance) ---
-  // Glutamate is modulated by NMDA blockade and excitation
   const glutamateBlock = inputs.glutamateBlock ?? 0;
-  const glutamateRecovery = 0.002 * (0.7 - state.glutamatePool);
-  const glutamateExcitation = (inputs.stressLevel ?? 0) * 0.01 * (1 - state.glutamatePool);
-  const glutamateSuppression = 0.005 * glutamateBlock * state.glutamatePool;
+  const glutamateRecovery = 0.002 * (0.7 - currentState.glutamatePool);
+  const glutamateExcitation = (inputs.stressLevel ?? 0) * 0.01 * (1 - currentState.glutamatePool);
+  const glutamateSuppression = 0.005 * glutamateBlock * currentState.glutamatePool;
   const newGlutamatePool = clamp(
-    state.glutamatePool + (glutamateRecovery + glutamateExcitation - glutamateSuppression) * dt,
+    currentState.glutamatePool + (glutamateRecovery + glutamateExcitation - glutamateSuppression) * dt,
     0.3, 1.0
   );
 
-  // --- Acetylcholine (Circadian Modulation) ---
-  // ACh follows sleep-wake cycle with peak during REM and wake
   const achCircadian = inputs.isAsleep ? 0.8 : 1.0;
   const achTarget = achCircadian * 0.6;
-  const achDelta = 0.01 * (achTarget - state.acetylcholineTone);
-  const newAchTone = clamp(state.acetylcholineTone + achDelta * dt, 0.2, 1.0);
+  const achDelta = 0.01 * (achTarget - currentState.acetylcholineTone);
+  const newAchTone = clamp(currentState.acetylcholineTone + achDelta * dt, 0.2, 1.0);
 
-  // --- BDNF Expression (Allostatic Load) ---
-  // Chronic stress suppresses BDNF, exercise enhances it
   const bdnfExerciseBoost = (inputs.exerciseIntensity ?? 0) * 0.02;
-  const bdnfStressSuppression = state.cortisolIntegral * 0.001;
-  const bdnfRecovery = 0.001 * (0.6 - state.bdnfExpression);
+  const bdnfStressSuppression = currentState.cortisolIntegral * 0.001;
+  const bdnfRecovery = 0.001 * (0.6 - currentState.bdnfExpression);
   const newBdnfExpression = clamp(
-    state.bdnfExpression + (bdnfRecovery + bdnfExerciseBoost - bdnfStressSuppression) * dt,
+    currentState.bdnfExpression + (bdnfRecovery + bdnfExerciseBoost - bdnfStressSuppression) * dt,
     0.2, 1.0
   );
 
-  // --- GH Reserve (Sleep and Exercise) ---
-  // GH is released during deep sleep and after exercise
   const ghReleaseTrigger = inputs.isAsleep ? 0.02 : (inputs.exerciseIntensity ?? 0) > 0.6 ? 0.015 : 0;
-  const ghRecovery = 0.001 * (0.8 - state.ghReserve);
-  const ghRelease = ghReleaseTrigger * state.ghReserve;
-  const newGhReserve = clamp(state.ghReserve + (ghRecovery - ghRelease) * dt, 0.3, 1.0);
+  const ghRecovery = 0.001 * (0.8 - currentState.ghReserve);
+  const ghRelease = ghReleaseTrigger * currentState.ghReserve;
+  const newGhReserve = clamp(currentState.ghReserve + (ghRecovery - ghRelease) * dt, 0.3, 1.0);
 
-  // --- Receptor Adaptation (Multi-receptor with biphasic kinetics) ---
-  const newReceptorStates = { ...state.receptorStates };
+  // Receptor Adaptation
+  const newReceptorStates = { ...currentState.receptorStates };
   const minDensity = RECEPTOR_ADAPTATION.MIN_DENSITY;
   const maxDensity = RECEPTOR_ADAPTATION.MAX_DENSITY;
 
-  // D2 receptor (stimulants cause agonist-like downregulation via indirect DA release)
+  // D2
   const stimulantOccupancy = inputs.stimulantEffect ?? 0;
   if (stimulantOccupancy > RECEPTOR_ADAPTATION.OCCUPANCY_THRESHOLD) {
     const d2Current = newReceptorStates['D2'] ?? 1.0;
     const d2Delta = receptorAdaptation(d2Current, stimulantOccupancy, 'full_agonist', 'D2');
     newReceptorStates['D2'] = clamp(d2Current + d2Delta * dt, minDensity, maxDensity);
   } else if (newReceptorStates['D2'] !== undefined && newReceptorStates['D2'] !== 1.0) {
-    // Recovery toward baseline when not exposed
     const d2Current = newReceptorStates['D2'];
     const d2Delta = receptorAdaptation(d2Current, 0, 'full_agonist', 'D2');
     newReceptorStates['D2'] = clamp(d2Current + d2Delta * dt, minDensity, maxDensity);
   }
 
-  // GABA-A receptor (alcohol, benzos are PAMs)
+  // GABA-A
   const gabaOccupancy = inputs.gabaBoost ?? 0;
   if (gabaOccupancy > RECEPTOR_ADAPTATION.OCCUPANCY_THRESHOLD * 0.7) {
     const gabaAcurrent = newReceptorStates['GABA_A'] ?? 1.0;
-    // Alcohol and benzos are PAMs, causing slower adaptation than direct agonists
     const gabaAdelta = receptorAdaptation(gabaAcurrent, gabaOccupancy, 'pam', 'GABAA');
     newReceptorStates['GABA_A'] = clamp(gabaAcurrent + gabaAdelta * dt, minDensity, maxDensity);
   } else if (newReceptorStates['GABA_A'] !== undefined && newReceptorStates['GABA_A'] !== 1.0) {
@@ -739,8 +747,8 @@ export function stepHomeostasis(
     newReceptorStates['GABA_A'] = clamp(gabaAcurrent + gabaAdelta * dt, minDensity, maxDensity);
   }
 
-  // A2A receptor (caffeine is antagonist - causes upregulation)
-  const caffeineOccupancy = (inputs.caffeineLevel ?? 0) / 200; // Normalize to 0..1 range
+  // A2A
+  const caffeineOccupancy = (inputs.caffeineLevel ?? 0) / 200;
   if (caffeineOccupancy > RECEPTOR_ADAPTATION.OCCUPANCY_THRESHOLD) {
     const a2aCurrent = newReceptorStates['A2A'] ?? 1.0;
     const a2aDelta = receptorAdaptation(a2aCurrent, caffeineOccupancy, 'antagonist', 'A2A');
@@ -751,8 +759,8 @@ export function stepHomeostasis(
     newReceptorStates['A2A'] = clamp(a2aCurrent + a2aDelta * dt, minDensity, maxDensity);
   }
 
-  // 5-HT2A receptor (serotonergics, psychedelics - fast adaptation)
-  const serotoninOccupancy = (inputs.serotoninFiringRate ?? 0.5) - 0.5; // Deviation from baseline
+  // 5-HT2A
+  const serotoninOccupancy = (inputs.serotoninFiringRate ?? 0.5) - 0.5;
   if (Math.abs(serotoninOccupancy) > 0.2) {
     const ht2aCurrent = newReceptorStates['5HT2A'] ?? 1.0;
     const mechanism = serotoninOccupancy > 0 ? 'full_agonist' : 'antagonist';
@@ -760,7 +768,7 @@ export function stepHomeostasis(
     newReceptorStates['5HT2A'] = clamp(ht2aCurrent + ht2aDelta * dt, minDensity, maxDensity);
   }
 
-  // Beta adrenergic (stress hormones)
+  // Beta Adrenergic
   const betaOccupancy = (inputs.stressLevel ?? 0) + (inputs.exerciseIntensity ?? 0) * 0.5;
   if (betaOccupancy > RECEPTOR_ADAPTATION.OCCUPANCY_THRESHOLD) {
     const betaCurrent = newReceptorStates['BETA'] ?? 1.0;
@@ -772,7 +780,7 @@ export function stepHomeostasis(
     newReceptorStates['BETA'] = clamp(betaCurrent + betaDelta * dt, minDensity, maxDensity);
   }
 
-  // NMDA receptor (glutamate modulation, ketamine is antagonist)
+  // NMDA
   const glutamateBlockOccupancy = inputs.glutamateBlock ?? 0;
   if (glutamateBlockOccupancy > RECEPTOR_ADAPTATION.OCCUPANCY_THRESHOLD) {
     const nmdaCurrent = newReceptorStates['NMDA'] ?? 1.0;
@@ -780,7 +788,21 @@ export function stepHomeostasis(
     newReceptorStates['NMDA'] = clamp(nmdaCurrent + nmdaDelta * dt, minDensity, maxDensity);
   }
 
-  // --- Compute Corrections ---
+  // Final state
+  const finalState: HomeostasisState = {
+    ...currentState,
+    dopamineVesicles: newDopamineVesicles,
+    norepinephrineVesicles: newNorepiVesicles,
+    serotoninPrecursor: newSerotoninPrecursor,
+    acetylcholineTone: newAchTone,
+    gabaPool: newGabaPool,
+    glutamatePool: newGlutamatePool,
+    bdnfExpression: newBdnfExpression,
+    ghReserve: newGhReserve,
+    receptorStates: newReceptorStates,
+  };
+
+  // Compute corrections relative to analytical baselines
   const vesicleDepletionFactor = (pool: number, baseline: number) => {
     const depletionThreshold = 0.5;
     if (pool >= 0.8) return 0;
@@ -789,94 +811,33 @@ export function stepHomeostasis(
     return -baseline * 0.3 * severity;
   };
 
-  const glucoseCorrection = newGI[0] - (inputs.baselineGlucose ?? 90);
-  const insulinCorrection = newGI[2] - 8;
-  const cortisolCorrection = newHPA[1] - (inputs.baselineCortisol ?? 12);
-
-  // Sleep pressure effects
-  const adenosineEffect = newAdenosine * 20;
-  const histamineCorrection = -newAdenosine * 10;
-  const orexinCorrection = -newAdenosine * 15;
-  const energyCorrection = -newAdenosine * 25 + (inputs.exerciseIntensity ?? 0) * 10;
-  const melatoninModulation = inputs.isAsleep ? newAdenosine * 5 : -newAdenosine * 3;
-
-  // Vesicle depletion
-  const dopamineCorrection = vesicleDepletionFactor(newDopamineVesicles, inputs.baselineDopamine ?? 50);
-  const norepiCorrection = vesicleDepletionFactor(newNorepiVesicles, inputs.baselineNorepi ?? 50);
-  const serotoninCorrection = vesicleDepletionFactor(newSerotoninPrecursor, inputs.baselineSerotonin ?? 50);
-
-  // Receptor effects - all receptors now tracked
-  const d2Factor = (newReceptorStates['D2'] ?? 1.0) - 1.0;
-  const dopamineReceptorEffect = (inputs.baselineDopamine ?? 50) * d2Factor * 0.25;
-  const gabaAFactor = (newReceptorStates['GABA_A'] ?? 1.0) - 1.0;
-  const gabaReceptorEffect = (inputs.baselineGaba ?? 50) * gabaAFactor * 0.2;
-  const a2aFactor = (newReceptorStates['A2A'] ?? 1.0) - 1.0;
-  const a2aEffect = adenosineEffect * a2aFactor * 0.3;
-
-  // 5-HT2A receptor effects on serotonin signaling
-  const ht2aFactor = (newReceptorStates['5HT2A'] ?? 1.0) - 1.0;
-  const serotoninReceptorEffect = (inputs.baselineSerotonin ?? 50) * ht2aFactor * 0.2;
-
-  // Beta adrenergic effects on stress response
+  const glucoseCorrection = finalState.glucosePool - (inputs.baselineGlucose ?? 90);
+  const insulinCorrection = finalState.insulinPool - 8;
+  const cortisolCorrection = finalState.cortisolPool - (inputs.baselineCortisol ?? 12);
+  const adenosineEffect = finalState.adenosinePressure * 20;
   const betaFactor = (newReceptorStates['BETA'] ?? 1.0) - 1.0;
-  const betaEffect = betaFactor * 0.15; // Affects adrenaline sensitivity
-
-  // NMDA receptor effects on glutamate
-  const nmdaFactor = (newReceptorStates['NMDA'] ?? 1.0) - 1.0;
-  const nmdaEffect = (inputs.baselineGlutamate ?? 50) * nmdaFactor * 0.25;
-
-  // E/I balance correction
-  const gabaCorrection = (newGabaPool - 0.7) * (inputs.baselineGaba ?? 50) * 0.3 + gabaReceptorEffect;
-  const glutamateCorrection = (newGlutamatePool - 0.7) * (inputs.baselineGlutamate ?? 50) * 0.3 + nmdaEffect;
-
-  // Acetylcholine modulation
-  const achCorrection = (newAchTone - 0.6) * (inputs.baselineAcetylcholine ?? 50) * 0.2;
-
-  // Adrenaline reserve depletion
-  const adrenalineCorrection = (newAdrenalineReserve - 0.9) * (inputs.baselineAdrenaline ?? 50) * 0.4;
-
-  // BDNF and GH corrections
-  const bdnfCorrection = (newBdnfExpression - 0.6) * (inputs.baselineBdnf ?? 50) * 0.3;
-  const ghCorrection = ghReleaseTrigger > 0 ? state.ghReserve * 5 : 0;
+  const betaEffect = betaFactor * 0.15;
 
   return {
-    newState: {
-      glucosePool: clamp(newGI[0], 40, 400),
-      insulinPool: clamp(newGI[2], 0, 200),
-      hepaticGlycogen: clamp(newGI[3], 0, 1),
-      adenosinePressure: newAdenosine,
-      crhPool: clamp(newHPA[0], 0, 5),
-      cortisolIntegral: newHPA[2],
-      adrenalineReserve: newAdrenalineReserve,
-      dopamineVesicles: newDopamineVesicles,
-      norepinephrineVesicles: newNorepiVesicles,
-      serotoninPrecursor: newSerotoninPrecursor,
-      acetylcholineTone: newAchTone,
-      gabaPool: newGabaPool,
-      glutamatePool: newGlutamatePool,
-      bdnfExpression: newBdnfExpression,
-      ghReserve: newGhReserve,
-      receptorStates: newReceptorStates,
-    },
+    newState: finalState,
     corrections: {
       glucose: glucoseCorrection,
       insulin: insulinCorrection,
       cortisol: cortisolCorrection,
-      histamine: histamineCorrection,
-      orexin: orexinCorrection,
-      energy: energyCorrection,
-      melatonin: melatoninModulation,
-      dopamine: dopamineCorrection + dopamineReceptorEffect,
-      norepi: norepiCorrection + betaEffect * (inputs.baselineNorepi ?? 50),
-      serotonin: serotoninCorrection + serotoninReceptorEffect,
-      gaba: gabaCorrection,
-      glutamate: glutamateCorrection,
-      acetylcholine: achCorrection,
-      adrenaline: adrenalineCorrection + betaEffect * (inputs.baselineAdrenaline ?? 50),
-      bdnf: bdnfCorrection,
-      growthHormone: ghCorrection,
-      // Adenosine receptor effects propagate through caffeine response
-      adenosineModulation: a2aEffect,
+      histamine: -finalState.adenosinePressure * 10,
+      orexin: -finalState.adenosinePressure * 15,
+      energy: -finalState.adenosinePressure * 25 + (inputs.exerciseIntensity ?? 0) * 10,
+      melatonin: inputs.isAsleep ? finalState.adenosinePressure * 5 : -finalState.adenosinePressure * 3,
+      dopamine: vesicleDepletionFactor(newDopamineVesicles, inputs.baselineDopamine ?? 50) + (inputs.baselineDopamine ?? 50) * ((newReceptorStates['D2'] ?? 1.0) - 1.0) * 0.25,
+      norepi: vesicleDepletionFactor(newNorepiVesicles, inputs.baselineNorepi ?? 50) + betaEffect * (inputs.baselineNorepi ?? 50),
+      serotonin: vesicleDepletionFactor(newSerotoninPrecursor, inputs.baselineSerotonin ?? 50) + (inputs.baselineSerotonin ?? 50) * ((newReceptorStates['5HT2A'] ?? 1.0) - 1.0) * 0.2,
+      gaba: (newGabaPool - 0.7) * (inputs.baselineGaba ?? 50) * 0.3 + (inputs.baselineGaba ?? 50) * ((newReceptorStates['GABA_A'] ?? 1.0) - 1.0) * 0.2,
+      glutamate: (newGlutamatePool - 0.7) * (inputs.baselineGlutamate ?? 50) * 0.3 + (inputs.baselineGlutamate ?? 50) * ((newReceptorStates['NMDA'] ?? 1.0) - 1.0) * 0.25,
+      acetylcholine: (newAchTone - 0.6) * (inputs.baselineAcetylcholine ?? 50) * 0.2,
+      adrenaline: (finalState.adrenalineReserve - 0.9) * (inputs.baselineAdrenaline ?? 50) * 0.4 + betaEffect * (inputs.baselineAdrenaline ?? 50),
+      bdnf: (newBdnfExpression - 0.6) * (inputs.baselineBdnf ?? 50) * 0.3,
+      growthHormone: ghReleaseTrigger > 0 ? finalState.ghReserve * 5 : 0,
+      adenosineModulation: adenosineEffect * ((newReceptorStates['A2A'] ?? 1.0) - 1.0) * 0.3,
     },
   };
 }
@@ -890,9 +851,11 @@ export function serializeHomeostasisState(state: HomeostasisState): HomeostasisS
   return {
     glucosePool: state.glucosePool,
     insulinPool: state.insulinPool,
+    insulinAction: state.insulinAction,
     hepaticGlycogen: state.hepaticGlycogen,
     adenosinePressure: state.adenosinePressure,
     crhPool: state.crhPool,
+    cortisolPool: state.cortisolPool,
     cortisolIntegral: state.cortisolIntegral,
     adrenalineReserve: state.adrenalineReserve,
     dopamineVesicles: state.dopamineVesicles,
@@ -921,9 +884,11 @@ export function deserializeHomeostasisState(
   return {
     glucosePool: snapshot.glucosePool ?? DEFAULT_HOMEOSTASIS_STATE.glucosePool,
     insulinPool: snapshot.insulinPool ?? DEFAULT_HOMEOSTASIS_STATE.insulinPool,
+    insulinAction: snapshot.insulinAction ?? DEFAULT_HOMEOSTASIS_STATE.insulinAction,
     hepaticGlycogen: snapshot.hepaticGlycogen ?? DEFAULT_HOMEOSTASIS_STATE.hepaticGlycogen,
     adenosinePressure: snapshot.adenosinePressure ?? DEFAULT_HOMEOSTASIS_STATE.adenosinePressure,
     crhPool: snapshot.crhPool ?? DEFAULT_HOMEOSTASIS_STATE.crhPool,
+    cortisolPool: snapshot.cortisolPool ?? DEFAULT_HOMEOSTASIS_STATE.cortisolPool,
     cortisolIntegral: snapshot.cortisolIntegral ?? DEFAULT_HOMEOSTASIS_STATE.cortisolIntegral,
     adrenalineReserve: snapshot.adrenalineReserve ?? DEFAULT_HOMEOSTASIS_STATE.adrenalineReserve,
     dopamineVesicles: snapshot.dopamineVesicles ?? DEFAULT_HOMEOSTASIS_STATE.dopamineVesicles,
