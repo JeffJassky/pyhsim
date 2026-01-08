@@ -18,9 +18,9 @@ export const ARCHETYPES: Archetype[] = [
     description:
       "Data-driven optimization of energy, longevity, and performance.",
     commonGoals: [
+      "longevity",
       "energy",
       "productivity",
-      "longevity",
       "recovery",
       "focus",
       "weightLoss",
