@@ -7,9 +7,9 @@
         class="message"
         :class="`message--${msg.role}`"
       >
-        <div 
-          class="message__content markdown-body" 
-          v-html="renderMarkdown(msg.content)"
+        <div
+          class="message__content markdown-body"
+          v-html="renderMarkdown(msg.content || '')"
         ></div>
         <div class="message__meta">
           {{ formatTime(msg.timestamp) }}
@@ -107,6 +107,25 @@ onMounted(scrollToBottom);
   height: 100%;
   display: flex;
   flex-direction: column;
+  background: rgba(18, 22, 32, 0.95);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.5rem;
+}
+
+/* Style the Panel header */
+:deep(.panel__header) {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+:deep(.panel__title h3) {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 1;
+  color: #f0f0f5;
 }
 
 /* Override Panel's body to fill height */
@@ -170,6 +189,9 @@ onMounted(scrollToBottom);
   margin-bottom: 0.5rem;
 }
 
+:deep(.markdown-body p:first-child) {
+  margin-top: 0;
+}
 :deep(.markdown-body p:last-child) {
   margin-bottom: 0;
 }
@@ -274,25 +296,34 @@ onMounted(scrollToBottom);
 .chat-input {
   display: flex;
   gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: auto;
 }
 
 .chat-input input {
   flex: 1;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
-  padding: 0.5rem 1rem;
-  color: white;
-  font-size: 0.9rem;
+  padding: 0.625rem 1rem;
+  color: #f0f0f5;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.chat-input input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .chat-input input:focus {
   outline: none;
-  border-color: rgba(50, 101, 219, 0.5);
+  border-color: rgba(0, 212, 255, 0.4);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .chat-input button {
-  background: rgba(50, 101, 219, 0.8);
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -300,18 +331,22 @@ onMounted(scrollToBottom);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #050509;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.25);
 }
 
 .chat-input button:hover:not(:disabled) {
-  background: rgb(50, 101, 219);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.35);
 }
 
 .chat-input button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .typing-indicator {

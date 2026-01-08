@@ -1,6 +1,6 @@
 <template>
   <section class="panel" :class="{ 'panel--collapsible': collapsible }">
-    <header class="panel__header">
+    <header class="panel__header" v-if="title">
       <div class="panel__title">
         <slot name="icon"></slot>
         <h3>{{ title }}</h3>

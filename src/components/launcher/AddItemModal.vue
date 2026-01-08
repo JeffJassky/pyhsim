@@ -318,7 +318,7 @@ watch(() => props.modelValue, (val) => {
 .launcher-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 10005;
   background: rgba(10, 10, 15, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);

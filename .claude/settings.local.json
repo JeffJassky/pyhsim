@@ -5,7 +5,8 @@
       "Bash(npx vue-tsc:*)",
       "Bash(npm test:*)",
       "Bash(tree:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(npm run check:*)"
     ]
   }
 }

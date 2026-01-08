@@ -113,8 +113,8 @@ onBeforeUnmount(() => {
   min-height: 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem;
-  padding: 1rem 2rem;
+  gap: 0;
+  padding: 0;
   overflow: hidden;
   position: relative;
   transition: grid-template-columns 0.3s ease;
@@ -132,12 +132,18 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(0, 1fr) 300px;
 }
 
-.app-shell__sidebar,
-.app-shell__main-area {
+
+.app-shell__sidebar {
   min-height: 0;
+  padding: 1rem 0 1rem 2rem;
+}
+
+.app-shell__sidebar--right {
+  padding: 0;
 }
 
 .app-shell__main-area {
+  min-height: 0;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -171,7 +177,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
-  padding-right: 0.5rem;
+  padding: 1rem 2rem;
 }
 
 .app-shell__mobile-toggle {
@@ -223,8 +229,12 @@ onBeforeUnmount(() => {
 @media (max-width: 600px) {
   .app-shell__body {
     grid-template-columns: 1fr;
-    gap: 1rem;
-    padding: 0rem 1rem 1rem 1rem;
+    gap: 0;
+    padding: 0;
+  }
+
+  .app-shell__main {
+    padding: 0 1rem 1rem 1rem;
   }
 
   .app-shell__mobile-toggle {
@@ -253,10 +263,6 @@ onBeforeUnmount(() => {
 
   .app-shell__sidebar--open {
     transform: translateX(0);
-  }
-
-  .app-shell__main {
-    padding-right: 0;
   }
 
   .app-shell__overlay {

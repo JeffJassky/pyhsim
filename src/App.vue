@@ -1,10 +1,13 @@
 <template>
   <div class="app">
-    <header class="app__header">
+    <header class="app__header" v-if="!isOnboarding">
       <div class="header-left">
         <span class="logo">physim</span>
       </div>
       <div class="header-right">
+        <button class="profile-link" @click="debugModalOpen = true" style="margin-right: 1.5rem">
+          Dev Tools
+        </button>
         <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
           My Profile
         </button>
@@ -15,14 +18,20 @@
         <RouterView />
       </div>
     </main>
+    <DebugModal v-model="debugModalOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterView } from 'vue-router';
+import { computed, ref } from 'vue';
+import { RouterView, useRoute } from 'vue-router';
 import { useUIStore } from '@/stores/ui';
+import DebugModal from '@/components/admin/DebugModal.vue';
 
 const uiStore = useUIStore();
+const route = useRoute();
+const isOnboarding = computed(() => route.name === 'onboarding');
+const debugModalOpen = ref(false);
 </script>
 
 <style scoped>

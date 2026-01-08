@@ -12,10 +12,14 @@ export const useUIStore = defineStore('ui', {
     theme: 'dark',
     compareScenarioId: undefined,
     profileModalOpen: false,
+    targetsModalOpen: false,
   }),
   actions: {
     setProfileModalOpen(open: boolean) {
       this.profileModalOpen = open;
+    },
+    setTargetsModalOpen(open: boolean) {
+      this.targetsModalOpen = open;
     },
     setPlayhead(minute: Minute) {
       this.playheadMin = minute;

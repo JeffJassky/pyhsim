@@ -130,6 +130,7 @@
       @select-food="handleFoodSelect"
     />
     <UserProfileModal v-model="profileModalOpen" />
+    <TargetsModal v-model="targetsModalOpen" />
   </AppShell>
 </template>
 
@@ -148,6 +149,7 @@ import NutritionCarousel from '@/components/log/NutritionCarousel.vue';
 import DateCarousel from '@/components/log/DateCarousel.vue';
 import AddItemModal from '@/components/launcher/AddItemModal.vue';
 import UserProfileModal from '@/components/launcher/UserProfileModal.vue';
+import TargetsModal from '@/components/log/TargetsModal.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
 import { useProfilesStore } from '@/stores/profiles';
@@ -229,11 +231,15 @@ const timelinePanelRef = ref<ComponentPublicInstance | null>(null);
 const selectedItem = computed(() => timeline.items.find((item) => item.id === timeline.selectedId));
 const selectedDef = computed(() => library.defs.find((def) => def.key === selectedItem.value?.meta.key));
 const inspectorVisible = ref(false);
-const showChat = ref(false);
+const showChat = ref(true);
 const addItemModalOpen = ref(false);
 const profileModalOpen = computed({
   get: () => uiStore.profileModalOpen,
   set: (val: boolean) => uiStore.setProfileModalOpen(val),
+});
+const targetsModalOpen = computed({
+  get: () => uiStore.targetsModalOpen,
+  set: (val: boolean) => uiStore.setTargetsModalOpen(val),
 });
 const recentFoods = ref<FoodSearchHit[]>([]);
 

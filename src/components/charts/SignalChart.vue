@@ -177,8 +177,8 @@ const normalize = (val: number, spec: ChartSeriesSpec) => {
 // Get reordered data starting from dayStartMin
 const reorderedData = (data: number[]) => {
   if (!data.length) return [];
-  const gridStep = props.grid.length > 1 ? props.grid[1] - props.grid[0] : 5;
-  const startIdx = Math.round(props.dayStartMin / gridStep) % data.length;
+  // Calculate start index based on dayStartMin ratio of total day
+  const startIdx = Math.round((props.dayStartMin / MINUTES_IN_DAY) * data.length) % data.length;
   const result: { value: number; displayIdx: number }[] = [];
   for (let i = 0; i < data.length; i++) {
     const srcIdx = (startIdx + i) % data.length;

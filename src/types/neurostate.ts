@@ -593,6 +593,7 @@ export interface UIState {
   theme: "light" | "dark";
   compareScenarioId?: UUID; // for A/B
   profileModalOpen: boolean;
+  targetsModalOpen: boolean;
 }
 
 export interface AppState {
