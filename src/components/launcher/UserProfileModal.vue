@@ -2,11 +2,16 @@
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="modelValue" class="launcher-overlay" @click.self="close">
-        <div class="launcher-content" :class="{ 'launcher-content--expanded': view !== 'categories' }">
+        <div
+          class="launcher-content"
+          :class="{ 'launcher-content--expanded': view !== 'categories' }"
+        >
           <button class="close-btn" @click="close">✕</button>
 
           <header class="launcher-header">
-            <h2 v-if="view === 'categories'" class="section-title">My Bio-Profile</h2>
+            <h2 v-if="view === 'categories'" class="section-title">
+              My Bio-Profile
+            </h2>
             <button v-else class="back-btn" @click="view = 'categories'">
               ← {{ selectedViewLabel }}
             </button>
@@ -31,6 +36,111 @@
                 <span class="card-icon">🎯</span>
                 <span class="card-label">Nutrient Targets</span>
               </button>
+              <button class="launcher-card" @click="view = 'charts'">
+                <span class="card-icon">📈</span>
+                <span class="card-label">Charts</span>
+              </button>
+              <button class="launcher-card" @click="view = 'subscription'">
+                <span class="card-icon">⭐</span>
+                <span class="card-label">Subscription</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Subscription View -->
+          <div v-else-if="view === 'subscription'" class="view-items">
+            <div class="subscription-card">
+              <div class="subscription-card__header">
+                <div class="card-icon">⭐</div>
+                <h3 class="subscription-card__title">Choose your plan</h3>
+                <p class="subscription-card__desc">
+                  Unlock high-fidelity physiological signals and advanced
+                  biomarkers.
+                </p>
+              </div>
+
+              <div class="tier-toggle">
+                <button
+                  class="tier-toggle__btn"
+                  :class="{ 'is-active': subscriptionTier === 'free' }"
+                  @click="handleSetTier('free')"
+                >
+                  Free
+                </button>
+                <button
+                  class="tier-toggle__btn tier-toggle__btn--premium"
+                  :class="{ 'is-active': subscriptionTier === 'premium' }"
+                  @click="handleSetTier('premium')"
+                >
+                  Premium
+                </button>
+              </div>
+
+              <ul class="benefit-list">
+                <li>
+                  {{ subscriptionTier === 'premium' ? '✓' : '✓' }} Basic
+                  circadian signals (Melatonin, Cortisol)
+                </li>
+                <li>
+                  {{ subscriptionTier === 'premium' ? '✓' : '✓' }} Metabolic
+                  proxies (Glucose, Energy)
+                </li>
+                <li :class="{ 'is-locked': subscriptionTier === 'free' }">
+                  {{ subscriptionTier === 'premium' ? '✓' : '🔒' }}
+                  Neurotransmitters (Dopamine, Serotonin)
+                </li>
+                <li :class="{ 'is-locked': subscriptionTier === 'free' }">
+                  {{ subscriptionTier === 'premium' ? '✓' : '🔒' }} Advanced
+                  Hormones (LH, FSH, Growth Hormone)
+                </li>
+                <li :class="{ 'is-locked': subscriptionTier === 'free' }">
+                  {{ subscriptionTier === 'premium' ? '✓' : '🔒' }} Organ
+                  Biomarkers (ALT, AST, eGFR)
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Charts View -->
+          <div v-else-if="view === 'charts'" class="view-items">
+            <div class="items-grid">
+              <div
+                v-for="goal in goalCategories"
+                :key="goal.id"
+                class="goal-group"
+              >
+                <h3 class="group-label">{{ goal.label }} Signals</h3>
+                <div class="signals-list" :data-goal-id="goal.id">
+                  <div
+                    v-for="sig in getSignalsByGoal(goal.id)"
+                    :key="sig.key"
+                    class="signal-toggle-item"
+                    :data-id="sig.key"
+                  >
+                    <div class="signal-toggle-item__drag">☰</div>
+                    <div class="signal-toggle-item__info">
+                      <div class="signal-toggle-item__label">
+                        {{ sig.label }}
+                        <span v-if="sig.isPremium && subscriptionTier !== 'premium'" class="premium-tag">
+                          <span class="premium-tag__icon">🔒</span>
+                          PREMIUM
+                        </span>
+                      </div>
+                      <div class="signal-toggle-item__group">
+                        {{ sig.group }}
+                      </div>
+                    </div>
+                    <label class="switch">
+                      <input
+                        type="checkbox"
+                        :checked="enabledSignals[sig.key]"
+                        @change="profilesStore.toggleSignal(sig.key, ($event.target as HTMLInputElement).checked)"
+                      />
+                      <span class="slider" />
+                    </label>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -48,7 +158,9 @@
                 >
                   <span class="card-icon">{{ cat.icon }}</span>
                   <span class="card-label">{{ cat.label }}</span>
-                  <div v-if="selectedGoals.includes(cat.id)" class="checkmark">✓</div>
+                  <div v-if="selectedGoals.includes(cat.id)" class="checkmark">
+                    ✓
+                  </div>
                 </button>
               </div>
             </div>
@@ -60,7 +172,10 @@
               <div class="setting-group">
                 <label>Biological Sex</label>
                 <div class="select-wrapper">
-                  <select :value="subject.sex" @change="updateSubject('sex', $event)">
+                  <select
+                    :value="subject.sex"
+                    @change="updateSubject('sex', $event)"
+                  >
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                   </select>
@@ -72,7 +187,13 @@
                   <label>Age</label>
                   <span class="setting-value">{{ subject.age }} yr</span>
                 </div>
-                <input type="range" min="18" max="90" :value="subject.age" @input="updateSubject('age', $event)" />
+                <input
+                  type="range"
+                  min="18"
+                  max="90"
+                  :value="subject.age"
+                  @input="updateSubject('age', $event)"
+                />
               </div>
 
               <div class="setting-group">
@@ -80,23 +201,45 @@
                   <label>Weight</label>
                   <span class="setting-value">{{ subject.weight }} kg</span>
                 </div>
-                <input type="range" min="40" max="150" :value="subject.weight" @input="updateSubject('weight', $event)" />
+                <input
+                  type="range"
+                  min="40"
+                  max="150"
+                  :value="subject.weight"
+                  @input="updateSubject('weight', $event)"
+                />
               </div>
 
               <template v-if="subject.sex === 'female'">
                 <div class="setting-group">
                   <div class="setting-header">
                     <label>Cycle Length</label>
-                    <span class="setting-value">{{ subject.cycleLength }} days</span>
+                    <span class="setting-value"
+                      >{{ subject.cycleLength }} days</span
+                    >
                   </div>
-                  <input type="range" min="21" max="35" :value="subject.cycleLength" @input="updateSubject('cycleLength', $event)" />
+                  <input
+                    type="range"
+                    min="21"
+                    max="35"
+                    :value="subject.cycleLength"
+                    @input="updateSubject('cycleLength', $event)"
+                  />
                 </div>
                 <div class="setting-group">
                   <div class="setting-header">
                     <label>Current Day</label>
-                    <span class="setting-value">Day {{ subject.cycleDay }}</span>
+                    <span class="setting-value"
+                      >Day {{ subject.cycleDay }}</span
+                    >
                   </div>
-                  <input type="range" min="0" :max="subject.cycleLength" :value="subject.cycleDay" @input="updateSubject('cycleDay', $event)" />
+                  <input
+                    type="range"
+                    min="0"
+                    :max="subject.cycleLength"
+                    :value="subject.cycleDay"
+                    @input="updateSubject('cycleDay', $event)"
+                  />
                 </div>
               </template>
             </div>
@@ -105,25 +248,52 @@
           <!-- Conditions View -->
           <div v-else-if="view === 'conditions'" class="view-items">
             <div class="items-grid">
-              <div v-for="profile in profileDefs" :key="profile.key" class="profile-item">
+              <div
+                v-for="profile in profileDefs"
+                :key="profile.key"
+                class="profile-item"
+              >
                 <div class="profile-item__main">
                   <div class="profile-item__info">
                     <div class="profile-item__title">{{ profile.label }}</div>
-                    <div class="profile-item__desc">{{ profile.description.physiology }}</div>
+                    <div class="profile-item__desc">
+                      {{ profile.description.physiology }}
+                    </div>
                   </div>
                   <label class="switch">
-                    <input type="checkbox" :checked="profileState[profile.key].enabled" @change="toggleProfile(profile.key, $event)" />
+                    <input
+                      type="checkbox"
+                      :checked="profileState[profile.key].enabled"
+                      @change="toggleProfile(profile.key, $event)"
+                    />
                     <span class="slider" />
                   </label>
                 </div>
-                
-                <div v-if="profileState[profile.key].enabled && profile.params.length" class="profile-item__params">
-                  <div v-for="param in profile.params" :key="param.key" class="setting-group">
+
+                <div
+                  v-if="profileState[profile.key].enabled && profile.params.length"
+                  class="profile-item__params"
+                >
+                  <div
+                    v-for="param in profile.params"
+                    :key="param.key"
+                    class="setting-group"
+                  >
                     <div class="setting-header">
                       <label>{{ param.label }}</label>
-                      <span class="setting-value">{{ profileState[profile.key].params[param.key].toFixed(2) }}</span>
+                      <span
+                        class="setting-value"
+                        >{{ profileState[profile.key].params[param.key].toFixed(2) }}</span
+                      >
                     </div>
-                    <input type="range" :min="param.min" :max="param.max" :step="param.step" :value="profileState[profile.key].params[param.key]" @input="updateProfileParam(profile.key, param.key, $event)" />
+                    <input
+                      type="range"
+                      :min="param.min"
+                      :max="param.max"
+                      :step="param.step"
+                      :value="profileState[profile.key].params[param.key]"
+                      @input="updateProfileParam(profile.key, param.key, $event)"
+                    />
                   </div>
                 </div>
               </div>
@@ -136,7 +306,9 @@
               <div class="setting-group">
                 <div class="setting-header">
                   <label>Daily calories</label>
-                  <span class="setting-value">{{ nutritionTargets.calories }} kcal</span>
+                  <span class="setting-value"
+                    >{{ nutritionTargets.calories }} kcal</span
+                  >
                 </div>
                 <input
                   type="range"
@@ -160,17 +332,37 @@
                 </label>
               </div>
 
-              <div class="macro-grid" :class="{ disabled: !nutritionTargets.macrosEnabled }">
-                <div v-for="macro in macroFields" :key="macro.key" class="macro-card">
-                  <div class="macro-card__label" :style="{ color: macro.color }">{{ macro.label }}</div>
+              <div
+                class="macro-grid"
+                :class="{ disabled: !nutritionTargets.macrosEnabled }"
+              >
+                <div
+                  v-for="macro in macroFields"
+                  :key="macro.key"
+                  class="macro-card"
+                >
+                  <div
+                    class="macro-card__label"
+                    :style="{ color: macro.color }"
+                  >
+                    {{ macro.label }}
+                  </div>
                   <div class="macro-card__inputs">
                     <div class="macro-input">
                       <span>Min</span>
-                      <input type="number" :value="nutritionTargets.macros[macro.key].min" @input="(e) => updateMacro(macro.key, 'min', Number((e.target as HTMLInputElement).value))" />
+                      <input
+                        type="number"
+                        :value="nutritionTargets.macros[macro.key].min"
+                        @input="(e) => updateMacro(macro.key, 'min', Number((e.target as HTMLInputElement).value))"
+                      />
                     </div>
                     <div class="macro-input">
                       <span>Max</span>
-                      <input type="number" :value="nutritionTargets.macros[macro.key].max" @input="(e) => updateMacro(macro.key, 'max', Number((e.target as HTMLInputElement).value))" />
+                      <input
+                        type="number"
+                        :value="nutritionTargets.macros[macro.key].max"
+                        @input="(e) => updateMacro(macro.key, 'max', Number((e.target as HTMLInputElement).value))"
+                      />
                     </div>
                   </div>
                 </div>
@@ -184,11 +376,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useProfilesStore } from '@/stores/profiles';
-import { PROFILE_LIBRARY } from '@/models';
+import { PROFILE_LIBRARY, SIGNAL_DEFS } from '@/models';
 import type { ProfileKey } from '@/models/profiles';
 import type { Subject } from '@/models/subject';
+import type { Signal, Goal } from '@/types';
+import Sortable from 'sortablejs';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -199,20 +393,106 @@ const emit = defineEmits<{
 }>();
 
 const profilesStore = useProfilesStore();
-const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals'>('categories');
+const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'charts' | 'subscription'>('categories');
 
 const subject = computed(() => profilesStore.subject);
 const profileDefs = PROFILE_LIBRARY;
 const profileState = computed(() => profilesStore.profiles);
 const nutritionTargets = computed(() => profilesStore.nutritionTargets);
 const selectedGoals = computed(() => profilesStore.selectedGoals);
+const enabledSignals = computed(() => profilesStore.enabledSignals);
+const signalOrder = computed(() => profilesStore.signalOrder);
+const subscriptionTier = computed(() => profilesStore.subscriptionTier);
 
 const selectedViewLabel = computed(() => {
   if (view.value === 'physiology') return 'Physiology';
   if (view.value === 'conditions') return 'My Conditions';
   if (view.value === 'nutrition') return 'Nutrient Targets';
   if (view.value === 'goals') return 'My Goals';
+  if (view.value === 'charts') return 'Charts';
+  if (view.value === 'subscription') return 'Subscription';
   return '';
+});
+
+const handleSetTier = (tier: 'free' | 'premium') => {
+  profilesStore.setSubscriptionTier(tier);
+};
+
+const getSignalsByGoal = (goalId: Goal) => {
+  const filtered = SIGNAL_DEFS.filter(sig => (sig.goals as Goal[])?.includes(goalId));
+  
+  // Create a map for quick lookup of current signal order
+  const orderMap = new Map(signalOrder.value.map((key, idx) => [key, idx]));
+
+  return [...filtered].sort((a, b) => {
+    // Primary: Free first (per user requirement)
+    if (a.isPremium && !b.isPremium) return 1;
+    if (!a.isPremium && b.isPremium) return -1;
+    
+    // Secondary: User custom order from signalOrder
+    const aIdx = orderMap.get(a.key) ?? 999;
+    const bIdx = orderMap.get(b.key) ?? 999;
+    return aIdx - bIdx;
+  });
+};
+const sortableInstances = ref<Sortable[]>([]);
+
+const initSortables = () => {
+  // Clean up existing instances
+  sortableInstances.value.forEach(s => s.destroy());
+  sortableInstances.value = [];
+
+  const lists = document.querySelectorAll('.signals-list');
+  lists.forEach(listEl => {
+    const s = new Sortable(listEl as HTMLElement, {
+      animation: 150,
+      handle: '.signal-toggle-item__drag',
+      ghostClass: 'sortable-ghost',
+      onEnd: (evt) => {
+        if (evt.oldIndex === evt.newIndex) return;
+
+        // When sorting within a group, we update the global signalOrder
+        const newLocalOrder = Array.from(listEl.querySelectorAll('.signal-toggle-item'))
+          .map(el => (el as HTMLElement).dataset.id as Signal);
+
+        const currentOrder = [...profilesStore.signalOrder];
+
+        // Simple heuristic: Move the signal in global order to its new relative position
+        // This handles shared signals across groups by letting the last sort win.
+        const movedId = evt.item.dataset.id as Signal;
+        const otherIdsInNewLocal = newLocalOrder.filter(id => id !== movedId);
+
+        // Find where to insert movedId in the global order relative to its siblings in the current group
+        const firstSiblingIdx = currentOrder.findIndex(id => otherIdsInNewLocal.includes(id));
+        const lastSiblingIdx = [...currentOrder].reverse().findIndex(id => otherIdsInNewLocal.includes(id));
+        const actualLastIdx = currentOrder.length - 1 - lastSiblingIdx;
+
+        // Remove from old pos
+        const oldGlobalIdx = currentOrder.indexOf(movedId);
+        if (oldGlobalIdx > -1) currentOrder.splice(oldGlobalIdx, 1);
+
+        // Insert at new pos
+        const newRelIdx = evt.newIndex ?? 0;
+        // Find the index of the element that is now at newRelIdx in local list
+        const neighborId = newLocalOrder[newRelIdx === 0 ? 1 : newRelIdx - 1];
+        const neighborGlobalIdx = currentOrder.indexOf(neighborId);
+
+        const insertIdx = newRelIdx === 0 ? neighborGlobalIdx : neighborGlobalIdx + 1;
+        currentOrder.splice(Math.max(0, insertIdx), 0, movedId);
+
+        profilesStore.updateSignalOrder(currentOrder);
+      }
+    });
+    sortableInstances.value.push(s);
+  });
+};
+
+watch(view, (newView) => {
+  if (newView === 'charts') {
+    nextTick(() => {
+      initSortables();
+    });
+  }
 });
 
 const close = () => {
@@ -250,15 +530,17 @@ const macroFields = [
   { key: 'fat' as const, label: 'Fat', color: '#fbbf24' },
 ];
 
-const goalCategories = [
+const goalCategories: Array<{ id: Goal; label: string; icon: string }> = [
   { id: 'energy', label: 'Energy', icon: '⚡' },
+  { id: 'productivity', label: 'Productivity', icon: '🚀' },
+  { id: 'weightLoss', label: 'Weight Loss', icon: '⚖️' },
   { id: 'mood', label: 'Mood', icon: '🎭' },
   { id: 'focus', label: 'Focus', icon: '🧠' },
   { id: 'recovery', label: 'Recovery', icon: '💪' },
   { id: 'sleep', label: 'Sleep', icon: '😴' },
   { id: 'digestion', label: 'Digestion', icon: '🦠' },
   { id: 'pain', label: 'Pain', icon: '❤️‍🩹' },
-  { id: 'hormones', label: 'Hormones', icon: '🧬' },
+  { id: 'cycle', label: 'Cycle Syncing', icon: '🌝' },
   { id: 'calm', label: 'Calm', icon: '😌' },
 ];
 
@@ -603,6 +885,181 @@ input[type="range"] {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+/* Charts View Styles */
+.goal-group {
+  margin-bottom: 2rem;
+}
+
+.group-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 1rem;
+}
+
+.signals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.signal-toggle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  gap: 0.75rem;
+}
+
+.signal-toggle-item__drag {
+  cursor: grab;
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.signal-toggle-item:hover .signal-toggle-item__drag {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.signal-toggle-item__drag:active {
+  cursor: grabbing;
+}
+
+.signal-toggle-item__info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.sortable-ghost {
+  opacity: 0.3;
+  background: rgba(143, 191, 95, 0.1);
+  border-color: #8fbf5f;
+}
+
+.signal-toggle-item__label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.signal-toggle-item__group {
+  font-size: 0.75rem;
+  opacity: 0.5;
+}
+
+.premium-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: linear-gradient(120deg, #fcd34d, #f59e0b);
+  color: #111;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-shadow: none;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.premium-tag__icon {
+  font-size: 0.65rem;
+}
+
+/* Subscription View Styles */
+.subscription-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  text-align: center;
+}
+
+.subscription-card__header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.subscription-card__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subscription-card__desc {
+  font-size: 0.95rem;
+  opacity: 0.6;
+  max-width: 300px;
+}
+
+.tier-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 0.25rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.tier-toggle__btn {
+  padding: 0.75rem;
+  border: none;
+  background: transparent;
+  color: white;
+  font-weight: 600;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tier-toggle__btn.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tier-toggle__btn--premium.is-active {
+  background: linear-gradient(120deg, #fcd34d, #f59e0b);
+  color: #111;
+}
+
+.benefit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.benefit-list li {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.benefit-list li.is-locked {
+  opacity: 0.4;
 }
 
 /* Common Components */

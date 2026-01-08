@@ -590,6 +590,7 @@ export interface UIState {
   zoomHours: number; // time zoom for timeline/charts
   theme: "light" | "dark";
   compareScenarioId?: UUID; // for A/B
+  profileModalOpen: boolean;
 }
 
 export interface AppState {
@@ -628,6 +629,7 @@ export type SeriesTendency = "higher" | "lower" | "mid" | "neutral";
 export interface ChartSeriesSpec {
   key: ChartSeriesKey;
   label: string;
+  isPremium?: boolean;
   unit?: string;
   color?: string;
   tendency?: SeriesTendency;
@@ -677,10 +679,24 @@ export type SignalGroup =
   | "Subjective"
   | "Organ";
 
+export type Goal =
+  | "energy"
+  | "productivity"
+  | "weightLoss"
+  | "mood"
+  | "focus"
+  | "recovery"
+  | "sleep"
+  | "digestion"
+  | "pain"
+  | "cycle"
+  | "calm";
+
 export interface SignalDef {
   key: Signal;
   label: string;
   group: SignalGroup;
+  isPremium: boolean;
   semantics: {
     unit: string; // "a.u." or "mg/dL", etc.
     // The engine runs in absolute units.
@@ -732,7 +748,7 @@ export interface SignalDef {
     warningThresholds?: Array<{ value: number; message: string }>;
   };
   /** Goal-based tagging (e.g., "focus", "sleep") */
-  goals?: string[];
+  goals?: Goal[];
   validation?: {
     expectedRange?: { min: number; max: number; context?: string };
     testIds?: string[];

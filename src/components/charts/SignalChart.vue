@@ -4,6 +4,7 @@
       v-for="spec in seriesSpecs"
       :key="spec.key"
       class="series"
+      :class="{ 'series--premium': spec.isPremium }"
       @click="onChartClick"
     >
       <div
@@ -53,7 +54,13 @@
           </div>
         </div>
         <div class="series__overlay series__overlay--value">
-          {{ latestValue(spec.key).toFixed(2) }} <span class="unit">{{ spec.unit }}</span>
+          <template v-if="!spec.isPremium || (seriesData[spec.key] && seriesData[spec.key].length > 0)">
+            {{ latestValue(spec.key).toFixed(2) }} <span class="unit">{{ spec.unit }}</span>
+          </template>
+          <span v-else class="premium-tag">
+            <span class="premium-tag__icon">🔒</span>
+            PREMIUM
+          </span>
         </div>
         <div class="series__bands">
           <div
@@ -348,6 +355,44 @@ svg {
   font-size: 0.65rem;
   opacity: 0.7;
   margin-left: 1px;
+}
+
+.premium-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: linear-gradient(120deg, #fcd34d, #f59e0b);
+  color: #111;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-shadow: none;
+  opacity: 0.8;
+}
+
+.premium-tag__icon {
+  font-size: 0.65rem;
+}
+
+.series--premium {
+  cursor: pointer;
+}
+
+.series--premium .series__canvas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(255, 255, 255, 0.02) 10px,
+    rgba(255, 255, 255, 0.02) 20px
+  );
+  border-radius: 8px;
+  pointer-events: none;
 }
 
 .series__info-button {

@@ -1,6 +1,25 @@
 <template>
-  <div class="timeline-container">
+  <div class="timeline-container" @mousemove="handleMouseMove" @mouseleave="hoverMinute = null">
     <div ref="container" class="timeline-vis" />
+    
+    <!-- Hover Playhead -->
+    <div 
+      v-if="hoverMinute !== null" 
+      class="playhead-line hover-line" 
+      :style="{ left: `${getMinutePercent(hoverMinute)}%` }"
+    >
+      <button class="playhead-add-btn hover-add-btn" @click="handlePlayheadAdd(hoverMinute)">
+        <span class="btn-icon">+</span>
+        <span class="btn-label">Add Item</span>
+      </button>
+    </div>
+
+    <!-- Active Playhead -->
+    <div 
+      class="playhead-line active-line" 
+      :style="{ left: `${getMinutePercent(playheadMin)}%` }"
+    >
+    </div>
   </div>
 </template>
 
@@ -29,17 +48,32 @@ const emit = defineEmits<{
   remove: [UUID];
   update: [{ id: UUID; start: string; end: string }];
   playhead: [Minute];
+  triggerAdd: [Minute];
 }>();
 
 const container = ref<HTMLDivElement | null>(null);
+const hoverMinute = ref<number | null>(null);
 let timeline: VisTimeline | null = null;
 let dataset: DataSet<any> | null = null;
-let playheadId = 'playhead-marker';
 
-const tagPlayheadElement = () => {
-  if (!container.value) return;
-  const el = container.value.querySelector(`.vis-custom-time[data-custom-time="${playheadId}"]`);
-  el?.classList.add('playhead-marker');
+const MINUTES_IN_DAY = 24 * 60;
+
+const getMinutePercent = (minute: number) => {
+  const offset = ((minute - props.dayStartMin + MINUTES_IN_DAY) % MINUTES_IN_DAY);
+  return (offset / MINUTES_IN_DAY) * 100;
+};
+
+const handleMouseMove = (event: MouseEvent) => {
+  if (!timeline || !container.value) return;
+  const props = timeline.getEventProperties(event);
+  if (props.time) {
+    const m = props.time.getHours() * 60 + props.time.getMinutes();
+    hoverMinute.value = m;
+  }
+};
+
+const handlePlayheadAdd = (m: number) => {
+  emit('triggerAdd', m as Minute);
 };
 
 const toVisItems = (items: TimelineItem[]) =>
@@ -70,30 +104,10 @@ const setSelection = (id?: UUID) => {
   else timeline.setSelection([]);
 };
 
-const updatePlayhead = (minute: number) => {
-  if (!timeline) return;
-  const time = new Date();
-  time.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
-  let hasMarker = true;
-  try {
-    timeline.getCustomTime(playheadId);
-  } catch {
-    hasMarker = false;
-  }
-  if (!hasMarker) {
-    timeline.addCustomTime(time, playheadId);
-  } else {
-    timeline.setCustomTime(time, playheadId);
-  }
-  tagPlayheadElement();
-  timeline.setCustomTimeTitle(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), playheadId);
-};
-
 const getDayBounds = () => {
   const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
   const start = new Date(baseDate);
   start.setHours(0, 0, 0, 0);
-  // Offset by dayStartMin
   const startHours = Math.floor(props.dayStartMin / 60);
   const startMins = props.dayStartMin % 60;
   start.setHours(startHours, startMins, 0, 0);
@@ -113,6 +127,7 @@ const options = (): TimelineOptions => {
     end,
     min: start,
     max: end,
+    showCurrentTime: false,
     format: {
       minorLabels: {
         minute: 'h:mm A',
@@ -154,16 +169,9 @@ const initTimeline = () => {
   timeline = new VisTimeline(container.value, dataset, options());
   timeline.on('select', (event) => {
     const id = (event.items?.[0] as UUID) || undefined;
-    if (!id) return;
     emit('select', id);
   });
-  const onTimeEvent = (event: any) => {
-    if (event.id !== playheadId) return;
-    const minute = event.time.getHours() * 60 + event.time.getMinutes();
-    emit('playhead', minute as Minute);
-  };
-  timeline.on('timechange', onTimeEvent);
-  timeline.on('timechanged', onTimeEvent);
+  
   const shouldHandlePlayheadClick = (event: any) => {
     return event.what === 'background' || event.what === 'axis';
   };
@@ -174,7 +182,6 @@ const initTimeline = () => {
     emit('playhead', minute);
   });
   if (props.selectedId) setSelection(props.selectedId);
-  updatePlayhead(props.playheadMin);
 };
 
 onMounted(() => {
@@ -198,12 +205,6 @@ watch(
 watch(
   () => props.selectedId,
   (id) => setSelection(id),
-  { immediate: true }
-);
-
-watch(
-  () => props.playheadMin,
-  (minute) => updatePlayhead(minute),
   { immediate: true }
 );
 
@@ -260,17 +261,10 @@ watch(
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
   min-width: 50px;
   overflow: hidden;
+  transition: left 0.2s ease, right 0.2s ease, width 0.2s ease, top 0.2s ease;
 }
 
 .timeline-vis :deep(.vis-item .vis-item-content) {
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.timeline-vis :deep(.vis-item .vis-item-content > *) {
   display: block;
   max-width: 100%;
   overflow: hidden;
@@ -296,17 +290,83 @@ watch(
   font-weight: 500;
 }
 
-.timeline-vis :deep(.vis-current-time),
-.timeline-vis :deep(.vis-custom-time) {
-  background: linear-gradient(180deg, #f8fafc 0%, rgba(248, 250, 252, 0.4) 100%);
+.playhead-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   width: 2px;
+  pointer-events: none;
+  z-index: 10;
+  transition: left 0.1s linear;
 }
 
-.timeline-vis :deep(.vis-custom-time) {
+.active-line {
+  background: linear-gradient(180deg, #f8fafc 0%, rgba(248, 250, 252, 0.4) 100%);
   box-shadow: 0 0 12px rgba(248, 250, 252, 0.35);
 }
 
-.timeline-vis :deep(.vis-custom-time.playhead-marker) {
-  pointer-events: none;
+.hover-line {
+  background: rgba(255, 255, 255, 0.25);
+  width: 1px;
+}
+
+.playhead-add-btn {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 20px;
+  background: #8fbf5f;
+  color: black;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: width 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease, box-shadow 0.2s ease;
+  line-height: 1;
+  padding: 0;
+  pointer-events: auto;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.btn-icon {
+  flex-shrink: 0;
+}
+
+.btn-label {
+  display: inline-block;
+  max-width: 0;
+  opacity: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: max-width 0.25s ease, opacity 0.2s ease, margin 0.2s ease;
+  overflow: hidden;
+}
+
+.playhead-add-btn:hover {
+  width: 90px;
+  background: #a3d977;
+  box-shadow: 0 0 15px rgba(143, 191, 95, 0.6);
+}
+
+.playhead-add-btn:hover .btn-label {
+  max-width: 60px;
+  opacity: 1;
+  margin-left: 4px;
+}
+
+.hover-add-btn {
+  opacity: 0.6;
+}
+
+.hover-line:hover .hover-add-btn {
+  opacity: 1;
 }
 </style>

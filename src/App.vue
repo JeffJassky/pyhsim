@@ -1,13 +1,14 @@
 <template>
   <div class="app">
     <header class="app__header">
-      <nav class="app-nav">
+      <div class="header-left">
         <span class="logo">physim</span>
-        <RouterLink to="/">Studio</RouterLink>
-        <RouterLink to="/library">Library</RouterLink>
-        <RouterLink to="/scenarios">Scenarios</RouterLink>
-        <RouterLink to="/log">Log</RouterLink>
-      </nav>
+      </div>
+      <div class="header-right">
+        <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
+          My Profile
+        </button>
+      </div>
     </header>
     <main class="app__body">
       <div class="app__viewport">
@@ -18,20 +19,60 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router';
+import { RouterView } from 'vue-router';
+import { useUIStore } from '@/stores/ui';
+
+const uiStore = useUIStore();
 </script>
 
 <style scoped>
 .app {
-  --app-header-height: 64px;
+  --header-height: 56px;
   height: 100vh;
   width: 100vw;
-  display: grid;
-  grid-template-rows: var(--app-header-height) 1fr;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
+.app__header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: rgba(13, 17, 23, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.logo {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.profile-link {
+  color: white;
+  font-weight: 500;
+  opacity: 0.7;
+  font-size: 0.9rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.profile-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .app__body {
+  flex: 1;
   min-height: 0;
   overflow: hidden;
 }
@@ -47,38 +88,6 @@ import { RouterLink, RouterView } from 'vue-router';
 .app__viewport :deep(> *) {
   flex: 1;
   min-height: 0;
-}
-
-.app__header {
-  height: var(--app-header-height);
-  display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(6px);
-}
-
-.app-nav {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.logo {
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-  opacity: 0.7;
-}
-
-a.router-link-active {
-  opacity: 1;
 }
 
 :deep(h3){

@@ -212,6 +212,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "melatonin",
     label: "Melatonin",
     group: "SCN",
+    isPremium: false,
     semantics: DEFAULT_SEMANTICS.SCN,
     description: {
       physiology:
@@ -234,6 +235,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "vasopressin",
     label: "Vasopressin",
     group: "SCN",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.SCN,
       referenceRange: { min: 0, max: 10 },
@@ -259,6 +261,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "vip",
     label: "VIP",
     group: "SCN",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.SCN,
       referenceRange: { min: 0, max: 100 },
@@ -270,7 +273,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Morning light therapy should sharpen VIP peaks; use this to validate zeitgeber timing.",
     },
     display: { tendency: "mid" },
-    goals: ["energy", "sleep"],
+    goals: ["energy", "sleep", "productivity"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const day = gaussian(m, 9, 300);
@@ -283,6 +286,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "dopamine",
     label: "Dopamine",
     group: "Neuro",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
       physiology:
@@ -291,7 +295,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Map stimulant use, novelty, or movement to dopamine tone to avoid overdriving motivation.",
     },
     display: { tendency: "higher" },
-    goals: ["focus", "energy", "mood"],
+    goals: ["focus", "energy", "mood", "productivity"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const morningDrive = gaussian(m, 3.5, 160);
@@ -318,6 +322,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "serotonin",
     label: "Serotonin",
     group: "Neuro",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
       physiology:
@@ -352,6 +357,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "acetylcholine",
     label: "Acetylcholine",
     group: "Neuro",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
       physiology:
@@ -376,6 +382,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "gaba",
     label: "GABA",
     group: "Neuro",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
       physiology:
@@ -405,6 +412,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "norepi",
     label: "Norepinephrine",
     group: "Neuro",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Neuro,
       unit: "pg/mL",
@@ -430,6 +438,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "histamine",
     label: "Histamine",
     group: "Neuro",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
       physiology:
@@ -468,6 +477,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "orexin",
     label: "Orexin",
     group: "Neuro",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Neuro,
       unit: "pg/mL",
@@ -517,6 +527,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "glutamate",
     label: "Glutamate",
     group: "Neuro",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
       physiology:
@@ -539,6 +550,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "endocannabinoid",
     label: "Endocannabinoid Tone",
     group: "Neuro",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
       physiology:
@@ -568,6 +580,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "cortisol",
     label: "Cortisol",
     group: "Endocrine",
+    isPremium: false,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ug/dL",
@@ -616,6 +629,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "adrenaline",
     label: "Adrenaline",
     group: "Endocrine",
+    isPremium: false,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "pg/mL",
@@ -628,7 +642,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Ensure workouts or cold exposure create sharp spikes with clean recoveries instead of chronic elevation.",
     },
     display: { tendency: "higher" },
-    goals: ["energy", "calm"],
+    goals: ["energy", "calm", "productivity"],
     baseline: fnBaseline(
       (minute) => 30.0 + 80.0 * gaussian(wrapMinute(minute), 2, 120)
     ),
@@ -658,6 +672,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "insulin",
     label: "Insulin",
     group: "Endocrine",
+    isPremium: false,
     semantics: DEFAULT_SEMANTICS.Endocrine,
     description: {
       physiology:
@@ -666,7 +681,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Use to test meal composition, exercise, or meds that improve insulin sensitivity and flatten peaks.",
     },
     display: { tendency: "neutral" },
-    goals: ["digestion", "energy"],
+    goals: ["digestion", "energy", "weightLoss", "productivity"],
     baseline: fnBaseline(() => 5.0),
     couplings: [
       {
@@ -694,6 +709,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "glucagon",
     label: "Glucagon",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "pg/mL",
@@ -706,7 +722,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Extended fasting or endurance sessions should elevate glucagon; use this to plan refuel windows.",
     },
     display: { tendency: "higher" },
-    goals: ["digestion", "energy"],
+    goals: ["digestion", "energy", "weightLoss"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const nocturnal = gaussian(m, 23, 160) + 0.8 * gaussian(m, 1.5, 220);
@@ -733,6 +749,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "ghrelin",
     label: "Ghrelin",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "pg/mL",
@@ -745,7 +762,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Time meals, protein, or fiber to blunt unwanted appetite spikes shown here.",
     },
     display: { tendency: "mid" },
-    goals: ["digestion"],
+    goals: ["digestion", "weightLoss"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const breakfast = gaussian(m, 3, 90);
@@ -779,6 +796,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "glp1",
     label: "GLP-1",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "pmol/L",
@@ -814,6 +832,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "leptin",
     label: "Leptin",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ng/mL",
@@ -851,6 +870,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "thyroid",
     label: "Thyroid Tone",
     group: "Endocrine",
+    isPremium: false,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "uIU/mL",
@@ -863,7 +883,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Monitor under chronic stress or dieting to avoid metabolic slowdown.",
     },
     display: { tendency: "higher" },
-    goals: ["energy", "recovery"],
+    goals: ["energy", "recovery", "weightLoss", "productivity"],
     baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
       const ramp = sigmoid((m - minutes(2.5)) / 80);
@@ -895,6 +915,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "oxytocin",
     label: "Oxytocin",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "pg/mL",
@@ -934,6 +955,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "prolactin",
     label: "Prolactin",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ng/mL",
@@ -946,7 +968,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Evening relaxation, heat, or intimacy sessions should allow the nightly prolactin crest to form.",
     },
     display: { tendency: "mid" },
-    goals: ["recovery", "sleep"],
+    goals: ["recovery", "sleep", "cycle"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const prep = sigmoid((m - minutes(13.5)) / 50);
@@ -973,6 +995,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "growthHormone",
     label: "Growth Hormone",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ng/mL",
@@ -1018,6 +1041,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "glucose",
     label: "Glucose",
     group: "Metabolic",
+    isPremium: false,
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
       physiology:
@@ -1026,7 +1050,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Make sure fueling or fasting tactics keep glucose within the range that matches your goals.",
     },
     display: { tendency: "mid" },
-    goals: ["energy", "digestion"],
+    goals: ["energy", "digestion", "weightLoss"],
     baseline: fnBaseline(() => 85.0),
     couplings: [
       {
@@ -1054,6 +1078,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "oxygen",
     label: "Oxygen Delivery",
     group: "Metabolic",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
       physiology:
@@ -1070,6 +1095,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "ketone",
     label: "Ketone / FFA",
     group: "Metabolic",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Metabolic,
       unit: "mmol/L",
@@ -1111,6 +1137,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "energy",
     label: "Energy",
     group: "Subjective",
+    isPremium: false,
     semantics: DEFAULT_SEMANTICS.Subjective,
     description: {
       physiology:
@@ -1119,7 +1146,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Tie subjectively productive hours to the objective drivers shown here to design better schedules.",
     },
     display: { tendency: "higher" },
-    goals: ["energy"],
+    goals: ["energy", "weightLoss", "productivity"],
     baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
       const morning = gaussian(m, 2.5, 180);
@@ -1166,6 +1193,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "vagal",
     label: "Vagal Tone",
     group: "Autonomic",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Autonomic,
     description: {
       physiology:
@@ -1210,6 +1238,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "testosterone",
     label: "Testosterone",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ng/dL",
@@ -1221,7 +1250,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Use as a low-frequency trend (labs) rather than acute chart.",
     },
     display: { tendency: "higher" },
-    goals: ["hormones", "energy", "recovery"],
+    goals: ["cycle", "energy", "recovery"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
 
@@ -1246,6 +1275,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "estrogen",
     label: "Estrogen",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "pg/mL",
@@ -1257,7 +1287,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: "Track phases or hormone therapy contextually.",
     },
     display: { tendency: "higher" },
-    goals: ["hormones", "energy", "mood", "focus"],
+    goals: ["cycle", "energy", "mood", "focus"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
       if (subject.sex === "male") {
@@ -1275,6 +1305,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "progesterone",
     label: "Progesterone",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ng/mL",
@@ -1287,7 +1318,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Expect higher sleep drive and slightly reduced insulin sensitivity during the luteal peak.",
     },
     display: { tendency: "mid" },
-    goals: ["hormones", "calm", "sleep"],
+    goals: ["cycle", "calm", "sleep"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
       if (subject.sex === "male") return 0.2;
@@ -1303,6 +1334,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "lh",
     label: "LH",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "IU/L",
@@ -1313,7 +1345,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: "Marker of ovulation timing.",
     },
     display: { tendency: "neutral" },
-    goals: ["hormones"],
+    goals: ["cycle"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
       if (subject.sex === "male") return 5.0;
@@ -1327,6 +1359,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "fsh",
     label: "FSH",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "IU/L",
@@ -1337,7 +1370,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: "Correlates with early follicular phase.",
     },
     display: { tendency: "neutral" },
-    goals: ["hormones"],
+    goals: ["cycle"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
       if (subject.sex === "male") return 5.0;
@@ -1350,6 +1383,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "hrv",
     label: "HRV",
     group: "Autonomic",
+    isPremium: false,
     semantics: {
       ...DEFAULT_SEMANTICS.Autonomic,
       unit: "ms",
@@ -1387,6 +1421,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "bloodPressure",
     label: "Blood Pressure",
     group: "Autonomic",
+    isPremium: false,
     semantics: {
       ...DEFAULT_SEMANTICS.Autonomic,
       unit: "mmHg",
@@ -1430,6 +1465,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "ethanol",
     label: "Ethanol",
     group: "Metabolic",
+    isPremium: false,
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
       physiology: "Circulating alcohol awaiting hepatic metabolism.",
@@ -1445,6 +1481,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "acetaldehyde",
     label: "Acetaldehyde",
     group: "Metabolic",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
       physiology:
@@ -1467,6 +1504,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "inflammation",
     label: "Inflammation",
     group: "Metabolic",
+    isPremium: false,
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
       physiology:
@@ -1496,6 +1534,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "bdnf",
     label: "BDNF",
     group: "Neuro",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Neuro,
       unit: "ng/mL",
@@ -1528,6 +1567,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "magnesium",
     label: "Magnesium status",
     group: "Metabolic",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
       physiology:
@@ -1552,6 +1592,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "sensoryLoad",
     label: "Sensory Load",
     group: "Subjective",
+    isPremium: true,
     semantics: DEFAULT_SEMANTICS.Subjective,
     description: {
       physiology:
@@ -1580,6 +1621,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "shbg",
     label: "SHBG",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "nmol/L",
@@ -1592,7 +1634,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Important for understanding bioavailable testosterone and estrogen.",
     },
     display: { tendency: "mid" },
-    goals: ["hormones"],
+    goals: ["cycle"],
     baseline: fnBaseline(() => 40.0),
     couplings: [
       {
@@ -1607,6 +1649,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "ferritin",
     label: "Ferritin / Iron",
     group: "Metabolic",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Metabolic,
       unit: "ng/mL",
@@ -1627,6 +1670,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "dheas",
     label: "DHEA-S",
     group: "Endocrine",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ug/dL",
@@ -1639,7 +1683,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Assess the Cortisol/DHEA ratio as a marker of HPA axis resilience.",
     },
     display: { tendency: "higher" },
-    goals: ["hormones", "energy", "recovery"],
+    goals: ["cycle", "energy", "recovery"],
     baseline: fnBaseline(() => 200.0),
     couplings: [
       {
@@ -1655,6 +1699,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "alt",
     label: "ALT (Liver)",
     group: "Organ",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Organ,
       unit: "U/L",
@@ -1680,6 +1725,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "ast",
     label: "AST (Liver)",
     group: "Organ",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Organ,
       unit: "U/L",
@@ -1698,6 +1744,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "egfr",
     label: "eGFR (Kidney)",
     group: "Organ",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Organ,
       unit: "mL/min",
@@ -1717,6 +1764,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "vitaminD3",
     label: "Vitamin D3",
     group: "Endocrine",
+    isPremium: false,
     semantics: {
       ...DEFAULT_SEMANTICS.Endocrine,
       unit: "ng/mL",
@@ -1728,7 +1776,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: "Long-term baseline tracker.",
     },
     display: { tendency: "higher" },
-    goals: ["recovery", "hormones"],
+    goals: ["recovery", "cycle"],
     baseline: fnBaseline(() => 40.0),
     metadata: { version: "1.0.0" },
   },
@@ -1736,6 +1784,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "mtor",
     label: "mTOR",
     group: "Metabolic",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Metabolic,
       unit: "fold-change",
@@ -1746,7 +1795,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Visualize anabolic "building" windows vs recovery.',
     },
     display: { tendency: "neutral" },
-    goals: ["recovery", "energy"],
+    goals: ["recovery", "energy", "weightLoss"],
     baseline: fnBaseline(() => 1.0), // Baseline = 1.0x (no change)
     couplings: [
       {
@@ -1761,6 +1810,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     key: "ampk",
     label: "AMPK",
     group: "Metabolic",
+    isPremium: true,
     semantics: {
       ...DEFAULT_SEMANTICS.Metabolic,
       unit: "fold-change",
@@ -1772,7 +1822,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Visualize "cleaning" and energy conservation windows.',
     },
     display: { tendency: "neutral" },
-    goals: ["energy", "recovery", "digestion"],
+    goals: ["energy", "recovery", "digestion", "weightLoss"],
     baseline: fnBaseline(() => 1.0), // Baseline = 1.0x (no change)
     couplings: [
       {

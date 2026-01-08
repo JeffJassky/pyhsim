@@ -5,10 +5,13 @@
   >
     <div
       class="app-shell__body"
-      :class="{ 'has-right-sidebar': showRightSidebar && !isMobile }"
+      :class="{ 
+        'has-right-sidebar': showRightSidebar && !isMobile,
+        'has-sidebar': (alwaysShowSidebar || !!$slots.sidebar) && !isMobile
+      }"
     >
       <button
-        v-if="isMobile"
+        v-if="isMobile && !!$slots.sidebar"
         class="app-shell__mobile-toggle"
         type="button"
         aria-label="Toggle sidebar"
@@ -21,6 +24,7 @@
         >
       </button>
       <aside
+        v-if="alwaysShowSidebar || !!$slots.sidebar"
         id="app-shell-sidebar"
         class="app-shell__sidebar"
         :class="{ 'app-shell__sidebar--open': isMobile && isSidebarOpen }"
@@ -103,7 +107,7 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 2rem;
   padding: 1rem 2rem;
   overflow: hidden;
@@ -111,8 +115,16 @@ onBeforeUnmount(() => {
   transition: grid-template-columns 0.3s ease;
 }
 
-.app-shell__body.has-right-sidebar {
+.app-shell__body.has-sidebar {
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+
+.app-shell__body.has-sidebar.has-right-sidebar {
   grid-template-columns: 280px minmax(0, 1fr) 300px;
+}
+
+.app-shell__body.has-right-sidebar:not(.has-sidebar) {
+  grid-template-columns: minmax(0, 1fr) 300px;
 }
 
 .app-shell__sidebar,
@@ -197,7 +209,7 @@ onBeforeUnmount(() => {
 
   .app-shell__sidebar {
     position: fixed;
-    top: var(--app-header-height, 64px);
+    top: 0;
     bottom: 0;
     left: 0;
     width: min(320px, 80vw);
@@ -223,7 +235,7 @@ onBeforeUnmount(() => {
   .app-shell__overlay {
     display: block;
     position: fixed;
-    top: var(--app-header-height, 64px);
+    top: 0;
     left: 0;
     right: 0;
     bottom: 0;

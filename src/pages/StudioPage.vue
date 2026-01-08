@@ -1,21 +1,10 @@
 <template>
-  <AppShell always-show-sidebar :show-right-sidebar="showChat">
-    <template #sidebar>
-      <div class="sidebar-top">
-        <button class="profile-trigger" @click="profileModalOpen = true">
-          <span class="profile-trigger__icon">🧬</span>
-          <div class="profile-trigger__content">
-            <span class="profile-trigger__label">My Bio-Profile</span>
-            <span class="profile-trigger__sub">Physiology & Conditions</span>
-          </div>
-        </button>
-      </div>
-    </template>
+  <AppShell :show-right-sidebar="showChat">
     <template #right-sidebar>
       <AIChatPanel />
     </template>
     <section class="studio-grid">
-      <Panel ref="timelinePanelRef" title="Timeline" icon="📅">
+      <Panel ref="timelinePanelRef" title="" icon="📅">
         <DateCarousel v-model="selectedDate" />
         <TimelineView
           :items="timeline.items"
@@ -27,6 +16,7 @@
           @remove="timeline.removeItem"
           @update="handleTimelineMove"
           @playhead="setMinute"
+          @trigger-add="handlePlayheadAdd"
         />
         <PlayheadBar :minute="minute" />
       </Panel>
@@ -41,17 +31,7 @@
         :macros-enabled="profiles.nutritionTargets.macrosEnabled"
       />
 
-      <Panel title="" :icon="panelIcon">
-        <template #toolbar>
-          <button
-            class="ghost"
-            :style="{ opacity: showChat ? 1 : 0.5 }"
-            title="Toggle Bio-Pilot AI"
-            @click="showChat = !showChat"
-          >
-            🤖
-          </button>
-        </template>
+      <Panel title="Charts" :icon="panelIcon">
         <nav class="chart-tabs-nav" role="tablist" aria-label="View families">
           <button
             v-for="tab in rootTabOptions"
@@ -71,6 +51,7 @@
         </p>
 
         <nav
+          v-if="activeSubtabOptions.length > 1"
           class="chart-tabs-nav chart-tabs-nav--sub"
           role="tablist"
           aria-label="Detailed chart groups"
@@ -92,7 +73,10 @@
             </button>
           </div>
         </nav>
-        <div v-if="activeGroupInfo" class="chart-info-card">
+        <div
+          v-if="activeGroupInfo.physiology || activeGroupInfo.application"
+          class="chart-info-card"
+        >
           <p>
             <strong>Physiology</strong>
             {{ activeGroupInfo.physiology }}
@@ -129,9 +113,19 @@
       @select-food="handleFoodSelect"
     />
     <UserProfileModal v-model="profileModalOpen" />
-    <button class="studio-fab" type="button" @click="addItemModalOpen = true">
-      ➕ Add Item
-    </button>
+    <div class="fab-group">
+      <button class="studio-fab" type="button" @click="addItemModalOpen = true">
+        ➕ Add Item
+      </button>
+      <button
+        class="studio-fab studio-fab--secondary"
+        type="button"
+        title="Toggle Bio-Pilot AI"
+        @click="showChat = !showChat"
+      >
+        🤖 Bio-Pilot AI
+      </button>
+    </div>
   </AppShell>
 </template>
 
@@ -154,6 +148,7 @@ import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
 import { useProfilesStore } from '@/stores/profiles';
 import { useMetersStore } from '@/stores/meters';
+import { useUIStore } from '@/stores/ui';
 import { useEngine } from '@/composables/useEngine';
 import { usePlayhead } from '@/composables/usePlayhead';
 import { useMeters } from '@/composables/useMeters';
@@ -164,6 +159,7 @@ import { useHeatmap } from '@/composables/useHeatmap';
 import type {
   ChartSeriesSpec,
   FoodSearchHit,
+  Goal,
   InterventionDef,
   MeterKey,
   Minute,
@@ -182,6 +178,7 @@ const profiles = useProfilesStore();
 const metersStore = useMetersStore();
 const heatmapStore = useHeatmapStore();
 const arousalStore = useArousalStore();
+const uiStore = useUIStore();
 
 // Selected date for day navigation
 const selectedDate = computed({
@@ -230,7 +227,10 @@ const selectedDef = computed(() => library.defs.find((def) => def.key === select
 const inspectorVisible = ref(false);
 const showChat = ref(false);
 const addItemModalOpen = ref(false);
-const profileModalOpen = ref(false);
+const profileModalOpen = computed({
+  get: () => uiStore.profileModalOpen,
+  set: (val: boolean) => uiStore.setProfileModalOpen(val),
+});
 const recentFoods = ref<FoodSearchHit[]>([]);
 
 const handleFoodSelect = (food: FoodSearchHit, quantity: number) => {
@@ -259,6 +259,11 @@ const handleCreate = (def: InterventionDef) => {
     intensity: 1,
   });
   scrollTimelineIntoView();
+};
+
+const handlePlayheadAdd = (m: Minute) => {
+  setMinute(m);
+  addItemModalOpen.value = true;
 };
 
 const handleInspectorChange = (item: TimelineItem) => timeline.updateItem(item.id, item);
@@ -357,14 +362,19 @@ const viewSignalSets = {
   liverKidney: ['alt', 'ast', 'egfr', 'ethanol', 'acetaldehyde', 'inflammation'],
 } as const;
 
+const enabledSignals = computed(() => profiles.enabledSignals);
+const subscriptionTier = computed(() => profiles.subscriptionTier);
+
 const buildSpecs = (keys: readonly Signal[]): ChartSeriesSpec[] =>
   keys
+    .filter((key) => enabledSignals.value[key] !== false)
     .map((key) => {
       const def = SIGNAL_LIBRARY[key];
       if (!def) return null;
       return {
         key: def.key,
         label: def.label,
+        isPremium: def.isPremium,
         unit: def.semantics.unit,
         yMin: def.semantics.referenceRange?.min,
         yMax: def.semantics.referenceRange?.max,
@@ -383,17 +393,17 @@ const buildSpecs = (keys: readonly Signal[]): ChartSeriesSpec[] =>
     })
     .filter((spec): spec is ChartSeriesSpec => spec !== null);
 
-const scnCouplingSpecs = buildSpecs(viewSignalSets.scnCoupling);
-const neurotransmitterSpecs = buildSpecs(viewSignalSets.neuroArousal);
-const endocrineSpecs = buildSpecs(viewSignalSets.endocrine);
-const metabolicSpecs = buildSpecs(viewSignalSets.metabolic);
-const clockSpecs = buildSpecs(viewSignalSets.clock);
-const fuelSpecs = buildSpecs(viewSignalSets.fuel);
-const recoverySpecs = buildSpecs(viewSignalSets.recovery);
-const emotionalSpecs = buildSpecs(viewSignalSets.emotional);
-const reproductiveSpecs = buildSpecs(viewSignalSets.reproductive);
-const biomarkerSpecs = buildSpecs(viewSignalSets.biomarkers);
-const liverKidneySpecs = buildSpecs(viewSignalSets.liverKidney);
+const scnCouplingSpecs = computed(() => buildSpecs(viewSignalSets.scnCoupling));
+const neurotransmitterSpecs = computed(() => buildSpecs(viewSignalSets.neuroArousal));
+const endocrineSpecs = computed(() => buildSpecs(viewSignalSets.endocrine));
+const metabolicSpecs = computed(() => buildSpecs(viewSignalSets.metabolic));
+const clockSpecs = computed(() => buildSpecs(viewSignalSets.clock));
+const fuelSpecs = computed(() => buildSpecs(viewSignalSets.fuel));
+const recoverySpecs = computed(() => buildSpecs(viewSignalSets.recovery));
+const emotionalSpecs = computed(() => buildSpecs(viewSignalSets.emotional));
+const reproductiveSpecs = computed(() => buildSpecs(viewSignalSets.reproductive));
+const biomarkerSpecs = computed(() => buildSpecs(viewSignalSets.biomarkers));
+const liverKidneySpecs = computed(() => buildSpecs(viewSignalSets.liverKidney));
 
 const toChartData = (record: Record<string, Float32Array | number[]> | undefined) => {
   const result: Record<string, number[]> = {};
@@ -496,7 +506,7 @@ const goalSpecs = computed(() => {
   const goals = profiles.selectedGoals;
   if (goals.length === 0) return [];
   const relevantKeys = (Object.values(SIGNAL_LIBRARY) as any[])
-    .filter(sig => sig.goals?.some((g: string) => goals.includes(g)))
+    .filter(sig => sig.goals?.some((g: Goal) => goals.includes(g)))
     .map(sig => sig.key as Signal);
   return buildSpecs(relevantKeys);
 });
@@ -538,9 +548,9 @@ const chartGroups: Record<ChartGroupKey, ChartGroup> = {
     data: signalSeriesData,
     info: {
       physiology:
-        'Prioritizes physiological signals relevant to your selected health and performance goals from your Bio-Profile.',
+        '',
       application:
-        'Your active goals determine which biometrics are surfaced here for monitoring.',
+        '',
     },
   },
   scnCoupling: {
@@ -733,7 +743,7 @@ const rootTabOptions: RootTabOption[] = [
     label: 'My Goals',
     icon: '✨',
     groupKeys: ['goals'],
-    info: 'Personalized view showing signals prioritized by your active goals.',
+    info: '',
   },
   {
     key: 'auto',
@@ -820,8 +830,38 @@ const activeGroup = computed(() => chartGroups[activeGroupKey.value]);
 const resolveSpecs = (specsSource: ChartGroup['specs']) =>
   Array.isArray(specsSource) ? specsSource : specsSource.value;
 
-const activeGroupSpecs = computed(() => resolveSpecs(activeGroup.value.specs));
-const activeGroupSeriesData = computed(() => activeGroup.value.data.value);
+const activeGroupSpecs = computed(() => {
+  const specs = resolveSpecs(activeGroup.value.specs);
+  const orderMap = new Map(profiles.signalOrder.map((key, idx) => [key, idx]));
+
+  return [...specs].sort((a, b) => {
+    const aPremium = !!a.isPremium;
+    const bPremium = !!b.isPremium;
+    if (aPremium && !bPremium) return 1;
+    if (!aPremium && bPremium) return -1;
+
+    // Fall back to custom order
+    const aIdx = orderMap.get(a.key as Signal) ?? 999;
+    const bIdx = orderMap.get(b.key as Signal) ?? 999;
+    return aIdx - bIdx;
+  });
+});
+const activeGroupSeriesData = computed(() => {
+  const data = activeGroup.value.data.value;
+  const specs = activeGroupSpecs.value;
+  const redacted: Record<string, number[]> = {};
+  const isPremiumUser = subscriptionTier.value === 'premium';
+
+  for (const spec of specs) {
+    const raw = data[spec.key];
+    if (spec.isPremium && !isPremiumUser) {
+      redacted[spec.key] = [];
+    } else {
+      redacted[spec.key] = raw ? Array.from(raw) : [];
+    }
+  }
+  return redacted;
+});
 const activeGroupInfo = computed(() => activeGroup.value.info);
 
 const setActiveGroup = (groupKey: ChartGroupKey) => {
@@ -861,8 +901,8 @@ const interventionBands = computed(() =>
   right: 1.5rem;
   bottom: 1.5rem;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: center;
   gap: 0.75rem;
   z-index: 50;
 }
@@ -882,10 +922,10 @@ const interventionBands = computed(() =>
 }
 
 .studio-fab--secondary {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.7);
   color: white;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .studio-fab:hover {
@@ -1031,55 +1071,37 @@ const interventionBands = computed(() =>
   margin-bottom: 0;
 }
 
-.sidebar-top {
-  padding: 1rem;
-}
-
-.profile-trigger {
+.toolbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1rem;
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
+  padding-right: 0.5rem;
 }
 
-.profile-trigger:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+.profile-link {
+  color: white !important;
+  font-weight: 500;
+  opacity: 0.7;
+  padding: 0 !important;
+  font-size: 0.9rem;
+  background: transparent !important;
+  border: none !important;
 }
 
-.profile-trigger__icon {
-  font-size: 1.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
+.profile-link:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
-.profile-trigger__content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
+.logo--inline {
+  font-size: 0.95rem;
 }
 
-.profile-trigger__label {
+.logo {
   font-weight: 700;
-  font-size: 1rem;
-}
-
-.profile-trigger__sub {
-  font-size: 0.8rem;
-  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  opacity: 0.8;
 }
 </style>
