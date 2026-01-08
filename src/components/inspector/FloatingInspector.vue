@@ -50,7 +50,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .floating-inspector {
-  position: fixed;
+  position: absolute;
   top: 64px;
   right: 24px;
   width: 340px;

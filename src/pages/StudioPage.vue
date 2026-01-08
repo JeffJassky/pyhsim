@@ -99,13 +99,30 @@
         />
       </Panel>
     </section>
-    <FloatingInspector
-      :visible="inspectorVisible"
-      :item="selectedItem"
-      :def="selectedDef"
-      @change="handleInspectorChange"
-      @close="handleInspectorClose"
-    />
+
+    <template #floating>
+      <FloatingInspector
+        :visible="inspectorVisible"
+        :item="selectedItem"
+        :def="selectedDef"
+        @change="handleInspectorChange"
+        @close="handleInspectorClose"
+      />
+      <div class="fab-group">
+        <button class="studio-fab" type="button" @click="addItemModalOpen = true">
+          ➕ Add Item
+        </button>
+        <button
+          class="studio-fab studio-fab--secondary"
+          type="button"
+          title="Toggle Bio-Pilot AI"
+          @click="showChat = !showChat"
+        >
+          🤖 Bio-Pilot AI
+        </button>
+      </div>
+    </template>
+
     <AddItemModal
       v-model="addItemModalOpen"
       :recents="recentFoods"
@@ -113,19 +130,6 @@
       @select-food="handleFoodSelect"
     />
     <UserProfileModal v-model="profileModalOpen" />
-    <div class="fab-group">
-      <button class="studio-fab" type="button" @click="addItemModalOpen = true">
-        ➕ Add Item
-      </button>
-      <button
-        class="studio-fab studio-fab--secondary"
-        type="button"
-        title="Toggle Bio-Pilot AI"
-        @click="showChat = !showChat"
-      >
-        🤖 Bio-Pilot AI
-      </button>
-    </div>
   </AppShell>
 </template>
 
@@ -897,7 +901,7 @@ const interventionBands = computed(() =>
 }
 
 .fab-group {
-  position: fixed;
+  position: absolute;
   right: 1.5rem;
   bottom: 1.5rem;
   display: flex;
@@ -905,6 +909,7 @@ const interventionBands = computed(() =>
   align-items: center;
   gap: 0.75rem;
   z-index: 50;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .studio-fab {

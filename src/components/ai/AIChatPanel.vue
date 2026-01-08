@@ -7,9 +7,10 @@
         class="message"
         :class="`message--${msg.role}`"
       >
-        <div class="message__content">
-          {{ msg.content }}
-        </div>
+        <div 
+          class="message__content markdown-body" 
+          v-html="renderMarkdown(msg.content)"
+        ></div>
         <div class="message__meta">
           {{ formatTime(msg.timestamp) }}
         </div>
@@ -38,10 +39,47 @@
 import { ref, watch, nextTick, onMounted } from 'vue';
 import Panel from '@/components/core/Panel.vue';
 import { useAIStore } from '@/stores/ai';
+import MarkdownIt from 'markdown-it';
+
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+  typographer: true
+});
+
+// Configure links to open in new tab
+const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+  return self.renderToken(tokens, idx, options);
+};
+
+md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+  // Add target="_blank"
+  const aIndex = tokens[idx].attrIndex('target');
+  if (aIndex < 0) {
+    tokens[idx].attrPush(['target', '_blank']);
+  } else {
+    tokens[idx].attrs![aIndex][1] = '_blank';
+  }
+
+  // Add rel="noopener noreferrer" for security
+  const relIndex = tokens[idx].attrIndex('rel');
+  if (relIndex < 0) {
+    tokens[idx].attrPush(['rel', 'noopener noreferrer']);
+  } else {
+    tokens[idx].attrs![relIndex][1] = 'noopener noreferrer';
+  }
+
+  return defaultRender(tokens, idx, options, env, self);
+};
 
 const aiStore = useAIStore();
 const input = ref('');
 const messagesContainer = ref<HTMLElement | null>(null);
+
+const renderMarkdown = (text: string) => {
+  return md.render(text);
+};
 
 const scrollToBottom = async () => {
   await nextTick();
@@ -113,6 +151,7 @@ onMounted(scrollToBottom);
   border-radius: 12px;
   line-height: 1.4;
   background: rgba(255, 255, 255, 0.05);
+  word-wrap: break-word;
 }
 
 .message--user .message__content {
@@ -124,6 +163,106 @@ onMounted(scrollToBottom);
 .message--assistant .message__content {
   background: rgba(255, 255, 255, 0.1);
   border-bottom-left-radius: 2px;
+}
+
+/* Markdown Styles */
+:deep(.markdown-body p) {
+  margin-bottom: 0.5rem;
+}
+
+:deep(.markdown-body p:last-child) {
+  margin-bottom: 0;
+}
+
+:deep(.markdown-body a) {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+:deep(.markdown-body ul),
+:deep(.markdown-body ol) {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+:deep(.markdown-body ul) {
+  list-style-type: disc;
+}
+
+:deep(.markdown-body ol) {
+  list-style-type: decimal;
+}
+
+:deep(.markdown-body li) {
+  margin-bottom: 0.25rem;
+}
+
+:deep(.markdown-body code) {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+:deep(.markdown-body pre) {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.75rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 0.5rem;
+}
+
+:deep(.markdown-body pre code) {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+:deep(.markdown-body h1),
+:deep(.markdown-body h2),
+:deep(.markdown-body h3),
+:deep(.markdown-body h4) {
+  margin: 1rem 0 0.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+:deep(.markdown-body h1) { font-size: 1.4em; }
+:deep(.markdown-body h2) { font-size: 1.25em; }
+:deep(.markdown-body h3) { font-size: 1.1em; }
+:deep(.markdown-body h4) { font-size: 1em; }
+
+:deep(.markdown-body blockquote) {
+  border-left: 3px solid rgba(255, 255, 255, 0.2);
+  padding-left: 0.75rem;
+  margin-left: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+:deep(.markdown-body table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75rem;
+  font-size: 0.85em;
+}
+
+:deep(.markdown-body th),
+:deep(.markdown-body td) {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+}
+
+:deep(.markdown-body th) {
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+}
+
+:deep(.markdown-body img) {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.5rem 0;
 }
 
 .message__meta {

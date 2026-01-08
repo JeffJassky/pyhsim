@@ -31,9 +31,14 @@
       >
         <slot name="sidebar">Sidebar</slot>
       </aside>
-      <main class="app-shell__main">
-        <slot />
-      </main>
+      <div class="app-shell__main-area">
+        <main class="app-shell__main">
+          <slot />
+        </main>
+        <div class="app-shell__floating">
+          <slot name="floating" />
+        </div>
+      </div>
       <aside v-if="showRightSidebar && !isMobile" class="app-shell__sidebar app-shell__sidebar--right">
         <slot name="right-sidebar" />
       </aside>
@@ -128,9 +133,28 @@ onBeforeUnmount(() => {
 }
 
 .app-shell__sidebar,
-.app-shell__main {
+.app-shell__main-area {
   min-height: 0;
-  overflow-y: auto;
+}
+
+.app-shell__main-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell__floating {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.app-shell__floating > * {
+  pointer-events: auto;
 }
 
 .app-shell__sidebar::-webkit-scrollbar,
@@ -143,6 +167,9 @@ onBeforeUnmount(() => {
 }
 
 .app-shell__main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   scrollbar-width: none;
   padding-right: 0.5rem;
 }
