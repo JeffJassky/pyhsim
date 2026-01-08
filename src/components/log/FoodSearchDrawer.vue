@@ -87,7 +87,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { searchFoods } from '@/api/openfoodfacts';
 import type { FoodSearchHit, MealSlot } from '@/types';
 
-const props = defineProps<{ modelValue: boolean; meal: MealSlot; recents: FoodSearchHit[] }>();
+const props = defineProps<{ modelValue: boolean; meal: MealSlot; recents: FoodSearchHit[]; labelOverride?: string }>();
 const emit = defineEmits<{
   'update:modelValue': [boolean];
   select: [FoodSearchHit, number];
@@ -100,7 +100,7 @@ const error = ref('');
 const qty = reactive<Record<string, number>>({});
 const expandedId = ref<string | null>(null);
 
-const mealLabel = computed(() => props.meal.charAt(0).toUpperCase() + props.meal.slice(1));
+const mealLabel = computed(() => props.labelOverride ?? (props.meal.charAt(0).toUpperCase() + props.meal.slice(1)));
 const filteredRecents = computed(() => {
   if (!query.value.trim()) return props.recents;
   const term = query.value.toLowerCase();

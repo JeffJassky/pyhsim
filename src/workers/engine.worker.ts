@@ -168,6 +168,25 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const netActivity = 1.0 + (transporterActivities['NET'] ?? 0);
   const sertActivity = 1.0 + (transporterActivities['SERT'] ?? 0);
 
+  // Apply enzyme activity adjustments
+  // DAO: Diamine oxidase - degrades histamine in the gut
+  // MAO_A/B: Monoamine oxidases - degrade DA, NE, 5-HT
+  // COMT: Catechol-O-methyltransferase - degrades catecholamines
+  const enzymeActivities = options?.enzymeActivities ?? {};
+  const daoActivity = 1.0 + (enzymeActivities['DAO'] ?? 0);
+  const maoAActivity = 1.0 + (enzymeActivities['MAO_A'] ?? 0);
+  const maoBActivity = 1.0 + (enzymeActivities['MAO_B'] ?? 0);
+  const comtActivity = 1.0 + (enzymeActivities['COMT'] ?? 0);
+
+  // Enzyme effects on signal clearance/degradation:
+  // Lower enzyme activity = slower clearance = higher signal levels
+  // histamineEnzymeGain: DAO reduces histamine, so low DAO → higher histamine
+  const histamineEnzymeGain = daoActivity < 1.0 ? (1.0 - daoActivity) * 0.4 : 0; // Up to 40% increase at DAO -1.0
+  // Monoamine clearance: MAO degrades DA/NE/5-HT
+  const monoamineClearanceRate = (maoAActivity + maoBActivity) / 2;
+  // Catecholamine clearance: COMT degrades DA/NE/adrenaline
+  const catecholamineClearanceRate = comtActivity;
+
   const homeostasisParams: HomeostasisParams = {
     ...DEFAULT_HOMEOSTASIS_PARAMS,
     metabolicRate: options?.physiology?.metabolicCapacity ?? 1.0,
@@ -346,6 +365,41 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
       // Apply homeostasis corrections for regulated signals
       if (enableHomeostasis && homeostasisCorrections[signal] !== undefined) {
         value += homeostasisCorrections[signal];
+      }
+
+      // Apply transporter-based clearance effects
+      // Higher transporter activity = faster synaptic clearance = lower signal levels
+      // This is the primary mechanism for ADHD's hypodopaminergia
+      if (signal === 'dopamine' && datActivity !== 1) {
+        // DAT clears dopamine from synapse; more DAT = less dopamine
+        value /= datActivity;
+      }
+      if (signal === 'norepi' && netActivity !== 1) {
+        // NET clears norepinephrine; more NET = less NE
+        value /= netActivity;
+      }
+      if (signal === 'serotonin' && sertActivity !== 1) {
+        // SERT clears serotonin; more SERT = less 5-HT
+        value /= sertActivity;
+      }
+
+      // Apply enzyme-based clearance effects
+      // These model how enzyme deficiencies affect neurotransmitter levels
+      if (signal === 'histamine' && histamineEnzymeGain !== 0) {
+        // DAO deficiency → slower histamine clearance → elevated histamine
+        value *= (1 + histamineEnzymeGain);
+      }
+      if ((signal === 'dopamine' || signal === 'norepi' || signal === 'serotonin') && monoamineClearanceRate !== 1) {
+        // MAO activity affects monoamine degradation
+        // Lower MAO = slower clearance = higher levels
+        const maoClearanceFactor = 1 / Math.max(0.5, monoamineClearanceRate);
+        value *= maoClearanceFactor;
+      }
+      if ((signal === 'dopamine' || signal === 'norepi' || signal === 'adrenaline') && catecholamineClearanceRate !== 1) {
+        // COMT activity affects catecholamine degradation
+        // Lower COMT = slower clearance = higher levels
+        const comtClearanceFactor = 1 / Math.max(0.5, catecholamineClearanceRate);
+        value *= comtClearanceFactor;
       }
 
       // We now allow absolute units (e.g. 100 mg/dL) to flow through.

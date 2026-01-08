@@ -236,6 +236,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Routine",
+    categories: ["environment"],
+    goals: ["energy"],
   },
   {
     key: "sleep",
@@ -280,6 +282,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Routine",
+    categories: ["environment"],
+    goals: ["sleep", "recovery"],
   },
   {
     key: "nap",
@@ -319,6 +323,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Routine",
+    categories: ["wellness"],
+    goals: ["sleep", "recovery", "energy"],
   },
   {
     key: "caffeine",
@@ -480,6 +486,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Stimulants",
+    categories: ["medications", "supplements"],
+    goals: ["energy", "focus"],
   },
   {
     key: "ritalinIR10",
@@ -581,6 +589,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Stimulants",
+    categories: ["medications"],
+    goals: ["focus", "energy"],
   },
   {
     key: "melatonin",
@@ -684,6 +694,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Supplements",
+    categories: ["supplements"],
+    goals: ["sleep"],
   },
   {
     key: "ltheanine",
@@ -826,6 +838,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Supplements",
+    categories: ["supplements"],
+    goals: ["calm", "focus", "mood"],
   },
   {
     key: "magnesium",
@@ -961,6 +975,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Supplements",
+    categories: ["supplements"],
+    goals: ["calm", "sleep", "recovery"],
   },
   {
     key: "exercise",
@@ -1244,6 +1260,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Lifestyle",
+    categories: ["exercise"],
+    goals: ["energy", "mood", "recovery", "hormones"],
   },
   {
     key: "alcohol",
@@ -1403,6 +1421,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Lifestyle",
+    categories: ["social"],
+    goals: ["mood", "calm"],
   },
   {
     key: "social",
@@ -1452,6 +1472,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Lifestyle",
+    categories: ["social"],
+    goals: ["mood", "hormones"],
   },
   {
     key: "meditation",
@@ -1499,6 +1521,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Wellness",
+    categories: ["wellness"],
+    goals: ["calm", "focus", "mood"],
   },
   {
     key: "electrolytes",
@@ -1533,6 +1557,8 @@ export const INTERVENTIONS: InterventionDef[] = [
       },
     },
     group: "Supplements",
+    categories: ["supplements"],
+    goals: ["energy", "recovery"],
   },
   {
     key: "food",
@@ -1617,6 +1643,8 @@ export const INTERVENTIONS: InterventionDef[] = [
     ],
     kernels: FOOD_KERNELS,
     group: "Food",
+    categories: ["food"],
+    goals: ["energy", "digestion"],
   },
 ];
 

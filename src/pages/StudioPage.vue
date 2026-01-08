@@ -1,23 +1,28 @@
 <template>
   <AppShell always-show-sidebar :show-right-sidebar="showChat">
     <template #sidebar>
-      <Panel title="Profiles" icon="🧬">
-        <ProfilePalette />
-      </Panel>
-      <Panel title="Influencers" icon="🎛">
-        <InterventionSearch v-model="search" />
-        <InterventionPalette :defs="filteredDefs" @select="handleCreate" />
-      </Panel>
+      <div class="sidebar-top">
+        <button class="profile-trigger" @click="profileModalOpen = true">
+          <span class="profile-trigger__icon">🧬</span>
+          <div class="profile-trigger__content">
+            <span class="profile-trigger__label">My Bio-Profile</span>
+            <span class="profile-trigger__sub">Physiology & Conditions</span>
+          </div>
+        </button>
+      </div>
     </template>
     <template #right-sidebar>
       <AIChatPanel />
     </template>
     <section class="studio-grid">
       <Panel ref="timelinePanelRef" title="Timeline" icon="📅">
+        <DateCarousel v-model="selectedDate" />
         <TimelineView
           :items="timeline.items"
           :selected-id="timeline.selectedId"
           :playhead-min="minute"
+          :date-iso="timeline.selectedDate"
+          :day-start-min="dayStartMin"
           @select="handleTimelineSelect"
           @remove="timeline.removeItem"
           @update="handleTimelineMove"
@@ -26,7 +31,17 @@
         <PlayheadBar :minute="minute" />
       </Panel>
 
-      <Panel :title="panelTitle" :icon="panelIcon">
+      <NutritionCarousel
+        v-if="timeline.foodItems.length > 0"
+        class="studio-nutrition"
+        :calories-goal="profiles.nutritionTargets.calories"
+        :calories-total="foodTotals.calories"
+        :macros="macroTotals"
+        :macro-targets="profiles.nutritionTargets.macros"
+        :macros-enabled="profiles.nutritionTargets.macrosEnabled"
+      />
+
+      <Panel title="" :icon="panelIcon">
         <template #toolbar>
           <button
             class="ghost"
@@ -95,6 +110,7 @@
           :series-data="activeGroupSeriesData"
           :playhead-min="minute"
           :interventions="interventionBands"
+          :day-start-min="dayStartMin"
           @playhead="(val) => setMinute(val as Minute)"
         />
       </Panel>
@@ -106,6 +122,16 @@
       @change="handleInspectorChange"
       @close="handleInspectorClose"
     />
+    <AddItemModal
+      v-model="addItemModalOpen"
+      :recents="recentFoods"
+      @select="handleCreate"
+      @select-food="handleFoodSelect"
+    />
+    <UserProfileModal v-model="profileModalOpen" />
+    <button class="studio-fab" type="button" @click="addItemModalOpen = true">
+      ➕ Add Item
+    </button>
   </AppShell>
 </template>
 
@@ -115,15 +141,18 @@ import type { ComponentPublicInstance, ComputedRef } from 'vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import Panel from '@/components/core/Panel.vue';
 import PlayheadBar from '@/components/core/PlayheadBar.vue';
-import InterventionSearch from '@/components/palette/InterventionSearch.vue';
-import InterventionPalette from '@/components/palette/InterventionPalette.vue';
 import ProfilePalette from '@/components/palette/ProfilePalette.vue';
 import TimelineView from '@/components/timeline/TimelineView.vue';
 import SignalChart from '@/components/charts/SignalChart.vue';
 import FloatingInspector from '@/components/inspector/FloatingInspector.vue';
 import AIChatPanel from '@/components/ai/AIChatPanel.vue';
+import NutritionCarousel from '@/components/log/NutritionCarousel.vue';
+import DateCarousel from '@/components/log/DateCarousel.vue';
+import AddItemModal from '@/components/launcher/AddItemModal.vue';
+import UserProfileModal from '@/components/launcher/UserProfileModal.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
+import { useProfilesStore } from '@/stores/profiles';
 import { useMetersStore } from '@/stores/meters';
 import { useEngine } from '@/composables/useEngine';
 import { usePlayhead } from '@/composables/usePlayhead';
@@ -134,6 +163,7 @@ import { useHeatmapStore } from '@/stores/heatmap';
 import { useHeatmap } from '@/composables/useHeatmap';
 import type {
   ChartSeriesSpec,
+  FoodSearchHit,
   InterventionDef,
   MeterKey,
   Minute,
@@ -148,9 +178,43 @@ import { SIGNAL_LIBRARY } from '@/models';
 
 const library = useLibraryStore();
 const timeline = useTimelineStore();
+const profiles = useProfilesStore();
 const metersStore = useMetersStore();
 const heatmapStore = useHeatmapStore();
 const arousalStore = useArousalStore();
+
+// Selected date for day navigation
+const selectedDate = computed({
+  get: () => timeline.selectedDate,
+  set: (val: string) => timeline.setDate(val),
+});
+
+// Day view starts at the wake event's time
+const dayStartMin = computed(() => {
+  const wakeItem = timeline.items.find((it) => it.meta.key === 'wake');
+  if (!wakeItem) return 7 * 60; // Default to 7 AM if no wake event
+  return toMinuteOfDay(wakeItem.start);
+});
+
+const foodTotals = computed(() => timeline.currentFoodTotals);
+const macroTotals = computed(() => ({
+  protein: foodTotals.value.protein,
+  fat: foodTotals.value.fat,
+  carbs: foodTotals.value.carbs,
+}));
+
+// Macro target editing
+const macroFields = [
+  { key: 'protein' as const, label: 'Protein', color: '#22c55e' },
+  { key: 'carbs' as const, label: 'Carbs', color: '#38bdf8' },
+  { key: 'fat' as const, label: 'Fat', color: '#fbbf24' },
+];
+
+const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
+  const current = profiles.nutritionTargets.macros[key];
+  const next = { ...current, [field]: Math.max(0, value) };
+  profiles.updateNutritionTargets({ macros: { ...profiles.nutritionTargets.macros, [key]: next } });
+};
 
 const engine = useEngine();
 const { gridMins, series } = engine;
@@ -161,15 +225,22 @@ useArousal();
 
 const timelinePanelRef = ref<ComponentPublicInstance | null>(null);
 
-const search = ref('');
-const filteredDefs = computed(() =>
-  library.defs.filter((def) => def.label.toLowerCase().includes(search.value.toLowerCase()))
-);
-
 const selectedItem = computed(() => timeline.items.find((item) => item.id === timeline.selectedId));
 const selectedDef = computed(() => library.defs.find((def) => def.key === selectedItem.value?.meta.key));
 const inspectorVisible = ref(false);
 const showChat = ref(false);
+const addItemModalOpen = ref(false);
+const profileModalOpen = ref(false);
+const recentFoods = ref<FoodSearchHit[]>([]);
+
+const handleFoodSelect = (food: FoodSearchHit, quantity: number) => {
+  // Add food at current playhead time on the selected date
+  const startDate = new Date(timeline.selectedDate);
+  startDate.setHours(Math.floor(minute.value / 60), minute.value % 60, 0, 0);
+  timeline.addFood(startDate.toISOString(), food.nutrients, quantity, food.name);
+  // Track recent foods
+  recentFoods.value = [food, ...recentFoods.value.filter(f => f.id !== food.id)].slice(0, 15);
+};
 
 const defaultParams = (def: InterventionDef) =>
   Object.fromEntries(def.params.map((param) => [param.key, param.default ?? 0]));
@@ -380,6 +451,8 @@ const organSeriesSpecs = computed<ChartSeriesSpec[]>(() =>
 const organSeriesData = computed(() => toChartData(heatmapStore.organSeries));
 
 type ChartGroupKey =
+  | 'auto'
+  | 'goals'
   | 'scnCoupling'
   | 'neuroArousal'
   | 'endocrine'
@@ -395,7 +468,7 @@ type ChartGroupKey =
   | 'biomarkers'
   | 'liverKidney';
 
-type RootTabKey = 'physiology' | 'application';
+type RootTabKey = 'goals' | 'auto' | 'physiology' | 'application';
 
 interface ChartGroupInfo {
   physiology: string;
@@ -419,7 +492,57 @@ interface RootTabOption {
   info: string;
 }
 
+const goalSpecs = computed(() => {
+  const goals = profiles.selectedGoals;
+  if (goals.length === 0) return [];
+  const relevantKeys = (Object.values(SIGNAL_LIBRARY) as any[])
+    .filter(sig => sig.goals?.some((g: string) => goals.includes(g)))
+    .map(sig => sig.key as Signal);
+  return buildSpecs(relevantKeys);
+});
+
+const autoSpecs = computed(() => {
+  // Aggregate all signals touched by interventions currently on the timeline
+  const activeInterventionKeys = new Set(timeline.items.map(it => it.meta.key));
+  const signalsToShow = new Set<Signal>();
+
+  activeInterventionKeys.forEach(key => {
+    const def = library.defs.find(d => d.key === key);
+    if (def?.kernels) {
+      Object.keys(def.kernels).forEach(sigKey => signalsToShow.add(sigKey as Signal));
+    }
+  });
+
+  return buildSpecs(Array.from(signalsToShow));
+});
+
 const chartGroups: Record<ChartGroupKey, ChartGroup> = {
+  auto: {
+    key: 'auto',
+    label: 'Timeline Smart View',
+    icon: '🪄',
+    specs: autoSpecs,
+    data: signalSeriesData,
+    info: {
+      physiology:
+        'Analyzes the interventions currently on your timeline and automatically surfaces all biological pathways they are interacting with.',
+      application:
+        'Add items to your day to see their physiological impact reflected here in real-time.',
+    },
+  },
+  goals: {
+    key: 'goals',
+    label: 'Goal Focus',
+    icon: '✨',
+    specs: goalSpecs,
+    data: signalSeriesData,
+    info: {
+      physiology:
+        'Prioritizes physiological signals relevant to your selected health and performance goals from your Bio-Profile.',
+      application:
+        'Your active goals determine which biometrics are surfaced here for monitoring.',
+    },
+  },
   scnCoupling: {
     key: 'scnCoupling',
     label: 'SCN Coupling',
@@ -606,6 +729,20 @@ const chartGroups: Record<ChartGroupKey, ChartGroup> = {
 
 const rootTabOptions: RootTabOption[] = [
   {
+    key: 'goals',
+    label: 'My Goals',
+    icon: '✨',
+    groupKeys: ['goals'],
+    info: 'Personalized view showing signals prioritized by your active goals.',
+  },
+  {
+    key: 'auto',
+    label: 'Auto',
+    icon: '🪄',
+    groupKeys: ['auto'],
+    info: 'Intelligent view that surfaces all signals affected by items currently on your timeline.',
+  },
+  {
     key: 'physiology',
     label: 'Physiology',
     icon: '🧬',
@@ -632,8 +769,10 @@ const rootTabOptions: RootTabOption[] = [
   },
 ];
 
-const activeRootTab = ref<RootTabKey>('physiology');
+const activeRootTab = ref<RootTabKey>('goals');
 const activeGroupByRoot = ref<Record<RootTabKey, ChartGroupKey>>({
+  goals: 'goals',
+  auto: 'auto',
   physiology: 'scnCoupling',
   application: 'clock',
 });
@@ -713,6 +852,120 @@ const interventionBands = computed(() =>
   gap: 1rem;
 }
 
+.studio-nutrition {
+  width: 100%;
+}
+
+.fab-group {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  z-index: 50;
+}
+
+.studio-fab {
+  padding: 0.75rem 1.25rem;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #8fbf5f, #6aa32f);
+  color: black;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+}
+
+.studio-fab--secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.studio-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+}
+
+.targets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field input[type='number'] {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  width: 100%;
+}
+
+.field--switch {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.targets__macros {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.targets__macros.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.targets__macro {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.5rem;
+}
+
+.targets__label {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.targets__inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.targets__inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.targets__inputs input[type='number'] {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  border-radius: 6px;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.9rem;
+}
+
 .split {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -776,5 +1029,57 @@ const interventionBands = computed(() =>
 
 .chart-info-card p:last-child {
   margin-bottom: 0;
+}
+
+.sidebar-top {
+  padding: 1rem;
+}
+
+.profile-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.profile-trigger:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.profile-trigger__icon {
+  font-size: 1.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.profile-trigger__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.profile-trigger__label {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.profile-trigger__sub {
+  font-size: 0.8rem;
+  opacity: 0.5;
 }
 </style>

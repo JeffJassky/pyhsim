@@ -86,8 +86,8 @@ import type {
   Signal,
   SignalDef,
   SignalGroup,
-} from '@/types';
-import { DEFAULT_SUBJECT, getMenstrualHormones } from './subject';
+} from "@/types";
+import { DEFAULT_SUBJECT, getMenstrualHormones } from "./subject";
 
 const MINUTES_IN_DAY = 24 * 60;
 const minutes = (hours: number) => hours * 60;
@@ -103,23 +103,31 @@ const wrapMinute = (minute: Minute) => {
   return m as Minute;
 };
 
-const getDayOfCycle = (minute: Minute, cycleLength: number, startDay: number = 0) => {
+const getDayOfCycle = (
+  minute: Minute,
+  cycleLength: number,
+  startDay: number = 0
+) => {
   // Assuming minute 0 is start of simulation.
   // We need a way to offset this if the user starts mid-cycle.
   // For now, assuming sim start = cycle day 0.
-  const day = Math.floor(minute / MINUTES_IN_DAY) + startDay; 
+  const day = Math.floor(minute / MINUTES_IN_DAY) + startDay;
   return day % cycleLength;
 };
 
-const fnBaseline = (fn: (minute: Minute, ctx: BaselineContext) => number): BaselineSpec => ({
-  kind: 'function',
+const fnBaseline = (
+  fn: (minute: Minute, ctx: BaselineContext) => number
+): BaselineSpec => ({
+  kind: "function",
   fn,
 });
 
 const fixedDelay = (minutesDelay?: number): DelaySpec | undefined =>
-  minutesDelay && minutesDelay > 0 ? { kind: 'fixed', minutes: minutesDelay } : undefined;
+  minutesDelay && minutesDelay > 0
+    ? { kind: "fixed", minutes: minutesDelay }
+    : undefined;
 
-const linear = (gain: number): ResponseSpec => ({ kind: 'linear', gain });
+const linear = (gain: number): ResponseSpec => ({ kind: "linear", gain });
 
 /**
  * Default semantics by signal group
@@ -127,13 +135,13 @@ const linear = (gain: number): ResponseSpec => ({ kind: 'linear', gain });
  * These provide fallback units and ranges when signals don't specify their own.
  * Individual signals should override with specific clinical values where available.
  */
-const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
+const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef["semantics"]> = {
   /**
    * SCN (Suprachiasmatic Nucleus) signals
    * Typically in pg/mL for neuropeptides
    */
   SCN: {
-    unit: 'pg/mL',
+    unit: "pg/mL",
     referenceRange: { min: 0, max: 100 },
     normalized: { mean: 0.5, sd: 0.2 },
     isLatent: true,
@@ -144,7 +152,7 @@ const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
    * This allows interventions to express effects as % changes
    */
   Neuro: {
-    unit: '% baseline',
+    unit: "% baseline",
     referenceRange: { min: 50, max: 150 },
     normalized: { mean: 0.5, sd: 0.2 },
     isLatent: true,
@@ -155,7 +163,7 @@ const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
    * Default to insulin-like units; individual hormones override
    */
   Endocrine: {
-    unit: 'µIU/mL',
+    unit: "µIU/mL",
     referenceRange: { min: 2, max: 20 },
     normalized: { mean: 0.5, sd: 0.2 },
   },
@@ -164,7 +172,7 @@ const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
    * Default to glucose-like units (mg/dL)
    */
   Metabolic: {
-    unit: 'mg/dL',
+    unit: "mg/dL",
     referenceRange: { min: 70, max: 140 },
     normalized: { mean: 0.5, sd: 0.2 },
   },
@@ -173,7 +181,7 @@ const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
    * Various metrics for ANS activity
    */
   Autonomic: {
-    unit: 'HRV index',
+    unit: "HRV index",
     referenceRange: { min: 0.3, max: 0.8 },
     normalized: { mean: 0.5, sd: 0.2 },
   },
@@ -182,7 +190,7 @@ const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
    * 0–100 scale representing self-reported states
    */
   Subjective: {
-    unit: 'score (0-100)',
+    unit: "score (0-100)",
     referenceRange: { min: 0, max: 100 },
     normalized: { mean: 0.5, sd: 0.2 },
     isLatent: true,
@@ -192,7 +200,7 @@ const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
    * -1 to +1 scale for directional effects
    */
   Organ: {
-    unit: 'score (-1 to +1)',
+    unit: "score (-1 to +1)",
     referenceRange: { min: -1, max: 1 },
     normalized: { mean: 0.5, sd: 0.2 },
     isLatent: true,
@@ -201,15 +209,18 @@ const DEFAULT_SEMANTICS: Record<SignalGroup, SignalDef['semantics']> = {
 
 export const SIGNAL_DEFS: SignalDef[] = [
   {
-    key: 'melatonin',
-    label: 'Melatonin',
-    group: 'SCN',
+    key: "melatonin",
+    label: "Melatonin",
+    group: "SCN",
     semantics: DEFAULT_SEMANTICS.SCN,
     description: {
-      physiology: 'Pineal hormone rising after dusk to broadcast biological night and align peripheral clocks.',
-      application: 'Track whether light hygiene or supplementation is shifting sleep onset / circadian phase.',
+      physiology:
+        "Pineal hormone rising after dusk to broadcast biological night and align peripheral clocks.",
+      application:
+        "Track whether light hygiene or supplementation is shifting sleep onset / circadian phase.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["sleep", "recovery", "calm"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const rise = sigmoid((m - minutes(15)) / 30);
@@ -217,18 +228,24 @@ export const SIGNAL_DEFS: SignalDef[] = [
       // Peak ~80 pg/mL
       return 80.0 * Math.max(0, rise - fall);
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'vasopressin',
-    label: 'Vasopressin',
-    group: 'SCN',
-    semantics: { ...DEFAULT_SEMANTICS.SCN, referenceRange: { min: 0, max: 10 } },
-    description: {
-      physiology: 'SCN shell neurons release AVP to keep clock cells phase-locked and to gate downstream endocrine outputs.',
-      application: 'Watch AVP when assessing circadian robustness against travel, shift work, or dehydration.',
+    key: "vasopressin",
+    label: "Vasopressin",
+    group: "SCN",
+    semantics: {
+      ...DEFAULT_SEMANTICS.SCN,
+      referenceRange: { min: 0, max: 10 },
     },
-    display: { tendency: 'mid' },
+    description: {
+      physiology:
+        "SCN shell neurons release AVP to keep clock cells phase-locked and to gate downstream endocrine outputs.",
+      application:
+        "Watch AVP when assessing circadian robustness against travel, shift work, or dehydration.",
+    },
+    display: { tendency: "mid" },
+    goals: ["sleep", "recovery"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const couple = gaussian(m, 8, 260);
@@ -236,62 +253,80 @@ export const SIGNAL_DEFS: SignalDef[] = [
       // Baseline ~2, Peak ~6 pg/mL
       return 1.8 + 3.5 * couple + 3.5 * nightRise;
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'vip',
-    label: 'VIP',
-    group: 'SCN',
-    semantics: { ...DEFAULT_SEMANTICS.SCN, referenceRange: { min: 0, max: 100 } }, // a.u. really, but let's match scale
+    key: "vip",
+    label: "VIP",
+    group: "SCN",
+    semantics: {
+      ...DEFAULT_SEMANTICS.SCN,
+      referenceRange: { min: 0, max: 100 },
+    }, // a.u. really, but let's match scale
     description: {
-      physiology: 'VIP neurons in the SCN core translate retinal light input into synchronized clock gene expression.',
-      application: 'Morning light therapy should sharpen VIP peaks; use this to validate zeitgeber timing.',
+      physiology:
+        "VIP neurons in the SCN core translate retinal light input into synchronized clock gene expression.",
+      application:
+        "Morning light therapy should sharpen VIP peaks; use this to validate zeitgeber timing.",
     },
-    display: { tendency: 'mid' },
+    display: { tendency: "mid" },
+    goals: ["energy", "sleep"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const day = gaussian(m, 9, 300);
       const eveningSuppress = sigmoid((m - minutes(15)) / 35);
       return 20.0 + 50.0 * day - 25.0 * eveningSuppress;
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'dopamine',
-    label: 'Dopamine',
-    group: 'Neuro',
+    key: "dopamine",
+    label: "Dopamine",
+    group: "Neuro",
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
-      physiology: 'Midbrain dopamine tracks reward prediction and energizes goal-directed behavior.',
-      application: 'Map stimulant use, novelty, or movement to dopamine tone to avoid overdriving motivation.',
+      physiology:
+        "Midbrain dopamine tracks reward prediction and energizes goal-directed behavior.",
+      application:
+        "Map stimulant use, novelty, or movement to dopamine tone to avoid overdriving motivation.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["focus", "energy", "mood"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const morningDrive = gaussian(m, 3.5, 160);
       const afternoonPlateau = gaussian(m, 6.5, 320);
       const eveningDrop = gaussian(m, 16, 200);
-      return 20.0 + 45.0 * morningDrive + 20.0 * afternoonPlateau - 15.0 * eveningDrop;
+      return (
+        20.0 +
+        45.0 * morningDrive +
+        20.0 * afternoonPlateau -
+        15.0 * eveningDrop
+      );
     }),
     couplings: [
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(0.5), // Cortisol (20) -> +10 units
-        description: 'Moderate cortisol supports dopaminergic tone through catecholamine availability.',
+        description:
+          "Moderate cortisol supports dopaminergic tone through catecholamine availability.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'serotonin',
-    label: 'Serotonin',
-    group: 'Neuro',
+    key: "serotonin",
+    label: "Serotonin",
+    group: "Neuro",
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
-      physiology: 'Raphe serotonin integrates light exposure, carbohydrate intake, and mood stability.',
-      application: 'Use to gauge whether daylight, meals, or SSRIs are creating the calm/upbeat baseline you want.',
+      physiology:
+        "Raphe serotonin integrates light exposure, carbohydrate intake, and mood stability.",
+      application:
+        "Use to gauge whether daylight, meals, or SSRIs are creating the calm/upbeat baseline you want.",
     },
-    display: { tendency: 'mid' },
+    display: { tendency: "mid" },
+    goals: ["mood", "calm", "sleep"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const lateMorning = gaussian(m, 5, 260);
@@ -300,48 +335,56 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'vip',
+        source: "vip",
         mapping: linear(0.3), // VIP (50) -> +15 units
-        description: 'SCN VIP input stabilizes raphe serotonin phase.',
+        description: "SCN VIP input stabilizes raphe serotonin phase.",
       },
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(-0.5), // Cortisol (20) -> -10 units
-        description: 'Elevated cortisol dampens serotonin synthesis via tryptophan shunting.',
+        description:
+          "Elevated cortisol dampens serotonin synthesis via tryptophan shunting.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'acetylcholine',
-    label: 'Acetylcholine',
-    group: 'Neuro',
+    key: "acetylcholine",
+    label: "Acetylcholine",
+    group: "Neuro",
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
-      physiology: 'Basal-forebrain cholinergic tone sharpens attention and supports REM consolidation.',
-      application: 'Track focus blocks, nicotine, or meditation to see how they sustain precision without overloading.',
+      physiology:
+        "Basal-forebrain cholinergic tone sharpens attention and supports REM consolidation.",
+      application:
+        "Track focus blocks, nicotine, or meditation to see how they sustain precision without overloading.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["focus", "energy"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const dawnPriming = sigmoid((m - minutes(1.5)) / 35);
       const middayPlateau = gaussian(m, 6.5, 320);
       const eveningDrop = sigmoid((m - minutes(14.5)) / 45);
-      const tone = 25.0 + 45.0 * dawnPriming + 35.0 * middayPlateau - 30.0 * eveningDrop;
+      const tone =
+        25.0 + 45.0 * dawnPriming + 35.0 * middayPlateau - 30.0 * eveningDrop;
       return Math.max(5.0, tone);
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'gaba',
-    label: 'GABA',
-    group: 'Neuro',
+    key: "gaba",
+    label: "GABA",
+    group: "Neuro",
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
-      physiology: 'Inhibitory GABA tone accumulates with sleep pressure and damps sympathetic overdrive.',
-      application: 'Check whether relaxation, breathwork, or evening routines are lifting GABA enough for sleep.',
+      physiology:
+        "Inhibitory GABA tone accumulates with sleep pressure and damps sympathetic overdrive.",
+      application:
+        "Check whether relaxation, breathwork, or evening routines are lifting GABA enough for sleep.",
     },
-    display: { tendency: 'mid' },
+    display: { tendency: "mid" },
+    goals: ["calm", "sleep", "recovery"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const evening = sigmoid((m - minutes(14)) / 45);
@@ -350,41 +393,52 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'adrenaline',
+        source: "adrenaline",
         mapping: linear(-0.3), // Adrenaline (20-500 pg/mL) -> GABA at 100 baseline produces -30 pg/mL
-        description: 'GABA-mediated parasympathetic tone restrains adrenergic surges.',
+        description:
+          "GABA-mediated parasympathetic tone restrains adrenergic surges.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'norepi',
-    label: 'Norepinephrine',
-    group: 'Neuro',
-    semantics: { ...DEFAULT_SEMANTICS.Neuro, unit: 'pg/mL', referenceRange: { min: 100, max: 600 } },
-    description: {
-      physiology: 'Locus coeruleus norepinephrine sets sympathetic vigilance and readiness to respond.',
-      application: 'Use to titrate stimulant dosage or monitor stress spikes from work, caffeine, or alarms.',
+    key: "norepi",
+    label: "Norepinephrine",
+    group: "Neuro",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Neuro,
+      unit: "pg/mL",
+      referenceRange: { min: 100, max: 600 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Locus coeruleus norepinephrine sets sympathetic vigilance and readiness to respond.",
+      application:
+        "Use to titrate stimulant dosage or monitor stress spikes from work, caffeine, or alarms.",
+    },
+    display: { tendency: "higher" },
+    goals: ["focus", "energy"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const alertness = gaussian(m, 2, 120) + 0.4 * gaussian(m, 7, 200);
       // Scale to pg/mL range: baseline ~150, peak ~400
       return 150.0 + 250.0 * alertness;
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'histamine',
-    label: 'Histamine',
-    group: 'Neuro',
+    key: "histamine",
+    label: "Histamine",
+    group: "Neuro",
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
-      physiology: 'TMN histamine neurons maintain wake maintenance and cortical activation.',
-      application: 'Anti-histamines, allergy load, or bright light show up here—useful for troubleshooting grogginess.',
+      physiology:
+        "TMN histamine neurons maintain wake maintenance and cortical activation.",
+      application:
+        "Anti-histamines, allergy load, or bright light show up here—useful for troubleshooting grogginess.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["energy", "sleep"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const wake = sigmoid((m - minutes(1)) / 35);
@@ -395,68 +449,83 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'melatonin',
+        source: "melatonin",
         mapping: linear(-0.3), // Melatonin (80) -> -24 units
         delay: fixedDelay(20),
-        description: 'Nocturnal melatonin suppresses TMN histamine neurons to permit sleep maintenance.',
+        description:
+          "Nocturnal melatonin suppresses TMN histamine neurons to permit sleep maintenance.",
       },
       {
-        source: 'vip',
+        source: "vip",
         mapping: linear(0.2), // VIP (50) -> +10 units
-        description: 'VIP signaling from the SCN core excites histaminergic tone to reinforce daytime wakefulness.',
+        description:
+          "VIP signaling from the SCN core excites histaminergic tone to reinforce daytime wakefulness.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'orexin',
-    label: 'Orexin',
-    group: 'Neuro',
-    semantics: { ...DEFAULT_SEMANTICS.Neuro, unit: 'pg/mL', referenceRange: { min: 200, max: 500 } },
-    description: {
-      physiology: 'Hypothalamic orexin links energy status and feeding cues to sustained wake drive.',
-      application: 'See how sleep, fasting, or carbs influence orexin so you can balance alertness with appetite.',
+    key: "orexin",
+    label: "Orexin",
+    group: "Neuro",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Neuro,
+      unit: "pg/mL",
+      referenceRange: { min: 200, max: 500 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Hypothalamic orexin links energy status and feeding cues to sustained wake drive.",
+      application:
+        "See how sleep, fasting, or carbs influence orexin so you can balance alertness with appetite.",
+    },
+    display: { tendency: "higher" },
+    goals: ["energy", "sleep", "digestion"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const wakeDrive = sigmoid((m - minutes(1.8)) / 30);
       const feedingCue = gaussian(m, 4.5, 160) + 0.6 * gaussian(m, 8.5, 280);
       const sleepPressure = sigmoid((m - minutes(15)) / 45);
       // Scale to CSF pg/mL range: baseline ~250, peak ~450
-      const tone = 250.0 + 150.0 * wakeDrive + 80.0 * feedingCue - 100.0 * sleepPressure;
+      const tone =
+        250.0 + 150.0 * wakeDrive + 80.0 * feedingCue - 100.0 * sleepPressure;
       return Math.max(150.0, tone);
     }),
     couplings: [
       {
-        source: 'melatonin',
+        source: "melatonin",
         mapping: linear(-0.4), // Melatonin (80) -> -32 units
         delay: fixedDelay(30),
-        description: 'Melatonin inhibits hypothalamic orexin neurons, lowering wake pressure at night.',
+        description:
+          "Melatonin inhibits hypothalamic orexin neurons, lowering wake pressure at night.",
       },
       {
-        source: 'ghrelin',
+        source: "ghrelin",
         mapping: linear(0.05), // Ghrelin (500) -> +25 units
-        description: 'Ghrelin stimulates orexin to couple hunger with arousal.',
+        description: "Ghrelin stimulates orexin to couple hunger with arousal.",
       },
       {
-        source: 'dopamine',
+        source: "dopamine",
         mapping: linear(0.3), // Dopamine (50) -> +15 units
-        description: 'Mesolimbic dopamine reinforces orexin firing during motivated states.',
+        description:
+          "Mesolimbic dopamine reinforces orexin firing during motivated states.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'glutamate',
-    label: 'Glutamate',
-    group: 'Neuro',
+    key: "glutamate",
+    label: "Glutamate",
+    group: "Neuro",
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
-      physiology: 'Primary excitatory transmitter carrying cortical throughput and learning plasticity.',
-      application: 'High glutamate reflects cognitively intense work or stress; use to pace deep work vs. recovery blocks.',
+      physiology:
+        "Primary excitatory transmitter carrying cortical throughput and learning plasticity.",
+      application:
+        "High glutamate reflects cognitively intense work or stress; use to pace deep work vs. recovery blocks.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["focus", "energy"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const focusBand = gaussian(m, 7, 260);
@@ -464,18 +533,21 @@ export const SIGNAL_DEFS: SignalDef[] = [
       const tone = 25.0 + 55.0 * focusBand - 25.0 * eveningDecline;
       return Math.max(5.0, tone);
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'endocannabinoid',
-    label: 'Endocannabinoid Tone',
-    group: 'Neuro',
+    key: "endocannabinoid",
+    label: "Endocannabinoid Tone",
+    group: "Neuro",
     semantics: DEFAULT_SEMANTICS.Neuro,
     description: {
-      physiology: 'Endocannabinoids act as retrograde messengers buffering stress, pain, and appetite signals.',
-      application: 'Exercise, fasting, or cannabis use alters this curve—track to understand cravings and calm responses.',
+      physiology:
+        "Endocannabinoids act as retrograde messengers buffering stress, pain, and appetite signals.",
+      application:
+        "Exercise, fasting, or cannabis use alters this curve—track to understand cravings and calm responses.",
     },
-    display: { tendency: 'mid' },
+    display: { tendency: "mid" },
+    goals: ["calm", "pain", "mood"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const afternoonEase = sigmoid((m - minutes(10.5)) / 55);
@@ -484,23 +556,31 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'serotonin',
+        source: "serotonin",
         mapping: linear(0.05),
-        description: 'Serotonergic input modulates endocannabinoid tone during mood regulation.',
+        description:
+          "Serotonergic input modulates endocannabinoid tone during mood regulation.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'cortisol',
-    label: 'Cortisol',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ug/dL', referenceRange: { min: 5, max: 25 } },
-    description: {
-      physiology: 'Adrenal glucocorticoid governing energy mobilization and stress response.',
-      application: 'Check the Cortisol Awakening Response (CAR) and evening decline to assess HPA axis health.',
+    key: "cortisol",
+    label: "Cortisol",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ug/dL",
+      referenceRange: { min: 5, max: 25 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Adrenal glucocorticoid governing energy mobilization and stress response.",
+      application:
+        "Check the Cortisol Awakening Response (CAR) and evening decline to assess HPA axis health.",
+    },
+    display: { tendency: "higher" },
+    goals: ["energy", "recovery"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       // Cortisol Awakening Response (CAR) peak around 07:30
@@ -511,94 +591,122 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'orexin',
+        source: "orexin",
         mapping: linear(0.2),
-        description: 'Orexin neurons activate the HPA axis, boosting ACTH and cortisol.',
+        description:
+          "Orexin neurons activate the HPA axis, boosting ACTH and cortisol.",
       },
       {
-        source: 'melatonin',
+        source: "melatonin",
         mapping: linear(-0.14),
         delay: fixedDelay(45),
-        description: 'Melatonin feeds back on the HPA axis, suppressing nocturnal cortisol.',
+        description:
+          "Melatonin feeds back on the HPA axis, suppressing nocturnal cortisol.",
       },
       {
-        source: 'gaba',
+        source: "gaba",
         mapping: linear(-0.09),
-        description: 'GABAergic tone inhibits CRH release, blunting cortisol bursts.',
+        description:
+          "GABAergic tone inhibits CRH release, blunting cortisol bursts.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'adrenaline',
-    label: 'Adrenaline',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'pg/mL', referenceRange: { min: 20, max: 500 } },
-    description: {
-      physiology: 'Adrenal medulla epinephrine delivers acute fight-or-flight energy and bronchodilation.',
-      application: 'Ensure workouts or cold exposure create sharp spikes with clean recoveries instead of chronic elevation.',
+    key: "adrenaline",
+    label: "Adrenaline",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "pg/mL",
+      referenceRange: { min: 20, max: 500 },
     },
-    display: { tendency: 'higher' },
-    baseline: fnBaseline((minute) => 30.0 + 80.0 * gaussian(wrapMinute(minute), 2, 120)),
+    description: {
+      physiology:
+        "Adrenal medulla epinephrine delivers acute fight-or-flight energy and bronchodilation.",
+      application:
+        "Ensure workouts or cold exposure create sharp spikes with clean recoveries instead of chronic elevation.",
+    },
+    display: { tendency: "higher" },
+    goals: ["energy", "calm"],
+    baseline: fnBaseline(
+      (minute) => 30.0 + 80.0 * gaussian(wrapMinute(minute), 2, 120)
+    ),
     couplings: [
       {
-        source: 'orexin',
+        source: "orexin",
         mapping: linear(2.0),
-        description: 'Orexin drives sympathetic preganglionic neurons, elevating epinephrine.',
+        description:
+          "Orexin drives sympathetic preganglionic neurons, elevating epinephrine.",
       },
       {
-        source: 'dopamine',
+        source: "dopamine",
         mapping: linear(1.0),
-        description: 'Dopamine facilitates adrenal medulla output during reward-driven arousal.',
+        description:
+          "Dopamine facilitates adrenal medulla output during reward-driven arousal.",
       },
       {
-        source: 'gaba',
+        source: "gaba",
         mapping: linear(-1.5),
-        description: 'GABA-mediated parasympathetic tone restrains adrenergic surges.',
+        description:
+          "GABA-mediated parasympathetic tone restrains adrenergic surges.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'insulin',
-    label: 'Insulin',
-    group: 'Endocrine',
+    key: "insulin",
+    label: "Insulin",
+    group: "Endocrine",
     semantics: DEFAULT_SEMANTICS.Endocrine,
     description: {
-      physiology: 'Pancreatic beta-cell insulin clears glucose into muscle, liver, and fat stores.',
-      application: 'Use to test meal composition, exercise, or meds that improve insulin sensitivity and flatten peaks.',
+      physiology:
+        "Pancreatic beta-cell insulin clears glucose into muscle, liver, and fat stores.",
+      application:
+        "Use to test meal composition, exercise, or meds that improve insulin sensitivity and flatten peaks.",
     },
-    display: { tendency: 'neutral' },
+    display: { tendency: "neutral" },
+    goals: ["digestion", "energy"],
     baseline: fnBaseline(() => 5.0),
     couplings: [
       {
-        source: 'orexin',
+        source: "orexin",
         mapping: linear(0.15), // Orexin (100) -> +15 uIU/mL
-        description: 'Orexin enhances vagal drive to beta cells, boosting insulin.',
+        description:
+          "Orexin enhances vagal drive to beta cells, boosting insulin.",
       },
       {
-        source: 'glucagon',
+        source: "glucagon",
         mapping: linear(-0.05),
-        description: 'Glucagon opposes insulin secretion through intra-islet feedback.',
+        description:
+          "Glucagon opposes insulin secretion through intra-islet feedback.",
       },
       {
-        source: 'dopamine',
+        source: "dopamine",
         mapping: linear(0.1), // Dopamine (100) -> +10 uIU/mL
-        description: 'Pancreatic dopamine augments first-phase insulin release.',
+        description:
+          "Pancreatic dopamine augments first-phase insulin release.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'glucagon',
-    label: 'Glucagon',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'pg/mL', referenceRange: { min: 50, max: 150 } },
-    description: {
-      physiology: 'Alpha-cell glucagon releases stored glucose and stimulates ketogenesis during fasting.',
-      application: 'Extended fasting or endurance sessions should elevate glucagon; use this to plan refuel windows.',
+    key: "glucagon",
+    label: "Glucagon",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "pg/mL",
+      referenceRange: { min: 50, max: 150 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Alpha-cell glucagon releases stored glucose and stimulates ketogenesis during fasting.",
+      application:
+        "Extended fasting or endurance sessions should elevate glucagon; use this to plan refuel windows.",
+    },
+    display: { tendency: "higher" },
+    goals: ["digestion", "energy"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const nocturnal = gaussian(m, 23, 160) + 0.8 * gaussian(m, 1.5, 220);
@@ -608,28 +716,36 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'insulin',
+        source: "insulin",
         mapping: linear(-0.5),
-        description: 'Paracrine insulin suppresses alpha-cell glucagon.',
+        description: "Paracrine insulin suppresses alpha-cell glucagon.",
       },
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(2.0),
-        description: 'Cortisol promotes gluconeogenesis and glucagon secretion during stress.',
+        description:
+          "Cortisol promotes gluconeogenesis and glucagon secretion during stress.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'ghrelin',
-    label: 'Ghrelin',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'pg/mL', referenceRange: { min: 200, max: 800 } },
-    description: {
-      physiology: 'Stomach-derived ghrelin pulses ahead of meals to trigger hunger and growth hormone release.',
-      application: 'Time meals, protein, or fiber to blunt unwanted appetite spikes shown here.',
+    key: "ghrelin",
+    label: "Ghrelin",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "pg/mL",
+      referenceRange: { min: 200, max: 800 },
     },
-    display: { tendency: 'mid' },
+    description: {
+      physiology:
+        "Stomach-derived ghrelin pulses ahead of meals to trigger hunger and growth hormone release.",
+      application:
+        "Time meals, protein, or fiber to blunt unwanted appetite spikes shown here.",
+    },
+    display: { tendency: "mid" },
+    goals: ["digestion"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const breakfast = gaussian(m, 3, 90);
@@ -640,33 +756,42 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'leptin',
+        source: "leptin",
         mapping: linear(-15.0), // Leptin (10) -> -150 pg/mL
-        description: 'Adipose leptin suppresses gastric ghrelin secretion to signal fullness.',
+        description:
+          "Adipose leptin suppresses gastric ghrelin secretion to signal fullness.",
       },
       {
-        source: 'insulin',
+        source: "insulin",
         mapping: linear(-2.0), // Insulin (30) -> -60 pg/mL
-        description: 'Post-meal insulin blunts ghrelin release for 2–3 hours.',
+        description: "Post-meal insulin blunts ghrelin release for 2–3 hours.",
       },
       {
-        source: 'progesterone',
+        source: "progesterone",
         mapping: linear(20.0), // Progesterone (10) -> +200 pg/mL
-        description: 'Progesterone rise in the luteal phase increases appetite baseline.',
+        description:
+          "Progesterone rise in the luteal phase increases appetite baseline.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'glp1',
-    label: 'GLP-1',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'pmol/L', referenceRange: { min: 2, max: 20 } },
-    description: {
-      physiology: 'Gut incretin GLP-1 enhances insulin secretion and slows gastric emptying to prolong satiety.',
-      application: 'Fiber, protein, or GLP-1 agonists should raise this curve—useful when coaching appetite control.',
+    key: "glp1",
+    label: "GLP-1",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "pmol/L",
+      referenceRange: { min: 2, max: 20 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Gut incretin GLP-1 enhances insulin secretion and slows gastric emptying to prolong satiety.",
+      application:
+        "Fiber, protein, or GLP-1 agonists should raise this curve—useful when coaching appetite control.",
+    },
+    display: { tendency: "higher" },
+    goals: ["digestion"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const bk = gaussian(m, 3.2, 70);
@@ -677,56 +802,75 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'insulin',
+        source: "insulin",
         mapping: linear(0.02), // Insulin (30) -> +0.6 pmol/L
-        description: 'Beta-cell activity correlates with incretin release during nutrient intake.',
+        description:
+          "Beta-cell activity correlates with incretin release during nutrient intake.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'leptin',
-    label: 'Leptin',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ng/mL', referenceRange: { min: 2, max: 30 } },
-    description: {
-      physiology: 'Adipose leptin reports long-term energy sufficiency to the hypothalamus.',
-      application: 'Sleep restriction or crash dieting should not chronically suppress leptin if you want stable metabolism.',
+    key: "leptin",
+    label: "Leptin",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ng/mL",
+      referenceRange: { min: 2, max: 30 },
     },
-    display: { tendency: 'higher' },
-    baseline: fnBaseline((minute) => 6.0 + 5.0 * sigmoid((wrapMinute(minute) - minutes(10)) / 120)),
+    description: {
+      physiology:
+        "Adose leptin reports long-term energy sufficiency to the hypothalamus.",
+      application:
+        "Sleep restriction or crash dieting should not chronically suppress leptin if you want stable metabolism.",
+    },
+    display: { tendency: "higher" },
+    goals: ["digestion", "energy"],
+    baseline: fnBaseline(
+      (minute) => 6.0 + 5.0 * sigmoid((wrapMinute(minute) - minutes(10)) / 120)
+    ),
     couplings: [
       {
-        source: 'insulin',
+        source: "insulin",
         mapping: linear(0.05), // Insulin (30) -> +1.5 ng/mL
         delay: fixedDelay(60),
-        description: 'Post-prandial insulin stimulates adipocytes to raise leptin expression.',
+        description:
+          "Post-prandial insulin stimulates adipocytes to raise leptin expression.",
       },
       {
-        source: 'glucagon',
+        source: "glucagon",
         mapping: linear(-0.05), // Glucagon (100) -> -5 ng/mL
-        description: 'Glucagon-driven lipolysis transiently lowers leptin signal.',
+        description:
+          "Glucagon-driven lipolysis transiently lowers leptin signal.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'thyroid',
-    label: 'Thyroid Tone',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'uIU/mL', referenceRange: { min: 0.5, max: 5.0 } },
-    description: {
-      physiology: 'Thyroid hormones set basal metabolic rate and temperature compensation.',
-      application: 'Monitor under chronic stress or dieting to avoid metabolic slowdown.',
+    key: "thyroid",
+    label: "Thyroid Tone",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "uIU/mL",
+      referenceRange: { min: 0.5, max: 5.0 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Thyroid hormones set basal metabolic rate and temperature compensation.",
+      application:
+        "Monitor under chronic stress or dieting to avoid metabolic slowdown.",
+    },
+    display: { tendency: "higher" },
+    goals: ["energy", "recovery"],
     baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
       const ramp = sigmoid((m - minutes(2.5)) / 80);
       const midday = gaussian(m, 7.5, 360);
       const nightDip = gaussian(m, 16.5, 300);
       let tone = 1.0 + 2.0 * ramp + 1.5 * midday - 1.2 * nightDip;
-      
+
       // Scale by metabolic capacity if available (default 1.0)
       const scale = ctx.physiology?.metabolicCapacity ?? 1.0;
       tone *= scale;
@@ -735,28 +879,35 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(-0.08), // Cortisol (20) -> -1.6 uIU/mL
-        description: 'Chronic cortisol suppresses TSH, lowering thyroid tone.',
+        description: "Chronic cortisol suppresses TSH, lowering thyroid tone.",
       },
       {
-        source: 'leptin',
+        source: "leptin",
         mapping: linear(0.1), // Leptin (10) -> +1.0 uIU/mL
-        description: 'Adequate leptin supports TRH/TSH drive to the thyroid.',
+        description: "Adequate leptin supports TRH/TSH drive to the thyroid.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'oxytocin',
-    label: 'Oxytocin',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'pg/mL', referenceRange: { min: 1, max: 10 } },
-    description: {
-      physiology: 'Hypothalamic oxytocin fosters bonding, trust, and parasympathetic activation.',
-      application: 'Social rituals, skin contact, or breathwork should raise oxytocin when emotional regulation is the goal.',
+    key: "oxytocin",
+    label: "Oxytocin",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "pg/mL",
+      referenceRange: { min: 1, max: 10 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Hypothalamic oxytocin fosters bonding, trust, and parasympathetic activation.",
+      application:
+        "Social rituals, skin contact, or breathwork should raise oxytocin when emotional regulation is the goal.",
+    },
+    display: { tendency: "higher" },
+    goals: ["mood", "calm", "pain"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const social = gaussian(m, 10, 260);
@@ -765,28 +916,37 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'endocannabinoid',
+        source: "endocannabinoid",
         mapping: linear(0.04), // Endocannabinoid (% baseline, ~50-150) -> +2 to +6 pg/mL oxytocin
-        description: 'Endocannabinoid tone modulates oxytocin release during stress buffering.',
+        description:
+          "Endocannabinoid tone modulates oxytocin release during stress buffering.",
       },
       {
-        source: 'serotonin',
+        source: "serotonin",
         mapping: linear(0.06), // Serotonin (50) -> +3 pg/mL
-        description: 'Serotonin facilitates oxytocin release in social bonding contexts.',
+        description:
+          "Serotonin facilitates oxytocin release in social bonding contexts.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'prolactin',
-    label: 'Prolactin',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ng/mL', referenceRange: { min: 2, max: 20 } },
-    description: {
-      physiology: 'Pituitary prolactin surges during sleep and caregiving, supporting immune balance and recovery.',
-      application: 'Evening relaxation, heat, or intimacy sessions should allow the nightly prolactin crest to form.',
+    key: "prolactin",
+    label: "Prolactin",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ng/mL",
+      referenceRange: { min: 2, max: 20 },
     },
-    display: { tendency: 'mid' },
+    description: {
+      physiology:
+        "Pituitary prolactin surges during sleep and caregiving, supporting immune balance and recovery.",
+      application:
+        "Evening relaxation, heat, or intimacy sessions should allow the nightly prolactin crest to form.",
+    },
+    display: { tendency: "mid" },
+    goals: ["recovery", "sleep"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const prep = sigmoid((m - minutes(13.5)) / 50);
@@ -795,28 +955,37 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'gaba',
+        source: "gaba",
         mapping: linear(0.05), // GABA (50) -> +2.5 ng/mL
-        description: 'GABAergic inhibition of tuberoinfundibular dopamine disinhibits prolactin.',
+        description:
+          "GABAergic inhibition of tuberoinfundibular dopamine disinhibits prolactin.",
       },
       {
-        source: 'dopamine',
+        source: "dopamine",
         mapping: linear(-0.1), // Dopamine (50) -> -5 ng/mL (Strong inhibition)
-        description: 'Hypothalamic dopamine tonically suppresses prolactin secretion.',
+        description:
+          "Hypothalamic dopamine tonically suppresses prolactin secretion.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'growthHormone',
-    label: 'Growth Hormone',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ng/mL', referenceRange: { min: 0, max: 10 } },
-    description: {
-      physiology: 'Growth hormone pulses shortly after sleep onset to drive protein synthesis and tissue repair.',
-      application: 'Hard training and good sleep hygiene should amplify this peak—use to evaluate recovery plans.',
+    key: "growthHormone",
+    label: "Growth Hormone",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ng/mL",
+      referenceRange: { min: 0, max: 10 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Growth hormone pulses shortly after sleep onset to drive protein synthesis and tissue repair.",
+      application:
+        "Hard training and good sleep hygiene should amplify this peak—use to evaluate recovery plans.",
+    },
+    display: { tendency: "higher" },
+    goals: ["recovery", "energy"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const sleepOnset = gaussian(m, 18.5, 120);
@@ -826,76 +995,94 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'gaba',
+        source: "gaba",
         mapping: linear(0.04), // GABA (50) -> +2 ng/mL
-        description: 'Sleep-related GABA increases GHRH release and growth hormone pulses.',
+        description:
+          "Sleep-related GABA increases GHRH release and growth hormone pulses.",
       },
       {
-        source: 'ghrelin',
+        source: "ghrelin",
         mapping: linear(0.01), // Ghrelin (400) -> +4 ng/mL
-        description: 'Ghrelin directly stimulates somatotrophs, boosting growth hormone.',
+        description:
+          "Ghrelin directly stimulates somatotrophs, boosting growth hormone.",
       },
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(-0.15), // Cortisol (20) -> -3 ng/mL
-        description: 'High cortisol suppresses growth hormone secretion.',
+        description: "High cortisol suppresses growth hormone secretion.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'glucose',
-    label: 'Glucose',
-    group: 'Metabolic',
+    key: "glucose",
+    label: "Glucose",
+    group: "Metabolic",
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
-      physiology: 'Glucose tracks immediate carbohydrate availability for the brain and muscles.',
-      application: 'Make sure fueling or fasting tactics keep glucose within the range that matches your goals.',
+      physiology:
+        "Glucose tracks immediate carbohydrate availability for the brain and muscles.",
+      application:
+        "Make sure fueling or fasting tactics keep glucose within the range that matches your goals.",
     },
-    display: { tendency: 'mid' },
+    display: { tendency: "mid" },
+    goals: ["energy", "digestion"],
     baseline: fnBaseline(() => 85.0),
     couplings: [
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(0.5),
-        description: 'Cortisol stimulates hepatic gluconeogenesis, raising glucose.',
+        description:
+          "Cortisol stimulates hepatic gluconeogenesis, raising glucose.",
       },
       {
-        source: 'adrenaline',
+        source: "adrenaline",
         mapping: linear(0.05),
-        description: 'Adrenaline drives glycogenolysis, elevating glucose acutely.',
+        description:
+          "Adrenaline drives glycogenolysis, elevating glucose acutely.",
       },
       {
-        source: 'insulin',
+        source: "insulin",
         mapping: linear(-1.5),
-        description: 'Insulin clears glucose into tissues, lowering circulating levels.',
+        description:
+          "Insulin clears glucose into tissues, lowering circulating levels.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'oxygen',
-    label: 'Oxygen Delivery',
-    group: 'Metabolic',
+    key: "oxygen",
+    label: "Oxygen Delivery",
+    group: "Metabolic",
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
-      physiology: 'Cerebral and systemic oxygen delivery driven by blood flow and respiratory efficiency.',
-      application: 'Track how aerobic exercise, breathwork, and certain nootropics support brain fuel delivery.',
+      physiology:
+        "Cerebral and systemic oxygen delivery driven by blood flow and respiratory efficiency.",
+      application:
+        "Track how aerobic exercise, breathwork, and certain nootropics support brain fuel delivery.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["energy", "focus"],
     baseline: fnBaseline(() => 50.0),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'ketone',
-    label: 'Ketone / FFA',
-    group: 'Metabolic',
-    semantics: { ...DEFAULT_SEMANTICS.Metabolic, unit: 'mmol/L', referenceRange: { min: 0.1, max: 5.0 } },
-    description: {
-      physiology: 'Ketone and free fatty acid levels reflect reliance on fat oxidation during fasting or low insulin states.',
-      application: 'Use to confirm fasting, low-carb diets, or cold exposure are shifting you toward fat metabolism.',
+    key: "ketone",
+    label: "Ketone / FFA",
+    group: "Metabolic",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Metabolic,
+      unit: "mmol/L",
+      referenceRange: { min: 0.1, max: 5.0 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Ketone and free fatty acid levels reflect reliance on fat oxidation during fasting or low insulin states.",
+      application:
+        "Use to confirm fasting, low-carb diets, or cold exposure are shifting you toward fat metabolism.",
+    },
+    display: { tendency: "higher" },
+    goals: ["energy", "digestion"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const overnight = gaussian(m, 19.5, 400) + gaussian(m, 22.5, 260);
@@ -906,77 +1093,88 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'glucagon',
+        source: "glucagon",
         mapping: linear(0.02),
-        description: 'Glucagon promotes lipolysis and ketogenesis during fasting.',
+        description:
+          "Glucagon promotes lipolysis and ketogenesis during fasting.",
       },
       {
-        source: 'insulin',
+        source: "insulin",
         mapping: linear(-0.05),
-        description: 'Insulin suppresses ketone production by inhibiting lipolysis.',
+        description:
+          "Insulin suppresses ketone production by inhibiting lipolysis.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'energy',
-    label: 'Energy',
-    group: 'Subjective',
+    key: "energy",
+    label: "Energy",
+    group: "Subjective",
     semantics: DEFAULT_SEMANTICS.Subjective,
     description: {
-      physiology: 'Composite readout of endocrine and neurotransmitter cues that create perceived energy capacity.',
-      application: 'Tie subjectively productive hours to the objective drivers shown here to design better schedules.',
+      physiology:
+        "Composite readout of endocrine and neurotransmitter cues that create perceived energy capacity.",
+      application:
+        "Tie subjectively productive hours to the objective drivers shown here to design better schedules.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["energy"],
     baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
       const morning = gaussian(m, 2.5, 180);
       const afternoon = gaussian(m, 6, 260);
       const slump = gaussian(m, 14, 200);
       const tone = 3.0 + 4.0 * (morning + afternoon) - 1.5 * slump;
-      
+
       const metabolicScale = ctx.physiology?.metabolicCapacity ?? 1.0;
       return tone * (0.8 + 0.2 * metabolicScale);
     }),
     couplings: [
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(0.1),
-        description: 'Moderate cortisol supplies glucose for perceived energy.',
+        description: "Moderate cortisol supplies glucose for perceived energy.",
       },
       {
-        source: 'thyroid',
+        source: "thyroid",
         mapping: linear(0.5), // Thyroid (2.0) -> +1.0 score
-        description: 'Thyroid-mediated metabolic rate boosts systemic energy availability.',
+        description:
+          "Thyroid-mediated metabolic rate boosts systemic energy availability.",
       },
       {
-        source: 'dopamine',
+        source: "dopamine",
         mapping: linear(0.06), // Dopamine (50) -> +3.0 score
-        description: 'Dopamine contributes to subjective drive and vigor.',
+        description: "Dopamine contributes to subjective drive and vigor.",
       },
       {
-        source: 'melatonin',
+        source: "melatonin",
         mapping: linear(-0.05), // Melatonin (80) -> -4.0 score
-        description: 'Melatonin signals biological night, pulling down perceived energy.',
+        description:
+          "Melatonin signals biological night, pulling down perceived energy.",
       },
       {
-        source: 'estrogen',
+        source: "estrogen",
         mapping: linear(0.02), // Estrogen (100) -> +2.0 score
-        description: 'Estrogen supports metabolic vigor and perceived energy availability.',
+        description:
+          "Estrogen supports metabolic vigor and perceived energy availability.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'vagal',
-    label: 'Vagal Tone',
-    group: 'Autonomic',
+    key: "vagal",
+    label: "Vagal Tone",
+    group: "Autonomic",
     semantics: DEFAULT_SEMANTICS.Autonomic,
     description: {
-      physiology: 'Vagal tone expresses parasympathetic braking on the heart and organs via the vagus nerve.',
-      application: 'Breathwork, HRV training, or calm evenings should lift vagal tone for better recovery.',
+      physiology:
+        "Vagal tone expresses parasympathetic braking on the heart and organs via the vagus nerve.",
+      application:
+        "Breathwork, HRV training, or calm evenings should lift vagal tone for better recovery.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["calm", "recovery", "sleep"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const parasym = sigmoid((m - minutes(13)) / 60);
@@ -985,383 +1183,610 @@ export const SIGNAL_DEFS: SignalDef[] = [
     }),
     couplings: [
       {
-        source: 'oxytocin',
+        source: "oxytocin",
         mapping: linear(0.04), // Oxytocin (5) -> +0.2
-        description: 'Oxytocin enhances parasympathetic vagal tone during bonding/relaxation.',
+        description:
+          "Oxytocin enhances parasympathetic vagal tone during bonding/relaxation.",
       },
       {
-        source: 'gaba',
+        source: "gaba",
         mapping: linear(0.006), // GABA (50) -> +0.3
-        description: 'GABA-mediated inhibition promotes vagal dominance.',
+        description: "GABA-mediated inhibition promotes vagal dominance.",
       },
       {
-        source: 'adrenaline',
+        source: "adrenaline",
         mapping: linear(-0.002), // Adrenaline (200) -> -0.4
-        description: 'Adrenergic surges withdraw vagal tone.',
+        description: "Adrenergic surges withdraw vagal tone.",
       },
       {
-        source: 'cortisol',
+        source: "cortisol",
         mapping: linear(-0.01), // Cortisol (20) -> -0.2
-        description: 'Chronic cortisol diminishes vagal recovery capacity.',
+        description: "Chronic cortisol diminishes vagal recovery capacity.",
       },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'testosterone',
-    label: 'Testosterone',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ng/dL', referenceRange: { min: 250, max: 950 } },
-    description: {
-      physiology: 'Androgen supporting muscle, motivation, and erythropoiesis.',
-      application: 'Use as a low-frequency trend (labs) rather than acute chart.',
+    key: "testosterone",
+    label: "Testosterone",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ng/dL",
+      referenceRange: { min: 250, max: 950 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology: "Androgen supporting muscle, motivation, and erythropoiesis.",
+      application:
+        "Use as a low-frequency trend (labs) rather than acute chart.",
+    },
+    display: { tendency: "higher" },
+    goals: ["hormones", "energy", "recovery"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
-      
+
       // Age decline: ~1% per year after 30
       const ageFactor = Math.max(0.5, 1 - Math.max(0, subject.age - 30) * 0.01);
 
       let val = 0;
-      if (subject.sex === 'male') {
-         // Diurnal rhythm for males: peak in morning ~600 ng/dL
-         const m = wrapMinute(minute);
-         const circadian = 400.0 + 300.0 * gaussian(m, 8, 240);
-         val = circadian * ageFactor;
+      if (subject.sex === "male") {
+        // Diurnal rhythm for males: peak in morning ~600 ng/dL
+        const m = wrapMinute(minute);
+        const circadian = 400.0 + 300.0 * gaussian(m, 8, 240);
+        val = circadian * ageFactor;
       } else {
         // Lower, steady baseline for females ~40 ng/dL
         val = 40.0 * ageFactor;
       }
       return val;
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'estrogen',
-    label: 'Estrogen',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'pg/mL', referenceRange: { min: 20, max: 300 } },
-    description: {
-      physiology: 'Estrogen tunes metabolism, cognition, and reproductive cycles.',
-      application: 'Track phases or hormone therapy contextually.',
+    key: "estrogen",
+    label: "Estrogen",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "pg/mL",
+      referenceRange: { min: 20, max: 300 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Estrogen tunes metabolism, cognition, and reproductive cycles.",
+      application: "Track phases or hormone therapy contextually.",
+    },
+    display: { tendency: "higher" },
+    goals: ["hormones", "energy", "mood", "focus"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
-      if (subject.sex === 'male') {
+      if (subject.sex === "male") {
         return 30.0; // Low constant for males
       }
       const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
       // Normalized 0-1 * 250 + 20
-      const val = 20.0 + 250.0 * getMenstrualHormones(day, subject.cycleLength).estrogen;
+      const val =
+        20.0 + 250.0 * getMenstrualHormones(day, subject.cycleLength).estrogen;
       return val;
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'progesterone',
-    label: 'Progesterone',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ng/mL', referenceRange: { min: 0.1, max: 20 } },
-    description: {
-      physiology: 'Progesterone rises in the luteal phase, raising body temp and promoting GABAergic calm.',
-      application: 'Expect higher sleep drive and slightly reduced insulin sensitivity during the luteal peak.',
+    key: "progesterone",
+    label: "Progesterone",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ng/mL",
+      referenceRange: { min: 0.1, max: 20 },
     },
-    display: { tendency: 'mid' },
+    description: {
+      physiology:
+        "Progesterone rises in the luteal phase, raising body temp and promoting GABAergic calm.",
+      application:
+        "Expect higher sleep drive and slightly reduced insulin sensitivity during the luteal peak.",
+    },
+    display: { tendency: "mid" },
+    goals: ["hormones", "calm", "sleep"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
-      if (subject.sex === 'male') return 0.2;
+      if (subject.sex === "male") return 0.2;
       const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
       // Normalized 0-1 * 18 + 0.2
-      return 0.2 + 18.0 * getMenstrualHormones(day, subject.cycleLength).progesterone;
+      return (
+        0.2 + 18.0 * getMenstrualHormones(day, subject.cycleLength).progesterone
+      );
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'lh',
-    label: 'LH',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'IU/L', referenceRange: { min: 1, max: 20 } },
-    description: {
-      physiology: 'Luteinizing Hormone spikes to trigger ovulation.',
-      application: 'Marker of ovulation timing.',
+    key: "lh",
+    label: "LH",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "IU/L",
+      referenceRange: { min: 1, max: 20 },
     },
-    display: { tendency: 'neutral' },
+    description: {
+      physiology: "Luteinizing Hormone spikes to trigger ovulation.",
+      application: "Marker of ovulation timing.",
+    },
+    display: { tendency: "neutral" },
+    goals: ["hormones"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
-      if (subject.sex === 'male') return 5.0;
+      if (subject.sex === "male") return 5.0;
       const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
       // Peak at ovulation ~20-50 IU/L. Let's say 30 baseline peak.
       return 2.0 + 30.0 * getMenstrualHormones(day, subject.cycleLength).lh;
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'fsh',
-    label: 'FSH',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'IU/L', referenceRange: { min: 1, max: 15 } },
-    description: {
-      physiology: 'Follicle Stimulating Hormone recruits ovarian follicles.',
-      application: 'Correlates with early follicular phase.',
+    key: "fsh",
+    label: "FSH",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "IU/L",
+      referenceRange: { min: 1, max: 15 },
     },
-    display: { tendency: 'neutral' },
+    description: {
+      physiology: "Follicle Stimulating Hormone recruits ovarian follicles.",
+      application: "Correlates with early follicular phase.",
+    },
+    display: { tendency: "neutral" },
+    goals: ["hormones"],
     baseline: fnBaseline((minute, ctx) => {
       const subject = ctx.subject ?? DEFAULT_SUBJECT;
-      if (subject.sex === 'male') return 5.0;
+      if (subject.sex === "male") return 5.0;
       const day = getDayOfCycle(minute, subject.cycleLength, subject.cycleDay);
       return 3.0 + 12.0 * getMenstrualHormones(day, subject.cycleLength).fsh;
     }),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'hrv',
-    label: 'HRV',
-    group: 'Autonomic',
-    semantics: { ...DEFAULT_SEMANTICS.Autonomic, unit: 'ms', referenceRange: { min: 20, max: 100 } },
-    description: {
-      physiology: 'Heart Rate Variability reflects the balance between sympathetic and parasympathetic branches.',
-      application: 'Track as a primary marker of recovery and autonomic readiness.',
+    key: "hrv",
+    label: "HRV",
+    group: "Autonomic",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Autonomic,
+      unit: "ms",
+      referenceRange: { min: 20, max: 100 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Heart Rate Variability reflects the balance between sympathetic and parasympathetic branches.",
+      application:
+        "Track as a primary marker of recovery and autonomic readiness.",
+    },
+    display: { tendency: "higher" },
+    goals: ["recovery", "calm"],
     baseline: fnBaseline(() => 50.0),
     couplings: [
-      { source: 'vagal', mapping: linear(40.0), description: 'Vagal tone drives the HF component of HRV.' },
-      { source: 'adrenaline', mapping: linear(-0.1), description: 'Sympathetic activation suppresses HRV.' },
-      { source: 'norepi', mapping: linear(-0.08), description: 'Sympathetic norepinephrine suppresses HRV.' },
+      {
+        source: "vagal",
+        mapping: linear(40.0),
+        description: "Vagal tone drives the HF component of HRV.",
+      },
+      {
+        source: "adrenaline",
+        mapping: linear(-0.1),
+        description: "Sympathetic activation suppresses HRV.",
+      },
+      {
+        source: "norepi",
+        mapping: linear(-0.08),
+        description: "Sympathetic norepinephrine suppresses HRV.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'bloodPressure',
-    label: 'Blood Pressure',
-    group: 'Autonomic',
-    semantics: { ...DEFAULT_SEMANTICS.Autonomic, unit: 'mmHg', referenceRange: { min: 70, max: 110 } },
-    description: {
-      physiology: 'Systemic arterial pressure driven by cardiac output and peripheral resistance.',
-      application: 'Monitor spikes from stimulants, stress, or intense lifting.',
+    key: "bloodPressure",
+    label: "Blood Pressure",
+    group: "Autonomic",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Autonomic,
+      unit: "mmHg",
+      referenceRange: { min: 70, max: 110 },
     },
-    display: { tendency: 'lower' },
+    description: {
+      physiology:
+        "Systemic arterial pressure driven by cardiac output and peripheral resistance.",
+      application:
+        "Monitor spikes from stimulants, stress, or intense lifting.",
+    },
+    display: { tendency: "lower" },
+    goals: ["energy", "recovery"],
     baseline: fnBaseline(() => 90.0),
     couplings: [
-      { source: 'adrenaline', mapping: linear(0.05), description: 'Adrenaline increases heart rate and vasoconstriction.' },
-      { source: 'cortisol', mapping: linear(0.5), description: 'Cortisol increases vascular sensitivity to catecholamines.' },
-      { source: 'vagal', mapping: linear(-10.0), description: 'Vagal activity lowers blood pressure via bradycardia.' },
-      { source: 'norepi', mapping: linear(0.4), description: 'Norepinephrine causes vasoconstriction, raising BP.' },
+      {
+        source: "adrenaline",
+        mapping: linear(0.05),
+        description: "Adrenaline increases heart rate and vasoconstriction.",
+      },
+      {
+        source: "cortisol",
+        mapping: linear(0.5),
+        description:
+          "Cortisol increases vascular sensitivity to catecholamines.",
+      },
+      {
+        source: "vagal",
+        mapping: linear(-10.0),
+        description: "Vagal activity lowers blood pressure via bradycardia.",
+      },
+      {
+        source: "norepi",
+        mapping: linear(0.4),
+        description: "Norepinephrine causes vasoconstriction, raising BP.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'ethanol',
-    label: 'Ethanol',
-    group: 'Metabolic',
+    key: "ethanol",
+    label: "Ethanol",
+    group: "Metabolic",
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
-      physiology: 'Circulating alcohol awaiting hepatic metabolism.',
-      application: 'Simulate the clearing time and its impact on sleep architecture.',
+      physiology: "Circulating alcohol awaiting hepatic metabolism.",
+      application:
+        "Simulate the clearing time and its impact on sleep architecture.",
     },
-    display: { tendency: 'lower' },
+    display: { tendency: "lower" },
+    goals: ["calm", "sleep"],
     baseline: fnBaseline(() => 0),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'acetaldehyde',
-    label: 'Acetaldehyde',
-    group: 'Metabolic',
+    key: "acetaldehyde",
+    label: "Acetaldehyde",
+    group: "Metabolic",
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
-      physiology: 'Primary toxic metabolite of ethanol; drives hangovers and oxidative stress.',
+      physiology:
+        "Primary toxic metabolite of ethanol; drives hangovers and oxidative stress.",
       application: 'Track the "hangover tail" after alcohol consumption.',
     },
-    display: { tendency: 'lower' },
+    display: { tendency: "lower" },
+    goals: ["recovery"],
     baseline: fnBaseline(() => 0),
     couplings: [
-      { source: 'ethanol', mapping: linear(0.3), description: 'Conversion of ethanol by ADH.' },
+      {
+        source: "ethanol",
+        mapping: linear(0.3),
+        description: "Conversion of ethanol by ADH.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'inflammation',
-    label: 'Inflammation',
-    group: 'Metabolic',
+    key: "inflammation",
+    label: "Inflammation",
+    group: "Metabolic",
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
-      physiology: 'Systemic inflammatory tone reflecting cytokine activity (IL-6, TNF-α, CRP).',
-      application: 'Track inflammatory burden from stress, poor sleep, alcohol, and diet.',
+      physiology:
+        "Systemic inflammatory tone reflecting cytokine activity (IL-6, TNF-α, CRP).",
+      application:
+        "Track inflammatory burden from stress, poor sleep, alcohol, and diet.",
     },
-    display: { tendency: 'lower' },
+    display: { tendency: "lower" },
+    goals: ["recovery", "pain"],
     baseline: fnBaseline(() => 1.0),
     couplings: [
-      { source: 'cortisol', mapping: linear(-0.2), description: 'Cortisol is a potent endogenous anti-inflammatory.' },
-      { source: 'adrenaline', mapping: linear(0.08), description: 'Acute stress can trigger transient inflammatory cytokine release.' },
+      {
+        source: "cortisol",
+        mapping: linear(-0.2),
+        description: "Cortisol is a potent endogenous anti-inflammatory.",
+      },
+      {
+        source: "adrenaline",
+        mapping: linear(0.08),
+        description:
+          "Acute stress can trigger transient inflammatory cytokine release.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'bdnf',
-    label: 'BDNF',
-    group: 'Neuro',
-    semantics: { ...DEFAULT_SEMANTICS.Neuro, unit: 'ng/mL', referenceRange: { min: 10, max: 40 } },
-    description: {
-      physiology: 'Brain-Derived Neurotrophic Factor supports neuronal survival and synaptic plasticity.',
-      application: 'Track how exercise, sleep, and certain nootropics support brain health.',
+    key: "bdnf",
+    label: "BDNF",
+    group: "Neuro",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Neuro,
+      unit: "ng/mL",
+      referenceRange: { min: 10, max: 40 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Brain-Derived Neurotrophic Factor supports neuronal survival and synaptic plasticity.",
+      application:
+        "Track how exercise, sleep, and certain nootropics support brain health.",
+    },
+    display: { tendency: "higher" },
+    goals: ["focus", "recovery"],
     baseline: fnBaseline(() => 25.0), // Serum BDNF baseline ~25 ng/mL
     couplings: [
-      { source: 'growthHormone', mapping: linear(0.5), description: 'GH and IGF-1 support BDNF expression.' },
-      { source: 'cortisol', mapping: linear(-0.3), description: 'Chronic high cortisol suppresses hippocampal BDNF.' },
+      {
+        source: "growthHormone",
+        mapping: linear(0.5),
+        description: "GH and IGF-1 support BDNF expression.",
+      },
+      {
+        source: "cortisol",
+        mapping: linear(-0.3),
+        description: "Chronic high cortisol suppresses hippocampal BDNF.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'magnesium',
-    label: 'Magnesium status',
-    group: 'Metabolic',
+    key: "magnesium",
+    label: "Magnesium status",
+    group: "Metabolic",
     semantics: DEFAULT_SEMANTICS.Metabolic,
     description: {
-      physiology: 'Intracellular magnesium levels; critical for >300 enzymatic reactions.',
-      application: 'Assess status in context of ADHD management and stress recovery.',
+      physiology:
+        "Intracellular magnesium levels; critical for >300 enzymatic reactions.",
+      application:
+        "Assess status in context of ADHD management and stress recovery.",
     },
-    display: { tendency: 'higher' },
+    display: { tendency: "higher" },
+    goals: ["recovery", "calm", "focus"],
     baseline: fnBaseline(() => 0.6),
     couplings: [
-      { source: 'adrenaline', mapping: linear(-0.05), description: 'Stress-induced catecholamine release increases magnesium excretion.' },
+      {
+        source: "adrenaline",
+        mapping: linear(-0.05),
+        description:
+          "Stress-induced catecholamine release increases magnesium excretion.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'sensoryLoad',
-    label: 'Sensory Load',
-    group: 'Subjective',
+    key: "sensoryLoad",
+    label: "Sensory Load",
+    group: "Subjective",
     semantics: DEFAULT_SEMANTICS.Subjective,
     description: {
-      physiology: 'Accumulated sensory input processing demand; particularly relevant for Autism profiles.',
-      application: 'Use to predict "overload" or meltdowns when combined with high arousal.',
+      physiology:
+        "Accumulated sensory input processing demand; particularly relevant for Autism profiles.",
+      application:
+        'Use to predict "overload" or meltdowns when combined with high arousal.',
     },
-    display: { tendency: 'lower' },
+    display: { tendency: "lower" },
+    goals: ["calm", "focus"],
     baseline: fnBaseline(() => 0.1),
     couplings: [
-      { source: 'adrenaline', mapping: linear(0.2), description: 'Hyper-arousal increases sensory sensitivity.' },
-      { source: 'gaba', mapping: linear(-0.15), description: 'GABAergic inhibition helps filter sensory input.' },
+      {
+        source: "adrenaline",
+        mapping: linear(0.2),
+        description: "Hyper-arousal increases sensory sensitivity.",
+      },
+      {
+        source: "gaba",
+        mapping: linear(-0.15),
+        description: "GABAergic inhibition helps filter sensory input.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'shbg',
-    label: 'SHBG',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'nmol/L', referenceRange: { min: 20, max: 100 } },
-    description: {
-      physiology: 'Sex Hormone Binding Globulin; regulates free vs bound hormone fractions.',
-      application: 'Important for understanding bioavailable testosterone and estrogen.',
+    key: "shbg",
+    label: "SHBG",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "nmol/L",
+      referenceRange: { min: 20, max: 100 },
     },
-    display: { tendency: 'mid' },
+    description: {
+      physiology:
+        "Sex Hormone Binding Globulin; regulates free vs bound hormone fractions.",
+      application:
+        "Important for understanding bioavailable testosterone and estrogen.",
+    },
+    display: { tendency: "mid" },
+    goals: ["hormones"],
     baseline: fnBaseline(() => 40.0),
     couplings: [
-      { source: 'insulin', mapping: linear(-0.2), description: 'High insulin levels suppress hepatic SHBG production.' },
+      {
+        source: "insulin",
+        mapping: linear(-0.2),
+        description: "High insulin levels suppress hepatic SHBG production.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'ferritin',
-    label: 'Ferritin / Iron',
-    group: 'Metabolic',
-    semantics: { ...DEFAULT_SEMANTICS.Metabolic, unit: 'ng/mL', referenceRange: { min: 20, max: 300 } },
-    description: {
-      physiology: 'Iron stores critical for oxygen transport and mitochondrial energy production.',
-      application: 'Track energy dips related to menstrual blood loss or dietary intake.',
+    key: "ferritin",
+    label: "Ferritin / Iron",
+    group: "Metabolic",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Metabolic,
+      unit: "ng/mL",
+      referenceRange: { min: 20, max: 300 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Iron stores critical for oxygen transport and mitochondrial energy production.",
+      application:
+        "Track energy dips related to menstrual blood loss or dietary intake.",
+    },
+    display: { tendency: "higher" },
+    goals: ["energy", "recovery"],
     baseline: fnBaseline(() => 60.0),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'dheas',
-    label: 'DHEA-S',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ug/dL', referenceRange: { min: 100, max: 400 } },
-    description: {
-      physiology: 'Adrenal androgen and neurosteroid; counter-regulatory to cortisol.',
-      application: 'Assess the Cortisol/DHEA ratio as a marker of HPA axis resilience.',
+    key: "dheas",
+    label: "DHEA-S",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ug/dL",
+      referenceRange: { min: 100, max: 400 },
     },
-    display: { tendency: 'higher' },
+    description: {
+      physiology:
+        "Adrenal androgen and neurosteroid; counter-regulatory to cortisol.",
+      application:
+        "Assess the Cortisol/DHEA ratio as a marker of HPA axis resilience.",
+    },
+    display: { tendency: "higher" },
+    goals: ["hormones", "energy", "recovery"],
     baseline: fnBaseline(() => 200.0),
     couplings: [
-      { source: 'cortisol', mapping: linear(-2.0), description: 'Adrenal steal or chronic stress can divert precursors away from DHEA.' },
+      {
+        source: "cortisol",
+        mapping: linear(-2.0),
+        description:
+          "Adrenal steal or chronic stress can divert precursors away from DHEA.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'alt',
-    label: 'ALT (Liver)',
-    group: 'Organ',
-    semantics: { ...DEFAULT_SEMANTICS.Organ, unit: 'U/L', referenceRange: { min: 10, max: 50 } },
-    description: { physiology: 'Liver enzyme; marker of hepatic stress or turnover.', application: 'Monitor during high metabolic load or toxin exposure.' },
-    display: { tendency: 'lower' },
+    key: "alt",
+    label: "ALT (Liver)",
+    group: "Organ",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Organ,
+      unit: "U/L",
+      referenceRange: { min: 10, max: 50 },
+    },
+    description: {
+      physiology: "Liver enzyme; marker of hepatic stress or turnover.",
+      application: "Monitor during high metabolic load or toxin exposure.",
+    },
+    display: { tendency: "lower" },
+    goals: ["recovery", "digestion"],
     baseline: fnBaseline(() => 20.0),
     couplings: [
-      { source: 'acetaldehyde', mapping: linear(5.0), description: 'Toxic metabolites stress hepatic tissue.' },
+      {
+        source: "acetaldehyde",
+        mapping: linear(5.0),
+        description: "Toxic metabolites stress hepatic tissue.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'ast',
-    label: 'AST (Liver)',
-    group: 'Organ',
-    semantics: { ...DEFAULT_SEMANTICS.Organ, unit: 'U/L', referenceRange: { min: 10, max: 50 } },
-    description: { physiology: 'Liver/Heart enzyme; marker of tissue turnover.', application: 'Track alongside ALT for liver health assessment.' },
-    display: { tendency: 'lower' },
+    key: "ast",
+    label: "AST (Liver)",
+    group: "Organ",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Organ,
+      unit: "U/L",
+      referenceRange: { min: 10, max: 50 },
+    },
+    description: {
+      physiology: "Liver/Heart enzyme; marker of tissue turnover.",
+      application: "Track alongside ALT for liver health assessment.",
+    },
+    display: { tendency: "lower" },
+    goals: ["recovery"],
     baseline: fnBaseline(() => 20.0),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'egfr',
-    label: 'eGFR (Kidney)',
-    group: 'Organ',
-    semantics: { ...DEFAULT_SEMANTICS.Organ, unit: 'mL/min', referenceRange: { min: 60, max: 120 } },
-    description: { physiology: 'Estimated Glomerular Filtration Rate; marker of kidney function.', application: 'Monitor during high protein intake or chronic stress.' },
-    display: { tendency: 'higher' },
+    key: "egfr",
+    label: "eGFR (Kidney)",
+    group: "Organ",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Organ,
+      unit: "mL/min",
+      referenceRange: { min: 60, max: 120 },
+    },
+    description: {
+      physiology:
+        "Estimated Glomerular Filtration Rate; marker of kidney function.",
+      application: "Monitor during high protein intake or chronic stress.",
+    },
+    display: { tendency: "higher" },
+    goals: ["recovery"],
     baseline: fnBaseline(() => 100.0),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'vitaminD3',
-    label: 'Vitamin D3',
-    group: 'Endocrine',
-    semantics: { ...DEFAULT_SEMANTICS.Endocrine, unit: 'ng/mL', referenceRange: { min: 30, max: 100 } },
-    description: { physiology: 'Steroid hormone precursor critical for immunity and calcium metabolism.', application: 'Long-term baseline tracker.' },
-    display: { tendency: 'higher' },
+    key: "vitaminD3",
+    label: "Vitamin D3",
+    group: "Endocrine",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Endocrine,
+      unit: "ng/mL",
+      referenceRange: { min: 30, max: 100 },
+    },
+    description: {
+      physiology:
+        "Steroid hormone precursor critical for immunity and calcium metabolism.",
+      application: "Long-term baseline tracker.",
+    },
+    display: { tendency: "higher" },
+    goals: ["recovery", "hormones"],
     baseline: fnBaseline(() => 40.0),
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'mtor',
-    label: 'mTOR',
-    group: 'Metabolic',
-    semantics: { ...DEFAULT_SEMANTICS.Metabolic, unit: 'fold-change', referenceRange: { min: 0.5, max: 3.0 } },
-    description: { physiology: 'Master regulator of cell growth and protein synthesis.', application: 'Visualize anabolic "building" windows vs recovery.' },
-    display: { tendency: 'neutral' },
+    key: "mtor",
+    label: "mTOR",
+    group: "Metabolic",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Metabolic,
+      unit: "fold-change",
+      referenceRange: { min: 0.5, max: 3.0 },
+    },
+    description: {
+      physiology: "Master regulator of cell growth and protein synthesis.",
+      application: 'Visualize anabolic "building" windows vs recovery.',
+    },
+    display: { tendency: "neutral" },
+    goals: ["recovery", "energy"],
     baseline: fnBaseline(() => 1.0), // Baseline = 1.0x (no change)
     couplings: [
-      { source: 'insulin', mapping: linear(0.03), description: 'Insulin/IGF-1 signaling activates the mTOR pathway.' },
+      {
+        source: "insulin",
+        mapping: linear(0.03),
+        description: "Insulin/IGF-1 signaling activates the mTOR pathway.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
   {
-    key: 'ampk',
-    label: 'AMPK',
-    group: 'Metabolic',
-    semantics: { ...DEFAULT_SEMANTICS.Metabolic, unit: 'fold-change', referenceRange: { min: 0.5, max: 3.0 } },
-    description: { physiology: 'Energy sensor that triggers catabolic pathways and autophagy.', application: 'Visualize "cleaning" and energy conservation windows.' },
-    display: { tendency: 'neutral' },
+    key: "ampk",
+    label: "AMPK",
+    group: "Metabolic",
+    semantics: {
+      ...DEFAULT_SEMANTICS.Metabolic,
+      unit: "fold-change",
+      referenceRange: { min: 0.5, max: 3.0 },
+    },
+    description: {
+      physiology:
+        "Energy sensor that triggers catabolic pathways and autophagy.",
+      application: 'Visualize "cleaning" and energy conservation windows.',
+    },
+    display: { tendency: "neutral" },
+    goals: ["energy", "recovery", "digestion"],
     baseline: fnBaseline(() => 1.0), // Baseline = 1.0x (no change)
     couplings: [
-      { source: 'insulin', mapping: linear(-0.04), description: 'Insulin inhibits AMPK as it signals energy abundance.' },
-      { source: 'glucagon', mapping: linear(0.01), description: 'Glucagon signals energy deficit, activating AMPK.' },
+      {
+        source: "insulin",
+        mapping: linear(-0.04),
+        description: "Insulin inhibits AMPK as it signals energy abundance.",
+      },
+      {
+        source: "glucagon",
+        mapping: linear(0.01),
+        description: "Glucagon signals energy deficit, activating AMPK.",
+      },
     ],
-    metadata: { version: '1.0.0' },
+    metadata: { version: "1.0.0" },
   },
 ];
 
@@ -1371,23 +1796,26 @@ export const SIGNAL_LIBRARY = Object.fromEntries(
 
 const baselineFnFromSpec = (spec: BaselineSpec): BaselineFn => {
   switch (spec.kind) {
-    case 'function':
+    case "function":
       return (minute: Minute, ctx: BaselineContext) => {
         const val = spec.fn(minute, ctx);
         if (isNaN(val)) {
-          console.error(`[BaselineFn] NaN produced for ${spec.kind} at ${minute}min`);
+          console.error(
+            `[BaselineFn] NaN produced for ${spec.kind} at ${minute}min`
+          );
         }
         return val;
       };
-    case 'flat':
+    case "flat":
       return () => spec.value;
-    case 'gaussianMix':
+    case "gaussianMix":
       return (minute: Minute) =>
         spec.terms.reduce(
-          (sum, term) => sum + term.gain * gaussian(minute, term.centerHours, term.widthMin),
+          (sum, term) =>
+            sum + term.gain * gaussian(minute, term.centerHours, term.widthMin),
           0
         );
-    case 'sigmoidCombo':
+    case "sigmoidCombo":
       return (minute: Minute) => {
         const m = wrapMinute(minute);
         const rise = sigmoid((m - minutes(spec.riseHour)) / spec.riseSlope);

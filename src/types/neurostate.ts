@@ -330,6 +330,10 @@ export interface InterventionDef {
   group?: string;
   /** Optional explainers for tooltips */
   notes?: string;
+  /** Explicit categorization for UI filtering */
+  categories?: string[];
+  /** Goal-based tagging (e.g., "focus", "sleep") */
+  goals?: string[];
 }
 
 /* ===========================
@@ -727,6 +731,8 @@ export interface SignalDef {
     saturation?: ResponseSpec;
     warningThresholds?: Array<{ value: number; message: string }>;
   };
+  /** Goal-based tagging (e.g., "focus", "sleep") */
+  goals?: string[];
   validation?: {
     expectedRange?: { min: number; max: number; context?: string };
     testIds?: string[];

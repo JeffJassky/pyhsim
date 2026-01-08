@@ -72,7 +72,7 @@
         :calories-goal="calorieGoal"
         :calories-total="dayTotals.calories"
         :macros="macroTotals"
-        :macro-targets="foodLog.targets.macros"
+        :macro-targets="profiles.nutritionTargets.macros"
         :macros-enabled="macrosEnabled"
       />
 
@@ -114,9 +114,11 @@ import MealSection from '@/components/log/MealSection.vue';
 import FoodSearchDrawer from '@/components/log/FoodSearchDrawer.vue';
 import TargetsModal from '@/components/log/TargetsModal.vue';
 import { MEAL_SLOTS, useFoodLogStore } from '@/stores/foodLog';
+import { useProfilesStore } from '@/stores/profiles';
 import type { FoodSearchHit, MealSlot, UUID } from '@/types';
 
 const foodLog = useFoodLogStore();
+const profiles = useProfilesStore();
 foodLog.ensureDay(foodLog.selectedDate);
 
 const selectedDate = computed({
@@ -134,16 +136,16 @@ const macroTotals = computed(() => ({
 }));
 
 const calorieGoal = computed({
-  get: () => foodLog.targets.calories,
-  set: (val: number) => foodLog.setTargets({ calories: Math.max(0, val) }),
+  get: () => profiles.nutritionTargets.calories,
+  set: (val: number) => profiles.updateNutritionTargets({ calories: Math.max(0, val) }),
 });
 
 const macrosEnabled = computed({
-  get: () => foodLog.targets.macrosEnabled,
-  set: (val: boolean) => foodLog.setTargets({ macrosEnabled: val }),
+  get: () => profiles.nutritionTargets.macrosEnabled,
+  set: (val: boolean) => profiles.updateNutritionTargets({ macrosEnabled: val }),
 });
 
-const macroValues = computed(() => foodLog.targets.macros);
+const macroValues = computed(() => profiles.nutritionTargets.macros);
 
 const macroFields = [
   { key: 'protein', label: 'Protein', color: '#22c55e' },
@@ -152,8 +154,8 @@ const macroFields = [
 ] as const;
 
 const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
-  const next = { ...foodLog.targets.macros[key], [field]: Math.max(0, value) };
-  foodLog.setTargets({ macros: { ...foodLog.targets.macros, [key]: next } });
+  const next = { ...profiles.nutritionTargets.macros[key], [field]: Math.max(0, value) };
+  profiles.updateNutritionTargets({ macros: { ...profiles.nutritionTargets.macros, [key]: next } });
 };
 
 const mealSlots = MEAL_SLOTS;

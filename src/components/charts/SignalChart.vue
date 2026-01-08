@@ -102,16 +102,34 @@ import { computed, ref, watch } from 'vue';
 import type { ChartSeriesSpec, ResponseSpec } from '@/types';
 import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/colors';
 
-const props = defineProps<{
-  grid: number[];
-  seriesSpecs: ChartSeriesSpec[];
-  seriesData: Record<string, number[]>;
-  playheadMin: number;
-  interventions?: Array<{ key: string; start: number; end: number; color?: string }>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    grid: number[];
+    seriesSpecs: ChartSeriesSpec[];
+    seriesData: Record<string, number[]>;
+    playheadMin: number;
+    interventions?: Array<{ key: string; start: number; end: number; color?: string }>;
+    dayStartMin?: number; // Minute of day where the view starts (e.g., 420 for 7 AM)
+  }>(),
+  { dayStartMin: 0 }
+);
 
 const emit = defineEmits<{ playhead: [number] }>();
 const infoOpenKey = ref<string | null>(null);
+
+const MINUTES_IN_DAY = 24 * 60;
+
+// Convert a minute-of-day to display percentage, offset by dayStartMin
+const minToPercent = (minute: number) => {
+  const offset = ((minute - props.dayStartMin + MINUTES_IN_DAY) % MINUTES_IN_DAY);
+  return (offset / MINUTES_IN_DAY) * 100;
+};
+
+// Convert a display percentage back to minute-of-day
+const percentToMin = (percent: number) => {
+  const offset = (percent / 100) * MINUTES_IN_DAY;
+  return (offset + props.dayStartMin) % MINUTES_IN_DAY;
+};
 
 const lineColor = (spec: ChartSeriesSpec) =>
   spec.color ?? TENDENCY_COLORS[spec.tendency ?? 'neutral'].line;
@@ -129,7 +147,7 @@ const latestValue = (key: string) => {
   if (!data.length) return 0;
   const idx = Math.min(
     data.length - 1,
-    Math.max(0, Math.round((props.playheadMin / (24 * 60)) * (data.length - 1)))
+    Math.max(0, Math.round((props.playheadMin / MINUTES_IN_DAY) * (data.length - 1)))
   );
   return data[idx] ?? 0;
 };
@@ -143,13 +161,27 @@ const normalize = (val: number, spec: ChartSeriesSpec) => {
   return Math.max(0, Math.min(1, (val - min) / range));
 };
 
+// Get reordered data starting from dayStartMin
+const reorderedData = (data: number[]) => {
+  if (!data.length) return [];
+  const gridStep = props.grid.length > 1 ? props.grid[1] - props.grid[0] : 5;
+  const startIdx = Math.round(props.dayStartMin / gridStep) % data.length;
+  const result: { value: number; displayIdx: number }[] = [];
+  for (let i = 0; i < data.length; i++) {
+    const srcIdx = (startIdx + i) % data.length;
+    result.push({ value: data[srcIdx], displayIdx: i });
+  }
+  return result;
+};
+
 const points = (spec: ChartSeriesSpec) => {
   const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
-  return data
-    .map((value, idx) => {
+  const reordered = reorderedData(data);
+  return reordered
+    .map(({ value, displayIdx }) => {
       const norm = normalize(value, spec);
-      return `${(idx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
+      return `${(displayIdx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
     })
     .join(' ');
 };
@@ -157,26 +189,31 @@ const points = (spec: ChartSeriesSpec) => {
 const fillPoints = (spec: ChartSeriesSpec) => {
   const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
-  const pts = data
-    .map((value, idx) => {
+  const reordered = reorderedData(data);
+  const pts = reordered
+    .map(({ value, displayIdx }) => {
       const norm = normalize(value, spec);
-      return `${(idx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
+      return `${(displayIdx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
     })
     .join(' ');
   return `0,30 ${pts} 100,30`;
 };
 
-const playheadPercent = computed(() => `${(props.playheadMin / (24 * 60)) * 100}%`);
+const playheadPercent = computed(() => `${minToPercent(props.playheadMin)}%`);
 
 const normalizedBands = computed(() => {
   if (!props.interventions?.length) return [] as Array<{ key: string; left: string; width: string; color: string }>;
   return props.interventions.map((band) => {
-    const left = `${(band.start / (24 * 60)) * 100}%`;
-    const width = `${((band.end - band.start) / (24 * 60)) * 100}%`;
+    const left = minToPercent(band.start);
+    // Handle width carefully - if band wraps around, just show the duration directly
+    const duration = band.end >= band.start
+      ? band.end - band.start
+      : (MINUTES_IN_DAY - band.start) + band.end;
+    const width = (duration / MINUTES_IN_DAY) * 100;
     return {
       key: band.key,
-      left,
-      width,
+      left: `${left}%`,
+      width: `${width}%`,
       color: band.color || 'rgba(255,255,255,0.07)',
     };
   });
@@ -189,7 +226,7 @@ const onChartClick = (event: MouseEvent) => {
   if (!rect.width) return;
   const x = event.clientX - rect.left;
   const ratio = Math.min(1, Math.max(0, x / rect.width));
-  const minutes = ratio * 24 * 60;
+  const minutes = percentToMin(ratio * 100);
   emit('playhead', minutes);
 };
 

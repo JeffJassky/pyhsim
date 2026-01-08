@@ -2,6 +2,31 @@ import { gaussian, sigmoid } from '@/utils/math';
 
 export type BiologicalSex = 'male' | 'female';
 
+export interface MacroRange {
+  min: number;
+  max: number;
+}
+
+export interface NutritionTargets {
+  calories: number;
+  macrosEnabled: boolean;
+  macros: {
+    carbs: MacroRange;
+    fat: MacroRange;
+    protein: MacroRange;
+  };
+}
+
+export const DEFAULT_NUTRITION_TARGETS: NutritionTargets = {
+  calories: 2000,
+  macrosEnabled: false,
+  macros: {
+    carbs: { min: 200, max: 300 },
+    fat: { min: 50, max: 90 },
+    protein: { min: 100, max: 150 },
+  },
+};
+
 export interface Subject {
   age: number;      // years
   weight: number;   // kg

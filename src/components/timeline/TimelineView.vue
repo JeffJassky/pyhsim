@@ -18,8 +18,10 @@ const props = withDefaults(
     editable?: boolean;
     zoomHours?: number;
     playheadMin: Minute;
+    dateIso?: string; // YYYY-MM-DD to anchor the visible window
+    dayStartMin?: number; // Minute of day where the view starts (e.g., 420 for 7 AM)
   }>(),
-  { editable: true, zoomHours: 6 }
+  { editable: true, zoomHours: 6, dayStartMin: 0 }
 );
 
 const emit = defineEmits<{
@@ -87,44 +89,64 @@ const updatePlayhead = (minute: number) => {
   timeline.setCustomTimeTitle(time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), playheadId);
 };
 
-const options = (): TimelineOptions => ({
-  stack: false,
-  selectable: true,
-  multiselect: false,
-  orientation: 'top',
-  format: {
-    minorLabels: {
-      minute: 'h:mm A',
-      hour: 'h A',
-      day: 'ddd h A',
+const getDayBounds = () => {
+  const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
+  const start = new Date(baseDate);
+  start.setHours(0, 0, 0, 0);
+  // Offset by dayStartMin
+  const startHours = Math.floor(props.dayStartMin / 60);
+  const startMins = props.dayStartMin % 60;
+  start.setHours(startHours, startMins, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+};
+
+const options = (): TimelineOptions => {
+  const { start, end } = getDayBounds();
+  return {
+    stack: false,
+    selectable: true,
+    multiselect: false,
+    orientation: 'top',
+    start,
+    end,
+    min: start,
+    max: end,
+    format: {
+      minorLabels: {
+        minute: 'h:mm A',
+        hour: 'h A',
+        day: 'ddd h A',
+      },
+      majorLabels: {
+        minute: 'MMM D',
+        hour: 'MMM D',
+        day: 'MMMM YYYY',
+      },
     },
-    majorLabels: {
-      minute: 'MMM D',
-      hour: 'MMM D',
-      day: 'MMMM YYYY',
+    zoomable: false,
+    moveable: false,
+    editable: props.editable
+      ? {
+          updateTime: true,
+          overrideItems: false,
+        }
+      : false,
+    onMove: (item, callback) => {
+      emit('update', {
+        id: item.id as UUID,
+        start: toISO(item.start),
+        end: toISO(item.end ?? item.start),
+      });
+      callback(item);
     },
-  },
-  zoomable: false,
-  moveable: false,
-  editable: props.editable
-    ? {
-        updateTime: true,
-        overrideItems: false,
-      }
-    : false,
-  onMove: (item, callback) => {
-    emit('update', {
-      id: item.id as UUID,
-      start: toISO(item.start),
-      end: toISO(item.end ?? item.start),
-    });
-    callback(item);
-  },
-  onRemove: (item, callback) => {
-    emit('remove', item.id as UUID);
-    callback(item);
-  },
-});
+    onRemove: (item, callback) => {
+      emit('remove', item.id as UUID);
+      callback(item);
+    },
+  };
+};
 
 const initTimeline = () => {
   if (!container.value) return;
@@ -187,6 +209,20 @@ watch(
 
 watch(
   () => props.editable,
+  () => {
+    timeline?.setOptions(options());
+  }
+);
+
+watch(
+  () => props.dateIso,
+  () => {
+    timeline?.setOptions(options());
+  }
+);
+
+watch(
+  () => props.dayStartMin,
   () => {
     timeline?.setOptions(options());
   }
