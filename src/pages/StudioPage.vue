@@ -131,6 +131,7 @@
     />
     <UserProfileModal v-model="profileModalOpen" />
     <TargetsModal v-model="targetsModalOpen" />
+    <StudioTour />
   </AppShell>
 </template>
 
@@ -150,6 +151,7 @@ import DateCarousel from '@/components/log/DateCarousel.vue';
 import AddItemModal from '@/components/launcher/AddItemModal.vue';
 import UserProfileModal from '@/components/launcher/UserProfileModal.vue';
 import TargetsModal from '@/components/log/TargetsModal.vue';
+import StudioTour from '@/components/onboarding/StudioTour.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
 import { useProfilesStore } from '@/stores/profiles';

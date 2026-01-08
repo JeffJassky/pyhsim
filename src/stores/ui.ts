@@ -13,6 +13,8 @@ export const useUIStore = defineStore('ui', {
     compareScenarioId: undefined,
     profileModalOpen: false,
     targetsModalOpen: false,
+    tourActive: false,
+    tourStep: 0,
   }),
   actions: {
     setProfileModalOpen(open: boolean) {
@@ -20,6 +22,12 @@ export const useUIStore = defineStore('ui', {
     },
     setTargetsModalOpen(open: boolean) {
       this.targetsModalOpen = open;
+    },
+    setTourActive(active: boolean) {
+      this.tourActive = active;
+    },
+    setTourStep(step: number) {
+      this.tourStep = step;
     },
     setPlayhead(minute: Minute) {
       this.playheadMin = minute;

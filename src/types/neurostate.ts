@@ -594,6 +594,8 @@ export interface UIState {
   compareScenarioId?: UUID; // for A/B
   profileModalOpen: boolean;
   targetsModalOpen: boolean;
+  tourActive: boolean;
+  tourStep: number;
 }
 
 export interface AppState {

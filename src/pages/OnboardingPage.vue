@@ -14,6 +14,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import { useOnboardingStore, OnboardingState } from '@/stores/onboarding';
+import { useUIStore } from '@/stores/ui';
 import { useRouter } from 'vue-router';
 
 // Components
@@ -21,11 +22,9 @@ import HookAnimation from '@/components/onboarding/HookAnimation.vue';
 import UniversalDemo from '@/components/onboarding/UniversalDemo.vue';
 import QuickProfile from '@/components/onboarding/QuickProfile.vue';
 import PersonalizedDemo from '@/components/onboarding/PersonalizedDemo.vue';
-import TimelineTutorial from '@/components/onboarding/TimelineTutorial.vue';
-import AIPilotIntro from '@/components/onboarding/AIPilotIntro.vue';
-import SoftLanding from '@/components/onboarding/SoftLanding.vue';
 
 const store = useOnboardingStore();
+const uiStore = useUIStore();
 const router = useRouter();
 
 const currentStepComponent = computed(() => {
@@ -34,9 +33,6 @@ const currentStepComponent = computed(() => {
     case OnboardingState.UNIVERSAL_DEMO: return UniversalDemo;
     case OnboardingState.QUICK_PROFILE: return QuickProfile;
     case OnboardingState.PERSONALIZED_DEMO: return PersonalizedDemo;
-    case OnboardingState.TIMELINE_TUTORIAL: return TimelineTutorial;
-    case OnboardingState.AI_INTRODUCTION: return AIPilotIntro;
-    case OnboardingState.SOFT_LANDING: return SoftLanding;
     default: return null;
   }
 });
@@ -44,6 +40,15 @@ const currentStepComponent = computed(() => {
 function advance() {
   store.advance();
 }
+
+watch(() => store.currentStep, (step) => {
+  if (step === OnboardingState.TIMELINE_TUTORIAL ||
+      step === OnboardingState.AI_INTRODUCTION ||
+      step === OnboardingState.SOFT_LANDING) {
+    uiStore.setTourActive(true);
+    router.push({ name: 'studio' });
+  }
+}, { immediate: true });
 
 watch(() => store.completed, (isCompleted) => {
   if (isCompleted) {
