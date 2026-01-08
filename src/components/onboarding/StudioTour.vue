@@ -3,7 +3,7 @@
     <div v-if="isActive" class="tour-overlay">
       <!-- Spotlight mask -->
       <div class="tour-mask" :style="spotlightStyle"></div>
-      
+
       <!-- Glow ring -->
       <div class="tour-glow" :style="glowStyle"></div>
 
@@ -12,16 +12,23 @@
         <div class="tour-card__header">
           <div class="tour-card__avatar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L14.5 9H22L16 14L18.5 21L12 17L5.5 21L8 14L2 9H9.5L12 2Z" fill="currentColor"/>
+              <path
+                d="M12 2L14.5 9H22L16 14L18.5 21L12 17L5.5 21L8 14L2 9H9.5L12 2Z"
+                fill="currentColor"
+              />
             </svg>
           </div>
           <h3>{{ currentStepData.title }}</h3>
         </div>
-        
+
         <p class="tour-card__text">{{ currentStepData.text }}</p>
-        
+
         <div class="tour-card__actions">
-          <button v-if="currentStepData.skip" @click="skipTour" class="tour-btn tour-btn--text">
+          <button
+            v-if="currentStepData.skip"
+            @click="skipTour"
+            class="tour-btn tour-btn--text"
+          >
             Skip
           </button>
           <button @click="next" class="tour-btn tour-btn--primary">
@@ -73,7 +80,7 @@ const tourSteps: TourStep[] = [
     id: 'charts',
     onboardingState: OnboardingState.TIMELINE_TUTORIAL,
     target: '.studio-grid > .panel:last-child', // Charts panel
-    title: 'Real-time Response',
+    title: 'Real-time Charts',
     text: 'Watch your biology respond instantly. Switch between views to see different systems.',
     btnText: 'Next',
     position: 'left',
@@ -83,7 +90,7 @@ const tourSteps: TourStep[] = [
     id: 'add-item',
     onboardingState: OnboardingState.TIMELINE_TUTORIAL,
     target: '.studio-fab:not(.studio-fab--secondary)',
-    title: 'Add Items',
+    title: 'Add exercise, food, supplements, etc',
     text: 'Tap here to add activities, meals, or supplements to your timeline.',
     btnText: 'Got it',
     position: 'top-left',
@@ -95,7 +102,7 @@ const tourSteps: TourStep[] = [
     target: '.app-shell__sidebar--right', // AI Chat Panel
     title: 'Bio-Pilot AI',
     text: 'Stuck? Ask your AI co-pilot to explain your data or optimize your schedule.',
-    btnText: 'Meet Co-pilot',
+    btnText: 'Got it',
     position: 'left',
     shape: 'rect'
   },
@@ -124,10 +131,10 @@ watch(() => onboardingStore.currentStep, (newStep) => {
 
 function next() {
   const currentStep = tourSteps[currentStepIndex.value];
-  
+
   if (currentStepIndex.value < tourSteps.length - 1) {
     currentStepIndex.value++;
-    
+
     // Sync back to onboarding store if we crossed a state boundary
     const nextStep = tourSteps[currentStepIndex.value];
     if (nextStep.onboardingState !== currentStep.onboardingState) {
@@ -153,9 +160,9 @@ const targetRect = ref({ top: 0, left: 0, width: 0, height: 0 });
 async function updateHighlight(attempts = 0) {
   if (!isActive.value) return;
   await nextTick();
-  
+
   const targetSelector = currentStepData.value.target;
-  
+
   if (targetSelector === 'center') {
     targetRect.value = { top: 0, left: 0, width: 0, height: 0 };
     return;
@@ -210,7 +217,7 @@ const spotlightStyle = computed(() => {
       opacity: '1'
     };
   }
-  
+
   const shape = currentStepData.value.shape || 'rect';
   let radius = '12px';
   if (shape === 'circle') radius = '50%';
@@ -228,7 +235,7 @@ const spotlightStyle = computed(() => {
 
 const glowStyle = computed(() => {
   if (currentStepData.value.target === 'center') return { display: 'none' };
-  
+
   const shape = currentStepData.value.shape || 'rect';
   let radius = '12px';
   if (shape === 'circle') radius = '50%';
@@ -246,7 +253,7 @@ const glowStyle = computed(() => {
 const cardStyle = computed(() => {
   const rect = targetRect.value;
   const pos = currentStepData.value.position;
-  
+
   if (currentStepData.value.target === 'center') {
     return {
       top: '50%',
@@ -313,9 +320,9 @@ const cardStyle = computed(() => {
   z-index: 10000;
 }
 
-/* Ensure the mask doesn't block clicks on the target if needed, 
+/* Ensure the mask doesn't block clicks on the target if needed,
    but generally we want the user to interact with the tour card first */
-   
+
 .tour-card {
   position: absolute;
   width: 320px;

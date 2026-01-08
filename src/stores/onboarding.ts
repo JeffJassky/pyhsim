@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import type { ArchetypeId } from '@/models/archetypes';
 
 export enum OnboardingState {
   HOOK_ANIMATION = 'HOOK_ANIMATION',
-  UNIVERSAL_DEMO = 'UNIVERSAL_DEMO',
   QUICK_PROFILE = 'QUICK_PROFILE',
-  PERSONALIZED_DEMO = 'PERSONALIZED_DEMO',
+  GOAL_INTERVENTIONS = 'GOAL_INTERVENTIONS',
   TIMELINE_TUTORIAL = 'TIMELINE_TUTORIAL',
   AI_INTRODUCTION = 'AI_INTRODUCTION',
   SOFT_LANDING = 'SOFT_LANDING',
@@ -18,7 +18,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
   const skippedSteps = ref<Set<OnboardingState>>(new Set());
   
   // Profile data
-  const persona = ref<'optimizer' | 'neurodivergent' | 'hormonal' | 'practitioner' | null>(null);
+  const persona = ref<ArchetypeId | null>(null);
   const quickProfile = ref({
     sex: null as 'male' | 'female' | null,
     ageRange: null as string | null,

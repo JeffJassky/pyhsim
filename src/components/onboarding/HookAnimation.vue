@@ -7,15 +7,11 @@
     <div class="hook__visual">
       <svg
         class="hook__body"
-        viewBox="0 0 200 400"
+        viewBox="0 0 200 320"
         :class="{ 'is-visible': phase >= 1 }"
       >
-        <!-- Human form - minimal, abstract -->
+        <!-- Abstract Bio-Network -->
         <defs>
-          <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="rgba(0, 212, 255, 0.15)" />
-            <stop offset="100%" stop-color="rgba(139, 92, 246, 0.08)" />
-          </linearGradient>
           <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="3" result="blur" />
             <feMerge>
@@ -25,19 +21,21 @@
           </filter>
         </defs>
 
-        <!-- Body silhouette -->
-        <ellipse
-          cx="100" cy="60" rx="28" ry="32"
-          fill="url(#bodyGrad)"
-          class="hook__head"
-        />
-        <path
-          d="M60,100 Q55,180 60,280 L140,280 Q145,180 140,100 Q120,85 100,85 Q80,85 60,100 Z"
-          fill="url(#bodyGrad)"
-          class="hook__torso"
-        />
+        <!-- Neural network pathways -->
+        <g class="hook__network" :class="{ 'is-active': phase >= 1 }">
+          <line
+            v-for="(line, i) in networkLines"
+            :key="i"
+            :x1="line.x1" :y1="line.y1"
+            :x2="line.x2" :y2="line.y2"
+            stroke="rgba(0, 212, 255, 0.15)"
+            stroke-width="1"
+            class="hook__line"
+            :style="{ animationDelay: `${i * 0.1}s` }"
+          />
+        </g>
 
-        <!-- Signal pathways - flowing energy -->
+        <!-- Signal nodes -->
         <g class="hook__signals" :class="{ 'is-active': phase >= 2 }">
           <circle
             v-for="(signal, i) in signals"
@@ -49,20 +47,6 @@
             filter="url(#glow)"
             class="hook__signal"
             :style="{ animationDelay: `${i * 0.15}s` }"
-          />
-        </g>
-
-        <!-- Neural network hints -->
-        <g class="hook__network" :class="{ 'is-active': phase >= 2 }">
-          <line
-            v-for="(line, i) in networkLines"
-            :key="i"
-            :x1="line.x1" :y1="line.y1"
-            :x2="line.x2" :y2="line.y2"
-            stroke="rgba(139, 92, 246, 0.3)"
-            stroke-width="1"
-            class="hook__line"
-            :style="{ animationDelay: `${i * 0.1}s` }"
           />
         </g>
       </svg>
@@ -103,24 +87,29 @@ const emit = defineEmits(['next']);
 const phase = ref(0);
 let autoAdvanceTimer: number | null = null;
 
-// Signal positions flowing through the body
+// Signal positions - abstract biological network
 const signals = [
-  { x: 100, y: 55 },   // Brain
-  { x: 95, y: 90 },    // Throat
-  { x: 105, y: 130 },  // Heart
-  { x: 100, y: 170 },  // Core
-  { x: 98, y: 210 },   // Gut
-  { x: 102, y: 250 },  // Lower
+  { x: 100, y: 160 }, // Core
+  { x: 140, y: 120 },
+  { x: 60, y: 120 },
+  { x: 140, y: 200 },
+  { x: 60, y: 200 },
+  { x: 100, y: 80 },
+  { x: 100, y: 240 },
 ];
 
-// Abstract network lines
+// Interconnected pathways
 const networkLines = [
-  { x1: 85, y1: 55, x2: 70, y2: 100 },
-  { x1: 115, y1: 55, x2: 130, y2: 100 },
-  { x1: 100, y1: 90, x2: 80, y2: 150 },
-  { x1: 100, y1: 90, x2: 120, y2: 150 },
-  { x1: 90, y1: 150, x2: 80, y2: 220 },
-  { x1: 110, y1: 150, x2: 120, y2: 220 },
+  { x1: 100, y1: 80, x2: 140, y2: 120 },
+  { x1: 100, y1: 80, x2: 60, y2: 120 },
+  { x1: 140, y1: 120, x2: 100, y2: 160 },
+  { x1: 60, y1: 120, x2: 100, y2: 160 },
+  { x1: 100, y1: 160, x2: 140, y2: 200 },
+  { x1: 100, y1: 160, x2: 60, y2: 200 },
+  { x1: 140, y1: 200, x2: 100, y2: 240 },
+  { x1: 60, y1: 200, x2: 100, y2: 240 },
+  { x1: 140, y1: 120, x2: 140, y2: 200 },
+  { x1: 60, y1: 120, x2: 60, y2: 200 },
 ];
 
 function handleSkip() {
@@ -201,11 +190,6 @@ onUnmounted(() => {
 .hook__body.is-visible {
   opacity: 1;
   transform: translateY(0);
-}
-
-.hook__head,
-.hook__torso {
-  transition: opacity 0.8s ease;
 }
 
 /* Signals animation */

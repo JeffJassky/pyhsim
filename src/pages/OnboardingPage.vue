@@ -19,9 +19,8 @@ import { useRouter } from 'vue-router';
 
 // Components
 import HookAnimation from '@/components/onboarding/HookAnimation.vue';
-import UniversalDemo from '@/components/onboarding/UniversalDemo.vue';
 import QuickProfile from '@/components/onboarding/QuickProfile.vue';
-import PersonalizedDemo from '@/components/onboarding/PersonalizedDemo.vue';
+import GoalInterventions from '@/components/onboarding/GoalInterventions.vue';
 
 const store = useOnboardingStore();
 const uiStore = useUIStore();
@@ -30,9 +29,8 @@ const router = useRouter();
 const currentStepComponent = computed(() => {
   switch (store.currentStep) {
     case OnboardingState.HOOK_ANIMATION: return HookAnimation;
-    case OnboardingState.UNIVERSAL_DEMO: return UniversalDemo;
     case OnboardingState.QUICK_PROFILE: return QuickProfile;
-    case OnboardingState.PERSONALIZED_DEMO: return PersonalizedDemo;
+    case OnboardingState.GOAL_INTERVENTIONS: return GoalInterventions;
     default: return null;
   }
 });

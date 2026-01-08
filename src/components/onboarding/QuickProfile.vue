@@ -71,11 +71,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useOnboardingStore } from '@/stores/onboarding';
+import { useProfilesStore } from '@/stores/profiles';
+import { GOAL_CATEGORIES } from '@/models/goals';
+import { ARCHETYPES, type ArchetypeId } from '@/models/archetypes';
 
 const emit = defineEmits(['next']);
 const store = useOnboardingStore();
+const profilesStore = useProfilesStore();
 
 const currentQuestion = ref(0);
 
@@ -94,74 +98,127 @@ interface Question {
   options: Option[];
 }
 
-const questions: Question[] = [
-  {
-    id: 'sex',
-    hint: 'This helps calibrate hormonal and metabolic baselines.',
-    title: 'Biological sex',
-    layout: 'row',
-    options: [
-      { value: 'male', label: 'Male' },
-      { value: 'female', label: 'Female' },
-    ]
-  },
-  {
-    id: 'age',
-    hint: 'Metabolism and recovery patterns shift with age.',
-    title: 'Age range',
-    layout: 'grid',
-    options: [
-      { value: '18-25', label: '18-25' },
-      { value: '26-35', label: '26-35' },
-      { value: '36-45', label: '36-45' },
-      { value: '46-55', label: '46-55' },
-      { value: '56+', label: '56+' },
-    ]
-  },
-  {
-    id: 'goal',
-    hint: 'We\'ll tailor the experience to what matters most to you.',
-    title: 'Primary goal',
-    layout: 'list',
-    options: [
-      { value: 'energy', label: 'Stable energy', desc: 'Avoid crashes, stay consistent' },
-      { value: 'sleep', label: 'Better sleep', desc: 'Fall asleep faster, wake refreshed' },
-      { value: 'focus', label: 'Deep focus', desc: 'Concentrate when it counts' },
-      { value: 'mood', label: 'Mood stability', desc: 'Reduce anxiety, feel balanced' },
-      { value: 'performance', label: 'Peak performance', desc: 'Optimize everything' },
-      { value: 'exploring', label: 'Just exploring', desc: 'Show me what\'s possible' },
-    ]
-  }
-];
+const goalDescriptions: Record<string, string> = {
+  energy: 'Avoid crashes, stay consistent',
+  productivity: 'Optimize mental output',
+  weightLoss: 'Metabolic flexibility & fat loss',
+  mood: 'Reduce anxiety, feel balanced',
+  focus: 'Deep work & concentration',
+  recovery: 'Bounce back faster',
+  sleep: 'Fall asleep faster, wake refreshed',
+  digestion: 'Gut health & regularity',
+  pain: 'Manage chronic pain & inflammation',
+  cycle: 'Sync with your rhythm',
+  calm: 'Stress resilience',
+};
+
+const questions = computed<Question[]>(() => {
+  const archetype = ARCHETYPES.find(a => a.id === store.persona);
+  const filteredGoals = archetype 
+    ? GOAL_CATEGORIES.filter(g => archetype.commonGoals.includes(g.id))
+        .sort((a, b) => archetype.commonGoals.indexOf(a.id) - archetype.commonGoals.indexOf(b.id))
+    : GOAL_CATEGORIES;
+
+  return [
+    {
+      id: 'archetype',
+      hint: 'This helps us calibrate the simulation for your needs.',
+      title: 'Which describes you best?',
+      layout: 'grid',
+      options: ARCHETYPES.map(a => ({
+        value: a.id,
+        label: a.label,
+        icon: a.icon,
+        desc: a.description
+      }))
+    },
+    {
+      id: 'goal',
+      hint: 'We\'ll tailor the simulation to your primary objective.',
+      title: 'Primary focus',
+      layout: 'list',
+      options: filteredGoals.map(g => ({
+        value: g.id,
+        label: g.label,
+        icon: g.icon,
+        desc: goalDescriptions[g.id] || ''
+      }))
+    },
+    {
+      id: 'sex',
+      hint: 'This helps calibrate hormonal and metabolic baselines.',
+      title: 'Biological sex',
+      layout: 'row',
+      options: [
+        { value: 'male', label: 'Male' },
+        { value: 'female', label: 'Female' },
+      ]
+    },
+    {
+      id: 'age',
+      hint: 'Metabolism and recovery patterns shift with age.',
+      title: 'Age range',
+      layout: 'grid',
+      options: [
+        { value: '18-25', label: '18-25' },
+        { value: '26-35', label: '26-35' },
+        { value: '36-45', label: '36-45' },
+        { value: '46-55', label: '46-55' },
+        { value: '56+', label: '56+' },
+      ]
+    }
+  ];
+});
 
 function isSelected(value: string) {
-  if (currentQuestion.value === 0) return store.quickProfile.sex === value;
-  if (currentQuestion.value === 1) return store.quickProfile.ageRange === value;
-  if (currentQuestion.value === 2) return store.quickProfile.primaryGoal === value;
+  if (currentQuestion.value === 0) return store.persona === value;
+  if (currentQuestion.value === 1) return store.quickProfile.primaryGoal === value;
+  if (currentQuestion.value === 2) return store.quickProfile.sex === value;
+  if (currentQuestion.value === 3) return store.quickProfile.ageRange === value;
   return false;
 }
 
 function selectOption(value: string) {
   // Save to store
-  if (currentQuestion.value === 0) store.quickProfile.sex = value as 'male' | 'female';
-  if (currentQuestion.value === 1) store.quickProfile.ageRange = value;
-  if (currentQuestion.value === 2) store.quickProfile.primaryGoal = value;
+  if (currentQuestion.value === 0) {
+    store.persona = value as ArchetypeId;
+    // Auto-select female for cycle syncers if not set
+    if (value === 'cycle_syncer') {
+      store.quickProfile.sex = 'female';
+      profilesStore.updateSubject({ sex: 'female' });
+    }
+  }
+  if (currentQuestion.value === 1) {
+    store.quickProfile.primaryGoal = value;
+    // Ensure it's in the profile goals
+    if (!profilesStore.selectedGoals.includes(value as any)) {
+      profilesStore.toggleGoal(value as any);
+    }
+  }
+  if (currentQuestion.value === 2) {
+    store.quickProfile.sex = value as 'male' | 'female';
+    profilesStore.updateSubject({ sex: value as 'male' | 'female' });
+  }
+  if (currentQuestion.value === 3) {
+    store.quickProfile.ageRange = value;
+    // Extract lower bound of age range as a simple numeric estimate
+    const age = parseInt(value);
+    if (!isNaN(age)) {
+      profilesStore.updateSubject({ age });
+    }
+  }
 
   // Advance after brief delay for visual feedback
   setTimeout(() => {
-    if (currentQuestion.value < questions.length - 1) {
+    // Skip sex question if already determined by archetype
+    if (currentQuestion.value === 1 && store.persona === 'cycle_syncer') {
+      currentQuestion.value = 3; // Skip to Age
+      return;
+    }
+
+    if (currentQuestion.value < questions.value.length - 1) {
       currentQuestion.value++;
     } else {
-      // Set persona based on goal
-      const goalPersonaMap: Record<string, typeof store.persona> = {
-        energy: 'optimizer',
-        focus: 'optimizer',
-        performance: 'optimizer',
-        sleep: 'optimizer',
-        mood: 'neurodivergent',
-        exploring: 'practitioner',
-      };
-      store.persona = goalPersonaMap[value] || 'optimizer';
       emit('next');
     }
   }, 200);
@@ -169,7 +226,12 @@ function selectOption(value: string) {
 
 function prevQuestion() {
   if (currentQuestion.value > 0) {
-    currentQuestion.value--;
+    // Handle skipping sex question backward
+    if (currentQuestion.value === 3 && store.persona === 'cycle_syncer') {
+      currentQuestion.value = 1;
+    } else {
+      currentQuestion.value--;
+    }
   }
 }
 </script>
@@ -239,7 +301,7 @@ function prevQuestion() {
 /* Content */
 .profile__content {
   width: 100%;
-  max-width: 440px;
+  max-width: 640px;
   padding: 2rem 1.5rem;
   position: relative;
   z-index: 1;
@@ -340,8 +402,8 @@ function prevQuestion() {
 
 .profile__option-label {
   display: block;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: #f0f0f5;
 }
 
@@ -349,7 +411,7 @@ function prevQuestion() {
   display: block;
   font-size: 0.8125rem;
   color: #8888a0;
-  margin-top: 0.125rem;
+  margin-top: 0.25rem;
 }
 
 .profile__option-check {
@@ -376,7 +438,7 @@ function prevQuestion() {
 .profile__options--row .profile__option {
   flex-direction: column;
   text-align: center;
-  padding: 1.25rem 0.75rem;
+  padding: 1.75rem 1rem;
 }
 
 .profile__options--grid .profile__option-check,

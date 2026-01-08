@@ -379,6 +379,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { useProfilesStore } from '@/stores/profiles';
 import { PROFILE_LIBRARY, SIGNAL_DEFS } from '@/models';
+import { GOAL_CATEGORIES } from '@/models/goals';
 import type { ProfileKey } from '@/models/profiles';
 import type { Subject } from '@/models/subject';
 import type { Signal, Goal } from '@/types';
@@ -530,19 +531,7 @@ const macroFields = [
   { key: 'fat' as const, label: 'Fat', color: '#fbbf24' },
 ];
 
-const goalCategories: Array<{ id: Goal; label: string; icon: string }> = [
-  { id: 'energy', label: 'Energy', icon: '⚡' },
-  { id: 'productivity', label: 'Productivity', icon: '🚀' },
-  { id: 'weightLoss', label: 'Weight Loss', icon: '⚖️' },
-  { id: 'mood', label: 'Mood', icon: '🎭' },
-  { id: 'focus', label: 'Focus', icon: '🧠' },
-  { id: 'recovery', label: 'Recovery', icon: '💪' },
-  { id: 'sleep', label: 'Sleep', icon: '😴' },
-  { id: 'digestion', label: 'Digestion', icon: '🦠' },
-  { id: 'pain', label: 'Pain', icon: '❤️‍🩹' },
-  { id: 'cycle', label: 'Cycle Syncing', icon: '🌝' },
-  { id: 'calm', label: 'Calm', icon: '😌' },
-];
+const goalCategories = GOAL_CATEGORIES;
 
 const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
   const current = nutritionTargets.value.macros[key];
