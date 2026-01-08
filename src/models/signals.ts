@@ -681,7 +681,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Use to test meal composition, exercise, or meds that improve insulin sensitivity and flatten peaks.",
     },
     display: { tendency: "neutral" },
-    goals: ["digestion", "energy", "weightLoss", "productivity"],
+    goals: ["digestion", "energy", "weightLoss", "productivity", "longevity"],
     baseline: fnBaseline(() => 5.0),
     couplings: [
       {
@@ -722,7 +722,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Extended fasting or endurance sessions should elevate glucagon; use this to plan refuel windows.",
     },
     display: { tendency: "higher" },
-    goals: ["digestion", "energy", "weightLoss"],
+    goals: ["digestion", "energy", "weightLoss", "longevity"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const nocturnal = gaussian(m, 23, 160) + 0.8 * gaussian(m, 1.5, 220);
@@ -762,7 +762,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Time meals, protein, or fiber to blunt unwanted appetite spikes shown here.",
     },
     display: { tendency: "mid" },
-    goals: ["digestion", "weightLoss"],
+    goals: ["digestion", "weightLoss", "longevity"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const breakfast = gaussian(m, 3, 90);
@@ -883,7 +883,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Monitor under chronic stress or dieting to avoid metabolic slowdown.",
     },
     display: { tendency: "higher" },
-    goals: ["energy", "recovery", "weightLoss", "productivity"],
+    goals: ["energy", "recovery", "weightLoss", "productivity", "longevity"],
     baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
       const ramp = sigmoid((m - minutes(2.5)) / 80);
@@ -1008,7 +1008,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Hard training and good sleep hygiene should amplify this peak—use to evaluate recovery plans.",
     },
     display: { tendency: "higher" },
-    goals: ["recovery", "energy"],
+    goals: ["recovery", "energy", "longevity"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const sleepOnset = gaussian(m, 18.5, 120);
@@ -1050,7 +1050,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Make sure fueling or fasting tactics keep glucose within the range that matches your goals.",
     },
     display: { tendency: "mid" },
-    goals: ["energy", "digestion", "weightLoss"],
+    goals: ["energy", "digestion", "weightLoss", "longevity"],
     baseline: fnBaseline(() => 85.0),
     couplings: [
       {
@@ -1110,7 +1110,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Use to confirm fasting, low-carb diets, or cold exposure are shifting you toward fat metabolism.",
     },
     display: { tendency: "higher" },
-    goals: ["energy", "digestion"],
+    goals: ["energy", "digestion", "longevity"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const overnight = gaussian(m, 19.5, 400) + gaussian(m, 22.5, 260);
@@ -1515,7 +1515,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Track inflammatory burden from stress, poor sleep, alcohol, and diet.",
     },
     display: { tendency: "lower" },
-    goals: ["recovery", "pain"],
+    goals: ["recovery", "pain", "longevity"],
     baseline: fnBaseline(() => 1.0),
     couplings: [
       {
@@ -1549,7 +1549,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
         "Track how exercise, sleep, and certain nootropics support brain health.",
     },
     display: { tendency: "higher" },
-    goals: ["focus", "recovery"],
+    goals: ["focus", "recovery", "longevity"],
     baseline: fnBaseline(() => 25.0), // Serum BDNF baseline ~25 ng/mL
     couplings: [
       {
@@ -1778,7 +1778,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: "Long-term baseline tracker.",
     },
     display: { tendency: "higher" },
-    goals: ["recovery", "cycle"],
+    goals: ["recovery", "cycle", "longevity"],
     baseline: fnBaseline(() => 40.0),
     metadata: { version: "1.0.0" },
   },
@@ -1797,7 +1797,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Visualize anabolic "building" windows vs recovery.',
     },
     display: { tendency: "neutral" },
-    goals: ["recovery", "energy", "weightLoss"],
+    goals: ["recovery", "energy", "weightLoss", "longevity"],
     baseline: fnBaseline(() => 1.0), // Baseline = 1.0x (no change)
     couplings: [
       {
@@ -1824,7 +1824,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
       application: 'Visualize "cleaning" and energy conservation windows.',
     },
     display: { tendency: "neutral" },
-    goals: ["energy", "recovery", "digestion", "weightLoss"],
+    goals: ["energy", "recovery", "digestion", "weightLoss", "longevity"],
     baseline: fnBaseline(() => 1.0), // Baseline = 1.0x (no change)
     couplings: [
       {

@@ -110,6 +110,7 @@ const goalDescriptions: Record<string, string> = {
   pain: 'Manage chronic pain & inflammation',
   cycle: 'Sync with your rhythm',
   calm: 'Stress resilience',
+  longevity: 'Mitochondrial health & lifespan',
 };
 
 const questions = computed<Question[]>(() => {

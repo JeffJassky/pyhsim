@@ -20,6 +20,7 @@ export const ARCHETYPES: Archetype[] = [
     commonGoals: [
       "energy",
       "productivity",
+      "longevity",
       "recovery",
       "focus",
       "weightLoss",

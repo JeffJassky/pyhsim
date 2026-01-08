@@ -283,7 +283,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     },
     group: "Routine",
     categories: ["environment"],
-    goals: ["sleep", "recovery"],
+    goals: ["sleep", "recovery", "longevity"],
   },
   {
     key: "nap",
@@ -324,7 +324,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     },
     group: "Routine",
     categories: ["wellness"],
-    goals: ["sleep", "recovery", "energy"],
+    goals: ["sleep", "recovery", "energy", "longevity"],
   },
   {
     key: "caffeine",
@@ -976,7 +976,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     },
     group: "Supplements",
     categories: ["supplements"],
-    goals: ["calm", "sleep", "recovery"],
+    goals: ["calm", "sleep", "recovery", "longevity"],
   },
   {
     key: "exercise",
@@ -1261,7 +1261,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     },
     group: "Lifestyle",
     categories: ["exercise"],
-    goals: ["energy", "mood", "recovery", "hormones"],
+    goals: ["energy", "mood", "recovery", "hormones", "longevity"],
   },
   {
     key: "alcohol",
@@ -1522,7 +1522,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     },
     group: "Wellness",
     categories: ["wellness"],
-    goals: ["calm", "focus", "mood"],
+    goals: ["calm", "focus", "mood", "longevity"],
   },
   {
     key: "electrolytes",
@@ -1644,7 +1644,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     kernels: FOOD_KERNELS,
     group: "Food",
     categories: ["food"],
-    goals: ["energy", "digestion"],
+    goals: ["energy", "digestion", "longevity"],
   },
 ];
 

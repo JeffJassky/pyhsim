@@ -289,4 +289,32 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
       }
     ]
   },
+  { 
+    id: 'longevity', 
+    label: 'Longevity', 
+    icon: '🏃',
+    recommendedInterventions: [
+      {
+        key: 'exercise',
+        label: 'Zone 2 Cardio',
+        icon: '🏃',
+        improvements: ['Mitochondrial health', 'Metabolic flexibility'],
+        readout: 'Increases mitochondrial density and efficiency for long-term healthspan.'
+      },
+      {
+        key: 'sleep',
+        label: 'Quality Sleep',
+        icon: '🌙',
+        improvements: ['Autophagy', 'Cellular repair'],
+        readout: 'Activates the glymphatic system to clear metabolic waste from the brain.'
+      },
+      {
+        key: 'magnesium',
+        label: 'Trace Minerals',
+        icon: '💎',
+        improvements: ['DNA stability', 'Enzyme cofactor'],
+        readout: 'Supports over 300 biochemical reactions essential for cellular maintenance.'
+      }
+    ]
+  },
 ];

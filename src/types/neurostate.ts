@@ -695,7 +695,8 @@ export type Goal =
   | "digestion"
   | "pain"
   | "cycle"
-  | "calm";
+  | "calm"
+  | "longevity";
 
 export interface SignalDef {
   key: Signal;
