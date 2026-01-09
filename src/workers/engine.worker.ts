@@ -130,6 +130,34 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const defsMap = new Map(defs.map((def) => [def.key, def]));
 
   const lastStepValues: Partial<Record<Signal, number>> = {};
+
+  // Pre-populate lastStepValues with baselines at t=0 to avoid startup transients
+  const startMinute = gridMins[0];
+  const startAdjustedMinute = (((startMinute - wakeOffsetMin) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+  
+  const isAsleepAtStart = items.some(item => {
+    const def = defsMap.get(item.meta.key);
+    return def?.key === 'sleep' &&
+           startMinute >= item.startMin &&
+           startMinute <= item.startMin + item.durationMin;
+  });
+
+  for (const signal of includeSignals) {
+    const baselineAdj = baselineAdjustments[signal];
+    const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
+    const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
+    const shiftedMinute = (((startAdjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+
+    const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
+    let val = baseVal * amplitude;
+    
+    if (isAsleepAtStart) {
+      val = applySleepAdjustment(signal, val, sleepQuality);
+    }
+    
+    lastStepValues[signal] = val;
+  }
+
   const couplings: CouplingMap = { ...SIGNAL_COUPLINGS };
   const profileCouplings: ProfileCouplingAdjustments = options?.profileCouplings ?? {};
   for (const [target, extras] of Object.entries(profileCouplings)) {
