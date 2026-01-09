@@ -1,3 +1,43 @@
+<script setup lang="ts">
+import { useOnboardingStore } from '@/stores/onboarding';
+import { useEngineStore } from '@/stores/engine';
+import { useRouter } from 'vue-router';
+import { computed } from 'vue';
+
+const props = defineProps<{
+  modelValue: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void;
+}>();
+
+const onboardingStore = useOnboardingStore();
+const engineStore = useEngineStore();
+const router = useRouter();
+
+const close = () => {
+  emit('update:modelValue', false);
+};
+
+const handleResetOnboarding = () => {
+  if (confirm('Are you sure you want to reset all onboarding progress? This cannot be undone.')) {
+    onboardingStore.reset();
+    close();
+    // Redirect to home/root to trigger the onboarding flow check
+    window.location.href = '/';
+  }
+};
+
+const finalStateJson = computed(() => {
+  // Accessing finalHomeostasisState from the store (needs to be added to store state)
+  // For now, let's assume we'll add it to the store shortly.
+  return (engineStore as any).finalHomeostasisState
+    ? JSON.stringify((engineStore as any).finalHomeostasisState, null, 2)
+    : 'No simulation data yet.';
+});
+</script>
+
 <template>
   <Teleport to="body">
     <Transition name="fade">
@@ -10,12 +50,90 @@
           </header>
 
           <div class="debug-body">
+            <!-- Signal Simulation Controls -->
+            <div class="tool-group">
+              <h3 class="group-title">Signal Simulation</h3>
+              <p class="group-desc">
+                Isolate components of the signal generation pipeline.
+              </p>
+
+              <div class="toggles">
+                <label class="toggle-row">
+                  <span>Baselines</span>
+                  <input
+                    type="checkbox"
+                    :checked="engineStore.debug.enableBaselines"
+                    @change="engineStore.updateDebug({ enableBaselines: ($event.target as HTMLInputElement).checked })"
+                  />
+                </label>
+                <label class="toggle-row">
+                  <span>Interventions</span>
+                  <input
+                    type="checkbox"
+                    :checked="engineStore.debug.enableInterventions"
+                    @change="engineStore.updateDebug({ enableInterventions: ($event.target as HTMLInputElement).checked })"
+                  />
+                </label>
+                <label class="toggle-row">
+                  <span>Couplings</span>
+                  <input
+                    type="checkbox"
+                    :checked="engineStore.debug.enableCouplings"
+                    @change="engineStore.updateDebug({ enableCouplings: ($event.target as HTMLInputElement).checked })"
+                  />
+                </label>
+                <label class="toggle-row">
+                  <span>Homeostasis</span>
+                  <input
+                    type="checkbox"
+                    :checked="engineStore.debug.enableHomeostasis"
+                    @change="engineStore.updateDebug({ enableHomeostasis: ($event.target as HTMLInputElement).checked })"
+                  />
+                </label>
+                <label class="toggle-row">
+                  <span>Receptors</span>
+                  <input
+                    type="checkbox"
+                    :checked="engineStore.debug.enableReceptors"
+                    @change="engineStore.updateDebug({ enableReceptors: ($event.target as HTMLInputElement).checked })"
+                  />
+                </label>
+                <label class="toggle-row">
+                  <span>Transporters</span>
+                  <input
+                    type="checkbox"
+                    :checked="engineStore.debug.enableTransporters"
+                    @change="engineStore.updateDebug({ enableTransporters: ($event.target as HTMLInputElement).checked })"
+                  />
+                </label>
+                <label class="toggle-row">
+                  <span>Enzymes</span>
+                  <input
+                    type="checkbox"
+                    :checked="engineStore.debug.enableEnzymes"
+                    @change="engineStore.updateDebug({ enableEnzymes: ($event.target as HTMLInputElement).checked })"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <!-- Internal State Inspection -->
+            <div class="tool-group">
+              <h3 class="group-title">Internal State</h3>
+              <p class="group-desc">Final snapshot of homeostasis variables.</p>
+              <pre class="json-dump">{{ finalStateJson }}</pre>
+            </div>
+
+            <!-- Onboarding Controls -->
             <div class="tool-group">
               <h3 class="group-title">Onboarding</h3>
               <p class="group-desc">Manage onboarding state and progress.</p>
-              
+
               <div class="actions">
-                <button class="action-btn danger" @click="handleResetOnboarding">
+                <button
+                  class="action-btn danger"
+                  @click="handleResetOnboarding"
+                >
                   <span class="icon">🔄</span>
                   Reset Onboarding
                 </button>
@@ -28,43 +146,14 @@
   </Teleport>
 </template>
 
-<script setup lang="ts">
-import { useOnboardingStore } from '@/stores/onboarding';
-import { useRouter } from 'vue-router';
-
-const props = defineProps<{
-  modelValue: boolean;
-}>();
-
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void;
-}>();
-
-const onboardingStore = useOnboardingStore();
-const router = useRouter();
-
-const close = () => {
-  emit('update:modelValue', false);
-};
-
-const handleResetOnboarding = () => {
-  if (confirm('Are you sure you want to reset all onboarding progress? This cannot be undone.')) {
-    onboardingStore.reset();
-    close();
-    // Redirect to home/root to trigger the onboarding flow check
-    window.location.href = '/'; 
-  }
-};
-</script>
-
 <style scoped>
 .debug-overlay {
   position: fixed;
   inset: 0;
   z-index: 2000; /* Higher than normal modals */
-  background: rgba(10, 10, 15, 0.8);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(10, 10, 15, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,6 +275,43 @@ const handleResetOnboarding = () => {
 
 .icon {
   font-size: 1.2rem;
+}
+
+.toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-row:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.toggle-row input[type="checkbox"] {
+  transform: scale(1.2);
+}
+
+.json-dump {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Transitions */

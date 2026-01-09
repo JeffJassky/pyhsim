@@ -1,11 +1,13 @@
 <template>
   <AppShell :show-right-sidebar="showChat">
+    <template #header-center>
+      <DateCarousel v-model="selectedDate" />
+    </template>
     <template #right-sidebar>
       <AIChatPanel />
     </template>
     <section class="studio-grid">
       <Panel ref="timelinePanelRef" title="" icon="📅">
-        <DateCarousel v-model="selectedDate" />
         <TimelineView
           :items="timeline.items"
           :selected-id="timeline.selectedId"
@@ -279,8 +281,8 @@ const handlePlayheadAdd = (m: Minute) => {
 };
 
 const handleInspectorChange = (item: TimelineItem) => timeline.updateItem(item.id, item);
-const handleTimelineMove = ({ id, start, end }: { id: UUID; start: string; end: string }) => {
-  timeline.updateItem(id, { start, end });
+const handleTimelineMove = ({ id, start, end, group }: { id: UUID; start: string; end: string; group?: string | number }) => {
+  timeline.updateItem(id, { start, end, group });
 };
 const handleTimelineSelect = (id?: UUID) => {
   timeline.select(id);
@@ -377,7 +379,7 @@ const viewSignalSets = {
 const enabledSignals = computed(() => profiles.enabledSignals);
 const subscriptionTier = computed(() => profiles.subscriptionTier);
 
-const buildSpecs = (keys: readonly Signal[], filterByEnabled = false): ChartSeriesSpec[] =>
+const buildSpecs = (keys: readonly Signal[], filterByEnabled = true): ChartSeriesSpec[] =>
   keys
     .filter((key) => !filterByEnabled || enabledSignals.value[key] !== false)
     .map((key) => {

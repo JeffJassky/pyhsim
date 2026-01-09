@@ -29,7 +29,7 @@ This is a high-need market where the application provides a "manual for the brai
 *   **Why they pay:** For **Predictability and Stability**. If the app can predict a "crash" at 4:00 PM due to a medication/food interaction or a POTS-induced energy drop from dehydration, the user can intervene before it happens.
 
 **Gap Analysis & Future Roadmap:**
-*   **Missing Signals:** Brain-Derived Neurotrophic Factor (BDNF), Magnesium status, "Sensory Load," and Autonomic indicators (Blood Pressure volatility, Histamine/Mast Cell activation).
+*   **Missing Signals:** Brain-Derived Neurotrophic Factor (BDNF), Magnesium, "Sensory Load," and Autonomic indicators (Blood Pressure volatility, Histamine/Mast Cell activation).
 *   **Missing Interventions:** Methylphenidate (Ritalin/Concerta) kernels, Guanfacine (Alpha-2 agonist), Electrolyte loading (for POTS management), and H1/H2 blockers.
 *   **Critical Add:** **Magnesium/Zinc & Sodium Synergies.** ADHD users often need dopamine support; POTS users require precise sodium/fluid balance. Modeling the interplay of electrolytes, histamine, and neurochemistry is a major differentiator.
 

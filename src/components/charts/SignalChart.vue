@@ -1,114 +1,182 @@
 <template>
-  <div class="chart">
+  <div ref="chartContainer" class="chart">
     <div
       v-for="spec in seriesSpecs"
       :key="spec.key"
-      class="series"
-      :class="{ 'series--premium': isLocked(spec.key) }"
-      @click="onChartClick"
+      class="series-container"
+      :data-id="spec.key"
     >
-      <div
-        class="series__canvas"
-        :style="{
-          '--line-color': lineColor(spec),
-          '--fill-color': fillColor(spec),
-        }"
-      >
-        <div class="series__overlay series__overlay--label">
-          <span>{{ spec.label }}</span>
-          <button
-            v-if="spec.info"
-            type="button"
-            class="series__info-button"
-            :aria-pressed="infoOpenKey === spec.key"
-            :title="`More about ${spec.label}`"
-            @click.stop="toggleInfo(spec.key)"
-          >
-            ⓘ
-          </button>
-        </div>
-        <div
-          v-if="spec.info && infoOpenKey === spec.key"
-          class="series__info-card"
-          @click.stop
-        >
-          <p>
-            <strong>Physiology</strong>
-            {{ spec.info.physiology }}
-          </p>
-          <p>
-            <strong>Application</strong>
-            {{ spec.info.application }}
-          </p>
-          <div v-if="spec.info.couplings?.length" class="series__couplings">
-            <strong>Couplings</strong>
-            <ul>
-              <li v-for="edge in spec.info.couplings" :key="edge.source + edge.description">
-                <span class="series__coupling-source">{{ edge.source }}</span>
-                <span class="series__coupling-mapping">
-                  {{ describeMapping(edge.mapping) }}
-                </span>
-                <span class="series__coupling-desc">{{ edge.description }}</span>
-              </li>
-            </ul>
+      <div class="series-wrapper">
+        <div class="series-sidebar__drag">☰</div>
+        <div class="series-sidebar">
+          <div class="series-sidebar__label" :title="spec.label">
+            {{ spec.label }}
+          </div>
+          <div class="series-sidebar__actions">
+            <button
+              type="button"
+              class="series-sidebar__btn series-sidebar__hide"
+              v-tooltip="'Hide'"
+              @click="hideSignal(spec.key)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+            <button
+              v-if="spec.info"
+              type="button"
+              class="series-sidebar__btn series-sidebar__info"
+              :class="{ 'is-active': infoOpenKey === spec.key }"
+              v-tooltip="'Learn more'"
+              @click="toggleInfo(spec.key)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="12"
+                height="12"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
           </div>
         </div>
-        <div class="series__overlay series__overlay--value">
-          <template v-if="!isLocked(spec.key)">
-            {{ latestValue(spec.key).toFixed(2) }} <span class="unit">{{ spec.unit }}</span>
-          </template>
-          <span v-else class="premium-tag">
-            <span class="premium-tag__icon">🔒</span>
-            PREMIUM
-          </span>
-        </div>
-        <div class="series__bands">
+        <div
+          class="series"
+          :class="{ 'series--premium': isLocked(spec.key) }"
+          @click="onChartClick"
+        >
           <div
-            v-for="band in normalizedBands"
-            :key="band.key + spec.key"
-            class="series__band"
-            :style="{ left: band.left, width: band.width, background: band.color }"
-          />
+            class="series__canvas"
+            :style="{
+              '--line-color': lineColor(spec),
+              '--fill-color': fillColor(spec),
+            }"
+          >
+            <div class="series__overlay series__overlay--value">
+              <template v-if="!isLocked(spec.key)">
+                {{ latestValue(spec.key).toFixed(2) }}
+                <span class="unit">{{ spec.unit }}</span>
+              </template>
+              <span v-else class="premium-tag">
+                <span class="premium-tag__icon">🔒</span>
+                PREMIUM
+              </span>
+            </div>
+            <div class="series__bands">
+              <div
+                v-for="band in normalizedBands"
+                :key="band.key + spec.key"
+                class="series__band"
+                :style="{ left: band.left, width: band.width, background: band.color }"
+              />
+            </div>
+            <svg viewBox="0 0 100 30" preserveAspectRatio="none">
+              <defs>
+                <linearGradient
+                  :id="gradientId(spec)"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="30"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop offset="0%" :stop-color="gradientStops(spec)[0]" />
+                  <stop offset="100%" :stop-color="gradientStops(spec)[1]" />
+                </linearGradient>
+              </defs>
+              <polyline
+                :points="points(spec)"
+                fill="none"
+                :stroke="strokeUrl(spec)"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <polygon
+                :points="fillPoints(spec)"
+                :fill="strokeUrl(spec)"
+                fill-opacity="0.12"
+              />
+            </svg>
+            <div class="series__playhead" :style="{ left: playheadPercent }" />
+          </div>
         </div>
-        <svg viewBox="0 0 100 30" preserveAspectRatio="none">
-          <defs>
-            <linearGradient
-              :id="gradientId(spec)"
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="30"
-              gradientUnits="userSpaceOnUse"
-            >
-              <stop offset="0%" :stop-color="gradientStops(spec)[0]" />
-              <stop offset="100%" :stop-color="gradientStops(spec)[1]" />
-            </linearGradient>
-          </defs>
-          <polyline
-            :points="points(spec)"
-            fill="none"
-            :stroke="strokeUrl(spec)"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <polygon
-            :points="fillPoints(spec)"
-            :fill="strokeUrl(spec)"
-            fill-opacity="0.12"
-          />
-        </svg>
-        <div class="series__playhead" :style="{ left: playheadPercent }" />
       </div>
+
+      <!-- Expanded Info Section -->
+      <Transition name="expand">
+        <div
+          v-if="spec.info && infoOpenKey === spec.key"
+          class="series-info-expanded"
+        >
+          <div class="series-info-expanded__content">
+            <div class="info-grid">
+              <div class="info-section">
+                <h4>Physiology</h4>
+                <p>{{ spec.info.physiology }}</p>
+              </div>
+              <div class="info-section">
+                <h4>Application</h4>
+                <p>{{ spec.info.application }}</p>
+              </div>
+            </div>
+
+            <div v-if="spec.info.couplings?.length" class="series__couplings">
+              <h4>PATHWAY COUPLINGS</h4>
+              <div class="couplings-grid">
+                <div
+                  v-for="edge in spec.info.couplings"
+                  :key="edge.source + edge.description"
+                  class="coupling-item"
+                >
+                  <div class="coupling-item__header">
+                    <span
+                      class="series__coupling-source"
+                      >{{ edge.source }}</span
+                    >
+                    <span
+                      class="series__coupling-mapping"
+                      >{{ describeMapping(edge.mapping) }}</span
+                    >
+                  </div>
+                  <div class="series__coupling-desc">
+                    {{ edge.description }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import type { ChartSeriesSpec, ResponseSpec, Signal } from '@/types';
 import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/colors';
 import { SIGNAL_LIBRARY } from '@/models';
+import Sortable from 'sortablejs';
+import { useProfilesStore } from '@/stores/profiles';
 
 const props = withDefaults(
   defineProps<{
@@ -124,6 +192,9 @@ const props = withDefaults(
 
 const emit = defineEmits<{ playhead: [number] }>();
 const infoOpenKey = ref<string | null>(null);
+const chartContainer = ref<HTMLElement | null>(null);
+const sortable = ref<Sortable | null>(null);
+const profilesStore = useProfilesStore();
 
 const MINUTES_IN_DAY = 24 * 60;
 
@@ -247,6 +318,10 @@ const toggleInfo = (key: string) => {
   infoOpenKey.value = infoOpenKey.value === key ? null : key;
 };
 
+const hideSignal = (key: string) => {
+  profilesStore.toggleSignal(key as Signal, false);
+};
+
 const describeMapping = (spec: ResponseSpec): string => {
   switch (spec.kind) {
     case 'linear':
@@ -261,6 +336,38 @@ const describeMapping = (spec: ResponseSpec): string => {
       return 'nonlinear';
   }
 };
+
+onMounted(() => {
+  if (chartContainer.value) {
+    sortable.value = new Sortable(chartContainer.value, {
+      animation: 150,
+      handle: '.series-sidebar__drag',
+      ghostClass: 'sortable-ghost',
+      onEnd: (evt) => {
+        if (evt.oldIndex === evt.newIndex) return;
+
+        const currentOrder = [...profilesStore.signalOrder];
+        const movedId = evt.item.dataset.id as Signal;
+
+        // Remove from old pos
+        const oldIdx = currentOrder.indexOf(movedId);
+        if (oldIdx > -1) currentOrder.splice(oldIdx, 1);
+
+        // Insert at new relative pos among the CURRENTLY VISIBLE specs
+        const visibleOrder = props.seriesSpecs.map(s => s.key as Signal);
+        const neighborId = visibleOrder[evt.newIndex!];
+        const neighborGlobalIdx = currentOrder.indexOf(neighborId);
+
+        currentOrder.splice(neighborGlobalIdx, 0, movedId);
+        profilesStore.updateSignalOrder(currentOrder);
+      }
+    });
+  }
+});
+
+onBeforeUnmount(() => {
+  sortable.value?.destroy();
+});
 
 watch(
   () => props.seriesSpecs,
@@ -278,8 +385,218 @@ watch(
   gap: 0.5rem;
 }
 
+.series-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.series-wrapper {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  transition: background 0.2s ease;
+  border-radius: 8px;
+}
+
+.series-wrapper:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.series-sidebar__drag {
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: grab;
+  opacity: 0;
+  font-size: 0.9rem;
+  padding: 4px;
+  transition: opacity 0.2s ease;
+  color: rgba(248, 250, 252, 0.35);
+  user-select: none;
+}
+
+.series-container:hover .series-sidebar__drag {
+  opacity: 1;
+}
+
+.series-sidebar__drag:active {
+  cursor: grabbing;
+}
+
+.series-sidebar {
+  width: 120px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0 10px;
+  background: rgba(32, 53, 95, 0.6);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  color: rgba(248, 250, 252, 0.65);
+  transition: all 0.2s ease;
+}
+
+.series-sidebar__actions {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+}
+
+.series-sidebar__btn {
+  background: transparent;
+  border: none;
+  color: rgba(248, 250, 252, 0.3);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.series-wrapper:hover .series-sidebar__btn {
+  opacity: 1;
+}
+
+.series-sidebar__btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+.series-sidebar__btn.is-active {
+  color: #8fbf5f;
+  opacity: 1;
+}
+
+.series-sidebar__hide:hover {
+  color: #ef4444;
+}
+
+.series-sidebar__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 2px;
+  text-align: right;
+}
+
+.series {
+  flex: 1;
+  min-width: 0;
+}
+
 .series__canvas {
   position: relative;
+}
+
+/* Expanded Info Section */
+.series-info-expanded {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: none;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  margin-top: -4px;
+  padding-top: 4px;
+  overflow: hidden;
+}
+
+.series-info-expanded__content {
+  padding: 1rem;
+  padding-left: 132px; /* Sidebar width + gap */
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-section h4 {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8fbf5f;
+  margin: 0 0 0.5rem 0;
+}
+
+.info-section p {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: rgba(248, 250, 252, 0.8);
+  margin: 0;
+}
+
+.series__couplings h4 {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(248, 250, 252, 0.4);
+  margin: 0 0 0.75rem 0;
+}
+
+.couplings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.coupling-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 0.6rem;
+}
+
+.coupling-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+}
+
+.series__coupling-source {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #f8fafc;
+}
+
+.series__coupling-mapping {
+  font-size: 0.7rem;
+  font-family: monospace;
+  color: #8fbf5f;
+}
+
+.series__coupling-desc {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(248, 250, 252, 0.6);
+}
+
+/* Transition */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 500px;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 .series__bands {
@@ -306,7 +623,7 @@ watch(
   z-index: 2;
 }
 
-svg {
+.series__canvas svg {
   width: 100%;
   height: 60px;
   display: block;
@@ -319,7 +636,8 @@ svg {
   position: absolute;
   inset: 0;
   background: var(--fill-color, transparent);
-  border-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
   z-index: 0;
 }
 
@@ -339,16 +657,6 @@ svg {
   pointer-events: none;
   color: #f5f5f5;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
-}
-
-.series__overlay--label {
-  top: 4px;
-  left: 6px;
-  opacity: 0.5;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  pointer-events: auto;
 }
 
 .series__overlay--value {
@@ -397,81 +705,13 @@ svg {
     rgba(255, 255, 255, 0.02) 10px,
     rgba(255, 255, 255, 0.02) 20px
   );
-  border-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
   pointer-events: none;
 }
 
-.series__info-button {
-  padding: 0.15rem 0.35rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(0, 0, 0, 0.35);
-  color: inherit;
-  cursor: pointer;
-  font-size: 0.65rem;
-  line-height: 1;
-}
-
-.series__info-button[aria-pressed='true'],
-.series__info-button:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #111;
-}
-
-.series__info-card {
-  position: absolute;
-  top: 26px;
-  left: 6px;
-  right: 6px;
-  padding: 0.4rem 0.5rem;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(8, 13, 27, 0.85);
-  color: #f8f8f8;
-  font-size: 0.72rem;
-  z-index: 3;
-  pointer-events: auto;
-}
-
-.series__info-card p {
-  margin: 0 0 0.25rem;
-}
-
-.series__info-card p:last-child {
-  margin-bottom: 0;
-}
-
-.series__couplings {
-  margin-top: 0.4rem;
-  font-size: 0.7rem;
-}
-
-.series__couplings ul {
-  list-style: none;
-  padding: 0;
-  margin: 0.25rem 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.series__couplings li {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  gap: 0.35rem;
-  align-items: baseline;
-}
-
-.series__coupling-source {
-  font-weight: 600;
-}
-
-.series__coupling-mapping {
-  font-feature-settings: 'tnum';
-  opacity: 0.7;
-}
-
-.series__coupling-desc {
-  opacity: 0.85;
+.sortable-ghost {
+  opacity: 0.2;
+  background: rgba(143, 191, 95, 0.1);
 }
 </style>

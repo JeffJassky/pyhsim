@@ -814,7 +814,7 @@ div.vis-tooltip {
 .vis-foreground .vis-group {
   position: relative;
   box-sizing: border-box;
-  border-bottom: 1px solid #bfbfbf;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .vis-foreground .vis-group:last-child {
@@ -985,7 +985,7 @@ div.vis-tooltip {
 }
 
 .vis-labelset .vis-label {
-  border-bottom: 1px solid #bfbfbf;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .vis-labelset .vis-label.draggable {
@@ -1246,7 +1246,7 @@ div.vis-tooltip {
 
 .vis-timeline {
   position: relative;
-  border: 1px solid #bfbfbf;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
   padding: 0;
   margin: 0;

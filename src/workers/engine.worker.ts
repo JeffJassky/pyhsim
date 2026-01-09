@@ -84,22 +84,37 @@ function computeItemEffect(
     weight: subject?.weight ?? 70, // Default to 70kg if missing
   };
   const I = typeof item.meta.intensity === 'number' ? item.meta.intensity : 1.0;
-  return kernel(t, paramsWithDuration, I);
+  // Intensity scaling is now handled here in the engine.
+  // This allows us to keep kernel definitions simple and strictly focused on physics/physiology.
+  const rawEffect = kernel(t, paramsWithDuration);
+  const result = rawEffect * I;
+  return Number.isFinite(result) ? result : 0;
 }
 
 self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const { gridMins, items, defs, options } = event.data;
+  
+  // Debug flags (default to true if missing)
+  const enableBaselines = options?.debug?.enableBaselines ?? true;
+  const enableInterventions = options?.debug?.enableInterventions ?? true;
+  const enableCouplings = options?.debug?.enableCouplings ?? true;
+  const enableHomeostasis = options?.debug?.enableHomeostasis ?? true;
+  const enableReceptors = options?.debug?.enableReceptors ?? true;
+  const enableTransporters = options?.debug?.enableTransporters ?? true;
+  const enableEnzymes = options?.debug?.enableEnzymes ?? true;
 
   console.debug('[EngineWorker] Received Request:', {
     gridLength: gridMins.length,
     itemCount: items.length,
-    hasSubject: !!options?.subject,
-    hasPhysiology: !!options?.physiology,
+    debug: options?.debug,
+    enableBaselines,
+    enableInterventions,
+    enableCouplings,
+    enableHomeostasis,
+    enableReceptors,
+    enableTransporters,
+    enableEnzymes
   });
-
-  if (options?.subject) {
-    console.debug(`[EngineWorker] Subject Context: ${options.subject.sex}, Age ${options.subject.age}, Day ${options.subject.cycleDay}`);
-  }
 
   const baselineFns: Partial<Record<Signal, BaselineFn>> = { ...SIGNAL_BASELINES };
   const baselineAdjustments: ProfileBaselineAdjustments = options?.profileBaselines ?? {};
@@ -139,15 +154,15 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   }
 
   // --- Homeostasis System (ODE-based feedback) ---
-  const enableHomeostasis = options?.enableHomeostasis ?? true;
+  const useHomeostasis = (options?.enableHomeostasis ?? true) && enableHomeostasis;
 
   // Initialize homeostasis state - use provided initial state or defaults
   const baseHomeostasisState = options?.initialHomeostasisState
     ? deserializeHomeostasisState(options.initialHomeostasisState)
     : { ...DEFAULT_HOMEOSTASIS_STATE };
 
-  // Apply receptor density adjustments from profiles (merge with any saved receptor states)
-  const receptorDensities = options?.receptorDensities ?? {};
+  // Apply receptor density adjustments (controlled by enableReceptors)
+  const receptorDensities = enableReceptors ? (options?.receptorDensities ?? {}) : {};
   const initialReceptorStates: Record<string, number> = {
     ...baseHomeostasisState.receptorStates,
   };
@@ -162,17 +177,14 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
     receptorStates: initialReceptorStates,
   };
 
-  // Apply transporter activity adjustments to clearance parameters
-  const transporterActivities = options?.transporterActivities ?? {};
+  // Apply transporter activity adjustments (controlled by enableTransporters)
+  const transporterActivities = enableTransporters ? (options?.transporterActivities ?? {}) : {};
   const datActivity = 1.0 + (transporterActivities['DAT'] ?? 0);
   const netActivity = 1.0 + (transporterActivities['NET'] ?? 0);
   const sertActivity = 1.0 + (transporterActivities['SERT'] ?? 0);
 
-  // Apply enzyme activity adjustments
-  // DAO: Diamine oxidase - degrades histamine in the gut
-  // MAO_A/B: Monoamine oxidases - degrade DA, NE, 5-HT
-  // COMT: Catechol-O-methyltransferase - degrades catecholamines
-  const enzymeActivities = options?.enzymeActivities ?? {};
+  // Apply enzyme activity adjustments (controlled by enableEnzymes)
+  const enzymeActivities = enableEnzymes ? (options?.enzymeActivities ?? {}) : {};
   const daoActivity = 1.0 + (enzymeActivities['DAO'] ?? 0);
   const maoAActivity = 1.0 + (enzymeActivities['MAO_A'] ?? 0);
   const maoBActivity = 1.0 + (enzymeActivities['MAO_B'] ?? 0);
@@ -189,6 +201,8 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
 
   const homeostasisParams: HomeostasisParams = {
     ...DEFAULT_HOMEOSTASIS_PARAMS,
+    // Metabolic rate affects homeostasis, could be considered Physiology or Conditions
+    // Keeping it linked to profile/physiology for now
     metabolicRate: options?.physiology?.metabolicCapacity ?? 1.0,
     insulinSensitivity: options?.physiology?.metabolicCapacity ?? 1.0,
   };
@@ -254,6 +268,24 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
     return Math.min(1, tryptophan);
   };
 
+  // Track if we've logged a NaN warning for a signal to avoid spam
+  const warnedSignals = new Set<string>();
+
+  const getBaseline = (signal: Signal, minute: number): number => {
+    if (!enableBaselines) return 0;
+    const fn = baselineFns[signal];
+    if (!fn) return 0;
+    const val = fn(minute as Minute, baselineContext);
+    if (!Number.isFinite(val)) {
+      if (!warnedSignals.has(signal)) {
+        console.warn(`[EngineWorker] Baseline for ${signal} returned ${val} at min ${minute}`);
+        warnedSignals.add(signal);
+      }
+      return 0;
+    }
+    return val;
+  };
+
   // Initialization of lastStepValues using analytical baselines
   const lastStepValues: Partial<Record<Signal, number>> = {};
   const startMinute = gridMins[0];
@@ -270,7 +302,8 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
     const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
     const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
     const shiftedMinute = (((startAdjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
-    const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
+    
+    const baseVal = getBaseline(signal, shiftedMinute);
     let val = baseVal * amplitude;
     if (isAsleepAtStart) {
       val = applySleepAdjustment(signal, val, sleepQuality);
@@ -291,41 +324,45 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
         const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
         const shiftedMinute = (((adjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
 
-        const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
+        const baseVal = getBaseline(signal, shiftedMinute);
         let val = baseVal * amplitude;
 
         val = applySleepAdjustment(signal, val, sleepQuality);
         
-        // Kernels
-        for (const item of items) {
-          const def = defsMap.get(item.meta.key);
-          if (!def) continue;
-          const kernelSet = getKernelSet(def.key, def.kernels);
-          // Sum effect from "today" (minute) and "yesterday" (minute + 1440) to handle wrapping
-          val += computeItemEffect(signal, kernelSet, minute as number, item, options?.physiology, options?.subject);
-          val += computeItemEffect(signal, kernelSet, (minute as number) + 1440, item, options?.physiology, options?.subject);
+        // Kernels (Interventions flag)
+        if (enableInterventions) {
+          for (const item of items) {
+            const def = defsMap.get(item.meta.key);
+            if (!def) continue;
+            const kernelSet = getKernelSet(def.key, def.kernels);
+            // Sum effect from "today" (minute) and "yesterday" (minute + 1440) to handle wrapping
+            val += computeItemEffect(signal, kernelSet, minute as number, item, options?.physiology, options?.subject);
+            val += computeItemEffect(signal, kernelSet, (minute as number) + 1440, item, options?.physiology, options?.subject);
+          }
         }
 
-        // Couplings
-        const modifiers = couplings[signal];
-        if (modifiers?.length) {
-          for (const modifier of modifiers) {
-            if (!includeSignalSet.has(modifier.source)) continue;
-            
-            // If homeostasis is enabled, skip couplings that are handled by the ODE system
-            if (enableHomeostasis && modifier.isManagedByHomeostasis) continue;
+        // Couplings (Couplings flag)
+        if (enableCouplings) {
+          const modifiers = couplings[signal];
+          if (modifiers?.length) {
+            for (const modifier of modifiers) {
+              if (!includeSignalSet.has(modifier.source)) continue;
+              
+              // If homeostasis is enabled, skip couplings that are handled by the ODE system
+              if (useHomeostasis && modifier.isManagedByHomeostasis) continue;
 
-            // Use series only if in recording pass and not at very beginning
-            // In warmup pass, or idx=0 of recording, rely on lastStepValues
-            const driver = (pass === 1 && idx > 0)
-              ? getCouplingDriver(modifier.source, series, idx, modifier.delay, gridStep, lastStepValues)
-              : lastStepValues[modifier.source] ?? 0;
+              // Use series only if in recording pass and not at very beginning
+              // In warmup pass, or idx=0 of recording, rely on lastStepValues
+              const driver = (pass === 1 && idx > 0)
+                ? getCouplingDriver(modifier.source, series, idx, modifier.delay, gridStep, lastStepValues)
+                : lastStepValues[modifier.source] ?? 0;
 
-            let contribution = applyResponseSpec(modifier.mapping, driver);
-            if (modifier.saturation) {
-              contribution = applyResponseSpec(modifier.saturation, contribution);
+              let contribution = applyResponseSpec(modifier.mapping, driver);
+              if (modifier.saturation) {
+                contribution = applyResponseSpec(modifier.saturation, contribution);
+              }
+              val += contribution;
             }
-            val += contribution;
           }
         }
         analyticalValues[signal] = val;
@@ -333,7 +370,7 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
 
       // 2. Step Homeostasis System
       let homeostasisCorrections: Record<string, number> = {};
-      if (enableHomeostasis) {
+      if (useHomeostasis) {
         const isAsleep = items.some(item => {
           const def = defsMap.get(item.meta.key);
           if (def?.key !== 'sleep') return false;
@@ -404,7 +441,7 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
       for (const signal of includeSignals) {
         let value = analyticalValues[signal] ?? 0;
 
-        if (enableHomeostasis && homeostasisCorrections[signal] !== undefined) {
+        if (useHomeostasis && homeostasisCorrections[signal] !== undefined) {
           value += homeostasisCorrections[signal];
         }
 
@@ -451,7 +488,7 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   console.debug('[EngineWorker] Computed. First Sample:', samples);
 
   // Serialize final homeostasis state for persistence
-  const finalHomeostasisState = enableHomeostasis
+  const finalHomeostasisState = useHomeostasis
     ? serializeHomeostasisState(homeostasisState)
     : undefined;
 

@@ -229,10 +229,9 @@ export type InterventionKey =
  * Kernel function signature (Worker-side).
  * t: minutes since start (can be negative)
  * p: parameter bag (from ParamValues)
- * I: intensity 0..1
  * returns delta to *add* to signal baseline at that time
  */
-export type KernelFn = (t: number, p: ParamValues, I: number) => number;
+export type KernelFn = (t: number, p: ParamValues) => number;
 
 /**
  * To make kernels portable to the Worker without bundler coupling,
@@ -356,6 +355,7 @@ export interface TimelineItem {
   style?: string; // vis-timeline inline style (optional)
   content?: string; // text on the bar
   meta: TimelineItemMeta;
+  group?: string | number;
 }
 
 /** Minimal runtime shape sent to worker (faster) */
@@ -396,6 +396,16 @@ export interface WorkerComputeRequest {
     enableHomeostasis?: boolean;
     /** Initial homeostasis state for multi-day simulations */
     initialHomeostasisState?: HomeostasisStateSnapshot;
+    /** Debug flags for signal isolation */
+    debug?: {
+      enableBaselines?: boolean;
+      enableInterventions?: boolean;
+      enableCouplings?: boolean;
+      enableHomeostasis?: boolean;
+      enableReceptors?: boolean;
+      enableTransporters?: boolean;
+      enableEnzymes?: boolean;
+    };
   };
 }
 

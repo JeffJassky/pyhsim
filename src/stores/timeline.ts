@@ -11,7 +11,6 @@ interface TimelineStoreState {
   selectedDate: string; // YYYY-MM-DD
 }
 
-const DEFAULT_WAKE_MINUTE: Minute = (7 * 60) as Minute;
 const DEFAULT_SLEEP_START_MINUTE: Minute = (23 * 60) as Minute;
 const DEFAULT_SLEEP_DURATION_MIN = 8 * 60;
 
@@ -32,7 +31,6 @@ const createRoutineItem = (key: InterventionKey, startMin: number, durationMin: 
 };
 
 const createDefaultRoutineItems = (): TimelineItem[] => [
-  createRoutineItem('wake', DEFAULT_WAKE_MINUTE, 60),
   createRoutineItem('sleep', DEFAULT_SLEEP_START_MINUTE, DEFAULT_SLEEP_DURATION_MIN),
 ];
 
@@ -113,10 +111,6 @@ export const useTimelineStore = defineStore('timeline', {
   },
   actions: {
     ensureRoutineAnchors() {
-      const hasWake = this.items.some((it) => it.meta.key === 'wake');
-      if (!hasWake) {
-        this.items.push(createRoutineItem('wake', DEFAULT_WAKE_MINUTE, 15));
-      }
       const hasSleep = this.items.some((it) => it.meta.key === 'sleep');
       if (!hasSleep) {
         this.items.push(createRoutineItem('sleep', DEFAULT_SLEEP_START_MINUTE, DEFAULT_SLEEP_DURATION_MIN));

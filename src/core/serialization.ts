@@ -13,10 +13,12 @@ export const toMinuteOfDay = (iso: string): Minute => {
 export const timelineItemToWorker = (item: TimelineItem): ItemForWorker => {
   const startMin = toMinuteOfDay(item.start);
   const endMin = toMinuteOfDay(item.end);
+  let duration = endMin - startMin;
+  if (duration < 0) duration += 24 * 60;
   return {
     id: item.id,
     startMin,
-    durationMin: Math.max(1, endMin - startMin),
+    durationMin: Math.max(1, duration),
     meta: item.meta,
   };
 };

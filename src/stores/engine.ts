@@ -6,6 +6,7 @@ import type {
   TimelineItem,
   WorkerComputeRequest,
   WorkerComputeResponse,
+  HomeostasisStateSnapshot,
 } from '@/types';
 import { SIGNALS_ALL } from '@/types';
 import { rangeMinutes } from '@/utils/time';
@@ -13,12 +14,23 @@ import { SIGNAL_BASELINES } from '@/models';
 import { buildInterventionLibrary } from '@/models/interventions';
 import { buildWorkerRequest, toMinuteOfDay } from '@/core/serialization';
 import { useProfilesStore } from './profiles';
+import { useTimelineStore } from './timeline';
 import { buildProfileAdjustments } from '@/models/profiles';
 import { derivePhysiology } from '@/models/subject';
 
 interface EngineStoreState extends EngineState {
   busy: boolean;
   error?: string;
+  debug: {
+    enableBaselines: boolean;
+    enableInterventions: boolean;
+    enableCouplings: boolean;
+    enableHomeostasis: boolean;
+    enableReceptors: boolean;
+    enableTransporters: boolean;
+    enableEnzymes: boolean;
+  };
+  finalHomeostasisState?: HomeostasisStateSnapshot;
 }
 
 const defaultGridStep = 5;
@@ -42,6 +54,16 @@ export const useEngineStore = defineStore('engine', {
     busy: false,
     error: undefined,
     lastComputedAt: undefined,
+    debug: {
+      enableBaselines: true,
+      enableInterventions: true,
+      enableCouplings: true,
+      enableHomeostasis: true,
+      enableReceptors: true,
+      enableTransporters: true,
+      enableEnzymes: true,
+    },
+    finalHomeostasisState: undefined,
   }),
   actions: {
     setGridStep(step: number) {
@@ -52,6 +74,11 @@ export const useEngineStore = defineStore('engine', {
     setBaselines(map: EngineState['baselines']) {
       this.baselines = map;
     },
+    updateDebug(flags: Partial<EngineStoreState['debug']>) {
+      this.debug = { ...this.debug, ...flags };
+      // Trigger recompute immediately when debug flags change
+      this.recompute(); 
+    },
     async recompute(payload?: { items?: TimelineItem[]; defs?: WorkerComputeRequest['defs'] }) {
       if (typeof Worker === 'undefined') {
         this.error = 'Web Workers are not supported in this environment';
@@ -60,7 +87,7 @@ export const useEngineStore = defineStore('engine', {
       if (!worker) {
         worker = new Worker(new URL('../workers/engine.worker.ts', import.meta.url), { type: 'module' });
         worker.onmessage = (event: MessageEvent<WorkerComputeResponse>) => {
-          const { series } = event.data;
+          const { series, finalHomeostasisState } = event.data;
           console.debug('[EngineStore] Received series from worker. Keys:', Object.keys(series));
           
           // Data validation check
@@ -77,6 +104,7 @@ export const useEngineStore = defineStore('engine', {
           }
 
           this.series = series;
+          this.finalHomeostasisState = finalHomeostasisState;
           this.busy = false;
           this.lastComputedAt = Date.now();
         };
@@ -86,12 +114,13 @@ export const useEngineStore = defineStore('engine', {
           this.busy = false;
         };
       }
-      const items = payload?.items ?? [];
+      const timelineStore = useTimelineStore();
+      const items = payload?.items ?? timelineStore.items;
       const clonedItems = JSON.parse(JSON.stringify(items));
       const gridCopy = [...this.gridMins] as Minute[];
-      const wakeItem = items.find((item) => item.meta.key === 'wake');
       const sleepItem = items.find((item) => item.meta.key === 'sleep');
-      const wakeOffsetMin = wakeItem ? toMinuteOfDay(wakeItem.start) : undefined;
+      // Wake time is determined by when the sleep block ends
+      const wakeOffsetMin = sleepItem ? toMinuteOfDay(sleepItem.end) : undefined;
       const sleepMinutes =
         sleepItem && sleepItem.start && sleepItem.end
           ? (() => {
@@ -133,6 +162,7 @@ export const useEngineStore = defineStore('engine', {
           enzymeActivities: profileAdjustments.enzymeActivities,
           subject,
           physiology,
+          debug: { ...this.debug },
         },
       });
       this.busy = true;

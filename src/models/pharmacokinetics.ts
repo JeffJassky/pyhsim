@@ -930,38 +930,38 @@ export function generatePKKernel(
   if (hasReceptorData) {
     if (mechanism === 'agonist') {
       // Use operationalAgonism helper
-      return `function(t,p,I){${preamble}
+      return `function(t,p){${preamble}
         // Operational agonism model via helper
-        return I * operationalAgonism(conc, ${bindingConstant}, ${tauValue}, ${effectGain * 100});
+        return operationalAgonism(conc, ${bindingConstant}, ${tauValue}, ${effectGain * 100});
       }`;
     } else if (mechanism === 'antagonist') {
       // Use receptorOccupancy helper
-      return `function(t,p,I){${preamble}
+      return `function(t,p){${preamble}
         // Receptor occupancy via helper
         const occupancy = receptorOccupancy(conc, ${bindingConstant});
-        return I * ${effectGain * 100} * occupancy;
+        return ${effectGain * 100} * occupancy;
       }`;
     } else if (mechanism === 'PAM') {
       // PAM enhances endogenous signaling
-      return `function(t,p,I){${preamble}
+      return `function(t,p){${preamble}
         // PAM occupancy via helper
         const pamOccupancy = receptorOccupancy(conc, ${bindingConstant});
         const enhancement = 1 + (${alphaValue} - 1) * pamOccupancy;
-        return I * ${effectGain * 100} * (enhancement - 1);
+        return ${effectGain * 100} * (enhancement - 1);
       }`;
     } else if (mechanism === 'NAM') {
       // NAM reduces signaling
-      return `function(t,p,I){${preamble}
+      return `function(t,p){${preamble}
         // NAM occupancy via helper
         const namOccupancy = receptorOccupancy(conc, ${bindingConstant});
         const reduction = 1 - (1 - ${alphaValue}) * namOccupancy;
-        return -I * ${Math.abs(effectGain) * 100} * (1 - reduction);
+        return -${Math.abs(effectGain) * 100} * (1 - reduction);
       }`;
     }
   }
 
   // Fallback: Simple linear PD (legacy behavior)
-  return `function(t,p,I){${preamble}
-    return I * ${effectGain} * dose * curve;
+  return `function(t,p){${preamble}
+    return ${effectGain} * dose * curve;
   }`;
 }

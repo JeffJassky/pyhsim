@@ -12,7 +12,7 @@ self.onmessage = (event: MessageEvent<{ kernel: string | { fn: string; desc: str
     series[sig] = new Float32Array(minutes.length);
   }
   minutes.forEach((minute, idx) => {
-    series[signal][idx] = fn(minute, params, 1);
+    series[signal][idx] = fn(minute, params);
   });
   self.postMessage({ series });
 };

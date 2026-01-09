@@ -1,25 +1,31 @@
 <template>
-  <div class="timeline-container" @mousemove="handleMouseMove" @mouseleave="hoverMinute = null">
+  <div
+    class="timeline-container"
+    @mousemove="handleMouseMove"
+    @mouseleave="hoverMinute = null"
+  >
     <div ref="container" class="timeline-vis" />
-    
+
     <!-- Hover Playhead -->
-    <div 
-      v-if="hoverMinute !== null" 
-      class="playhead-line hover-line" 
+    <div
+      v-if="hoverMinute !== null"
+      class="playhead-line hover-line"
       :style="{ left: `${getMinutePercent(hoverMinute)}%` }"
     >
-      <button class="playhead-add-btn hover-add-btn" @click="handlePlayheadAdd(hoverMinute)">
+      <button
+        class="playhead-add-btn hover-add-btn"
+        @click="handlePlayheadAdd(hoverMinute)"
+      >
         <span class="btn-icon">+</span>
         <span class="btn-label">Add Item</span>
       </button>
     </div>
 
     <!-- Active Playhead -->
-    <div 
-      class="playhead-line active-line" 
+    <div
+      class="playhead-line active-line"
       :style="{ left: `${getMinutePercent(playheadMin)}%` }"
-    >
-    </div>
+    ></div>
   </div>
 </template>
 
@@ -31,6 +37,7 @@ import { VTooltip } from 'floating-vue';
 import '@/assets/vis-timeline.css';
 import type { Minute, TimelineItem, UUID } from '@/types';
 import { useLibraryStore } from '@/stores/library';
+import { INTERVENTION_CATEGORIES } from '@/models/categories';
 
 const props = withDefaults(
   defineProps<{
@@ -48,7 +55,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   select: [UUID | undefined];
   remove: [UUID];
-  update: [{ id: UUID; start: string; end: string }];
+  update: [{ id: UUID; start: string; end: string; group?: string | number }];
   playhead: [Minute];
   triggerAdd: [Minute];
 }>();
@@ -57,13 +64,42 @@ const container = ref<HTMLDivElement | null>(null);
 const hoverMinute = ref<number | null>(null);
 let timeline: VisTimeline | null = null;
 let dataset: DataSet<any> | null = null;
+let groupDataset: DataSet<any> | null = null;
 const library = useLibraryStore();
 
 const MINUTES_IN_DAY = 24 * 60;
 
 const getMinutePercent = (minute: number) => {
+  if (!timeline) return 0;
+  const { start, end } = getDayBounds();
+  const totalMs = end.getTime() - start.getTime();
+
+  // Calculate the time at the start of the visible window
+  const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
+  const windowStart = new Date(baseDate);
+  windowStart.setHours(0, 0, 0, 0);
+  const startHours = Math.floor(props.dayStartMin / 60);
+  const startMins = props.dayStartMin % 60;
+  windowStart.setHours(startHours, startMins, 0, 0);
+
+  const currentMs = (minute * 60 * 1000);
+  const startMs = (props.dayStartMin * 60 * 1000);
+
   const offset = ((minute - props.dayStartMin + MINUTES_IN_DAY) % MINUTES_IN_DAY);
-  return (offset / MINUTES_IN_DAY) * 100;
+  const percent = (offset / MINUTES_IN_DAY) * 100;
+
+  // Since we have a left panel (group labels), we need to factor that in
+  // vis-timeline's internal mapping is complex, but we can try to find the panel width
+  const leftPanel = container.value?.querySelector('.vis-panel.vis-left') as HTMLElement;
+  const leftWidth = leftPanel?.offsetWidth || 0;
+  const centerPanel = container.value?.querySelector('.vis-panel.vis-center') as HTMLElement;
+  const centerWidth = centerPanel?.offsetWidth || 1;
+  const totalWidth = container.value?.offsetWidth || 1;
+
+  const leftPercent = (leftWidth / totalWidth) * 100;
+  const centerFactor = (centerWidth / totalWidth);
+
+  return leftPercent + (percent * centerFactor);
 };
 
 const handleMouseMove = (event: MouseEvent) => {
@@ -79,25 +115,69 @@ const handlePlayheadAdd = (m: number) => {
   emit('triggerAdd', m as Minute);
 };
 
+const getItemGroup = (item: TimelineItem) => {
+  if (item.group) return item.group;
+  const def = library.defs.find((d) => d.key === item.meta.key);
+  return def?.categories?.[0] || 'general';
+};
+
 const toVisItems = (items: TimelineItem[]) =>
   items.map((item) => {
     const def = library.defs.find((d) => d.key === item.meta.key);
     const icon = def?.icon ? `${def.icon} ` : '';
-    const label = item.content ?? item.meta.labelOverride ?? def?.label ?? item.meta.key;
+    let label = item.content ?? item.meta.labelOverride ?? def?.label ?? item.meta.key;
+    let content = `${icon}${label}`;
+
+    if (item.meta.key === 'sleep') {
+      const start = new Date(item.start);
+      const end = new Date(item.end);
+      let diffMs = end.getTime() - start.getTime();
+      // Handle overnight wrap (if end < start, assume next day)
+      if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const mins = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const durationStr = `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+
+      content = `
+        <div class="timeline-item-sleep">
+          <span class="sleep-label">${icon}Sleep <span style="opacity:0.7; font-weight:400; font-size:0.8em; margin-left:4px;">${durationStr}</span></span>
+          <span class="wake-label">Wake ☀️</span>
+        </div>
+      `;
+    }
+
     return {
       id: item.id,
-      content: `${icon}${label}`,
+      content,
       start: item.start,
       end: item.end,
       type: item.type,
+      group: getItemGroup(item),
       _tooltip: label,
       className: item.meta.locked ? 'timeline-item--locked' : undefined,
     };
   });
 
 const syncItems = () => {
-  if (!dataset) return;
+  if (!dataset || !groupDataset) return;
   const selectedId = props.selectedId;
+
+  // Dynamic group management
+  const activeGroups = new Set(props.items.map(getItemGroup));
+  const existingGroups = groupDataset.getIds();
+
+  // Add missing groups
+  activeGroups.forEach(gid => {
+    if (!existingGroups.includes(gid)) {
+      const cat = INTERVENTION_CATEGORIES.find(c => c.id === gid);
+      groupDataset?.add({
+        id: gid,
+        content: cat ? `${cat.icon} ${cat.label}` : gid.toString().charAt(0).toUpperCase() + gid.toString().slice(1)
+      });
+    }
+  });
+
   dataset.clear();
   dataset.add(toVisItems(props.items));
   if (selectedId) {
@@ -149,11 +229,15 @@ const options = (): TimelineOptions => {
         day: 'MMMM YYYY',
       },
     },
-    zoomable: false,
-    moveable: false,
+    zoomable: true,
+	  moveable: true,
+	  zoomMin: 3600000, // 1 hour
+	zoomMax: 86400000, // 1 day
+    groupEditable: true,
     editable: props.editable
       ? {
           updateTime: true,
+          updateGroup: true,
           overrideItems: false,
         }
       : false,
@@ -162,6 +246,7 @@ const options = (): TimelineOptions => {
         id: item.id as UUID,
         start: toISO(item.start),
         end: toISO(item.end ?? item.start),
+        group: item.group,
       });
       callback(item);
     },
@@ -171,12 +256,12 @@ const options = (): TimelineOptions => {
     },
     template: (item: any, element: any, data: any) => {
       const container = document.createElement('div');
-      
+
       const vnode = h('div', {
         innerHTML: item.content,
         style: { width: '100%', height: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
       });
-      
+
       const tooltip = item._tooltip;
       if (tooltip) {
         const vnWithTooltip = withDirectives(vnode, [[VTooltip, {
@@ -188,7 +273,7 @@ const options = (): TimelineOptions => {
       } else {
         render(vnode, container);
       }
-      
+
       return container;
     },
   };
@@ -196,13 +281,20 @@ const options = (): TimelineOptions => {
 
 const initTimeline = () => {
   if (!container.value) return;
+
+  groupDataset = new DataSet([]);
   dataset = new DataSet(toVisItems(props.items));
-  timeline = new VisTimeline(container.value, dataset, options());
+
+  timeline = new VisTimeline(container.value, dataset, groupDataset, options());
+
+  // Initial sync to populate groups
+  syncItems();
+
   timeline.on('select', (event) => {
     const id = (event.items?.[0] as UUID) || undefined;
     emit('select', id);
   });
-  
+
   const shouldHandlePlayheadClick = (event: any) => {
     return event.what === 'background' || event.what === 'axis';
   };
@@ -223,6 +315,7 @@ onBeforeUnmount(() => {
   timeline?.destroy();
   timeline = null;
   dataset = null;
+  groupDataset = null;
 });
 
 watch(
@@ -278,8 +371,23 @@ watch(
   border-radius: 14px;
 }
 
-.timeline-vis :deep(.vis-panel) {
-  background: transparent;
+.timeline-vis :deep(.vis-panel.vis-left) {
+  display: block;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  width: 120px !important;
+}
+
+.timeline-vis :deep(.vis-panel.vis-right) {
+  display: none;
+}
+
+.timeline-vis :deep(.vis-label) {
+  color: rgba(248, 250, 252, 0.65);
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
 }
 
 .timeline-vis :deep(.vis-item) {
@@ -312,7 +420,8 @@ watch(
   box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.7), 0 10px 25px rgba(14, 165, 233, 0.4);
 }
 
-.timeline-vis :deep(.vis-time-axis .vis-grid) {
+.timeline-vis :deep(.vis-time-axis .vis-grid),
+.timeline-vis :deep(.vis-grid.vis-horizontal) {
   border-color: rgba(248, 250, 252, 0.05);
 }
 
@@ -399,5 +508,21 @@ watch(
 
 .hover-line:hover .hover-add-btn {
   opacity: 1;
+}
+
+/* Custom Sleep Item Styling */
+:deep(.timeline-item-sleep) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.9rem;
+}
+
+:deep(.sleep-label) {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 </style>

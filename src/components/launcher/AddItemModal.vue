@@ -136,6 +136,8 @@ import { ref, computed, nextTick, watch } from 'vue';
 import { useLibraryStore } from '@/stores/library';
 import { searchFoods } from '@/api/openfoodfacts';
 import type { InterventionDef, FoodSearchHit } from '@/types';
+import { INTERVENTION_CATEGORIES, type InterventionCategory } from '@/models/categories';
+import { GOAL_CATEGORIES } from '@/models/goals';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -150,7 +152,7 @@ const emit = defineEmits<{
 
 const library = useLibraryStore();
 
-type Category = { id: string; label: string; icon: string };
+type Category = InterventionCategory;
 type View = 'categories' | 'items' | 'food';
 
 const view = ref<View>('categories');
@@ -165,27 +167,8 @@ const loading = ref(false);
 const expandedFoodId = ref<string | null>(null);
 const foodQty = ref(1);
 
-const typeCategories: Category[] = [
-  { id: 'food', label: 'Food', icon: '🍎' },
-  { id: 'exercise', label: 'Exercise', icon: '🏃' },
-  { id: 'medications', label: 'Medications', icon: '💊' },
-  { id: 'supplements', label: 'Supplements', icon: '🍃' },
-  { id: 'wellness', label: 'Wellness', icon: '🧘' },
-  { id: 'environment', label: 'Environment', icon: '☀️' },
-  { id: 'social', label: 'Social', icon: '🗣️' },
-];
-
-const goalCategories: Category[] = [
-  { id: 'energy', label: 'Energy', icon: '⚡' },
-  { id: 'mood', label: 'Mood', icon: '🎭' },
-  { id: 'focus', label: 'Focus', icon: '🧠' },
-  { id: 'recovery', label: 'Recovery', icon: '💪' },
-  { id: 'sleep', label: 'Sleep', icon: '😴' },
-  { id: 'digestion', label: 'Digestion', icon: '🦠' },
-  { id: 'pain', label: 'Pain', icon: '❤️‍🩹' },
-  { id: 'hormones', label: 'Hormones', icon: '🧬' },
-  { id: 'calm', label: 'Calm', icon: '😌' },
-];
+const typeCategories = INTERVENTION_CATEGORIES;
+const goalCategories = GOAL_CATEGORIES;
 
 const searchPlaceholder = computed(() => {
   if (view.value === 'food') return 'Search foods (e.g. oatmeal, salmon)...';

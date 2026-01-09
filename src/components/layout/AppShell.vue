@@ -3,6 +3,22 @@
     class="app-shell"
     :class="{ 'app-shell--sidebar-lock': alwaysShowSidebar }"
   >
+    <header class="app-shell__header" v-if="!isOnboarding">
+      <div class="header-left">
+        <span class="logo">physim</span>
+      </div>
+      <div class="header-center">
+        <slot name="header-center" />
+      </div>
+      <div class="header-right">
+        <button class="profile-link" @click="debugModalOpen = true" style="margin-right: 1.5rem">
+          Dev Tools
+        </button>
+        <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
+          My Profile
+        </button>
+      </div>
+    </header>
     <div
       class="app-shell__body"
       :class="{ 
@@ -48,11 +64,20 @@
         @click="closeSidebar"
       ></div>
     </div>
+    <DebugModal v-model="debugModalOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { useUIStore } from '@/stores/ui';
+import DebugModal from '@/components/admin/DebugModal.vue';
+
+const uiStore = useUIStore();
+const route = useRoute();
+const isOnboarding = computed(() => route.name === 'onboarding');
+const debugModalOpen = ref(false);
 
 withDefaults(
   defineProps<{
@@ -98,6 +123,57 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+
+.app-shell__header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1.5rem;
+  background: rgba(13, 17, 23, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+}
+
+.header-left {
+  flex-shrink: 0;
+}
+
+.header-center {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.profile-link {
+  color: white;
+  font-weight: 500;
+  opacity: 0.7;
+  font-size: 0.9rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.profile-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
 
 .app-shell {
   display: flex;

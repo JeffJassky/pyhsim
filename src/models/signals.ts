@@ -90,47 +90,164 @@ import type {
 import { DEFAULT_SUBJECT, getMenstrualHormones } from "./subject";
 
 const MINUTES_IN_DAY = 24 * 60;
-const minutes = (hours: number) => hours * 60;
+const TWO_PI = 2 * Math.PI;
 
-const gaussian = (minute: Minute, centerHours: number, widthMinutes: number) => {
-  const center = minutes(centerHours);
-  const diff = Math.abs(minute - center);
-  const d = Math.min(diff, MINUTES_IN_DAY - diff);
-  return Math.exp(-Math.pow(d / widthMinutes, 2));
+// ============================================================================
+// PHASE-BASED HELPER FUNCTIONS
+// ============================================================================
+// These functions use phase angles (θ = 2π * minute / 1440) instead of raw
+// minutes, providing inherently continuous evaluation across day boundaries.
+// cos(2π) = cos(0), so there's no discontinuity at midnight.
+
+/**
+ * Convert minute to phase angle (0 to 2π for one day)
+ * This is the core transformation for continuous time modeling.
+ */
+const minuteToPhase = (minute: Minute): number => {
+  return (minute / MINUTES_IN_DAY) * TWO_PI;
 };
 
-const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
-
-const wrapMinute = (minute: Minute) => {
-  let m = minute % MINUTES_IN_DAY;
-  if (m < 0) m += MINUTES_IN_DAY;
-  return m as Minute;
+/**
+ * Convert hour-of-day to phase angle
+ * e.g., 6 AM = π/2, 12 PM = π, 6 PM = 3π/2
+ */
+const hourToPhase = (hour: number): number => {
+  return (hour / 24) * TWO_PI;
 };
 
-const periodicWindow = (minute: Minute, startHour: number, endHour: number, slopeMinutes: number = 45) => {
-  const m = minute; // Work with raw minute, don't wrap yet for the logic below
-  let start = minutes(startHour);
-  let end = minutes(endHour);
-  
-  // Normalize interval to be [start, end] with end > start
-  if (end < start) {
-    end += MINUTES_IN_DAY;
+/**
+ * Convert duration in minutes to phase width
+ */
+const minutesToPhaseWidth = (mins: number): number => {
+  return (mins / MINUTES_IN_DAY) * TWO_PI;
+};
+
+/**
+ * Convert width in minutes to von Mises concentration parameter
+ * Higher concentration = narrower peak
+ */
+const widthToConcentration = (widthMinutes: number): number => {
+  const widthPhase = minutesToPhaseWidth(widthMinutes);
+  // Calibrated to match the visual width of the old gaussian function
+  return 2 / (widthPhase * widthPhase);
+};
+
+/**
+ * Von Mises-like gaussian on circular domain
+ * Uses exp(κ * (cos(θ - θ₀) - 1)) which peaks at 1 when θ = θ₀
+ * and smoothly decays based on concentration κ
+ *
+ * @param phase - Current phase angle
+ * @param centerPhase - Phase angle of peak
+ * @param concentration - Higher = narrower peak (use widthToConcentration for familiar units)
+ */
+const gaussianPhase = (phase: number, centerPhase: number, concentration: number): number => {
+  const diff = phase - centerPhase;
+  return Math.exp(concentration * (Math.cos(diff) - 1));
+};
+
+/**
+ * Smooth window function using cosine blend
+ * Returns 1 inside the window, 0 outside, with smooth transitions at edges.
+ * Handles wrap-around windows (e.g., 22:00 to 06:00) correctly.
+ *
+ * @param phase - Current phase angle
+ * @param startPhase - Phase angle where window begins
+ * @param endPhase - Phase angle where window ends
+ * @param transitionWidth - Phase width of smooth transition (default ~30 min)
+ */
+const windowPhase = (
+  phase: number,
+  startPhase: number,
+  endPhase: number,
+  transitionWidth: number = minutesToPhaseWidth(30)
+): number => {
+  // Normalize phase to [0, 2π)
+  let p = phase % TWO_PI;
+  if (p < 0) p += TWO_PI;
+
+  // Normalize start and end to [0, 2π)
+  let s = startPhase % TWO_PI;
+  if (s < 0) s += TWO_PI;
+  let e = endPhase % TWO_PI;
+  if (e < 0) e += TWO_PI;
+
+  // Handle wrap-around windows (e.g., 22:00 to 06:00 where end < start)
+  const wraps = e < s;
+
+  // Check if we're in the window
+  const inWindow = wraps
+    ? (p >= s || p <= e)
+    : (p >= s && p <= e);
+
+  if (!inWindow) return 0;
+
+  // Calculate distance to start edge
+  let distToStart: number;
+  if (wraps && p < s) {
+    distToStart = p + (TWO_PI - s);
+  } else {
+    distToStart = p - s;
   }
-  
-  // Sum windows from previous, current, and next day to ensure continuity
-  let val = 0;
-  for (let k = -1; k <= 1; k++) {
-    const shift = k * MINUTES_IN_DAY;
-    const s = start + shift;
-    const e = end + shift;
-    // Standard boxcar: sigmoid rise - sigmoid fall
-    const rise = sigmoid((m - s) / slopeMinutes);
-    const fall = sigmoid((m - e) / slopeMinutes);
-    val += (rise - fall);
+
+  // Calculate distance to end edge
+  let distToEnd: number;
+  if (wraps && p > e) {
+    distToEnd = (TWO_PI - p) + e;
+  } else {
+    distToEnd = e - p;
   }
-  
-  return val;
+
+  // Cosine fade at edges for smooth transitions
+  const fadeIn = distToStart < transitionWidth
+    ? 0.5 * (1 - Math.cos(Math.PI * distToStart / transitionWidth))
+    : 1;
+  const fadeOut = distToEnd < transitionWidth
+    ? 0.5 * (1 - Math.cos(Math.PI * distToEnd / transitionWidth))
+    : 1;
+
+  return fadeIn * fadeOut;
 };
+
+/**
+ * Simple cosine rhythm - peaks at 1 at centerPhase, troughs at 0 opposite
+ * Useful for signals with simple sinusoidal circadian patterns.
+ *
+ * @param phase - Current phase angle
+ * @param peakPhase - Phase angle of maximum
+ */
+const cosineRhythm = (phase: number, peakPhase: number): number => {
+  return 0.5 * (1 + Math.cos(phase - peakPhase));
+};
+
+/**
+ * Smooth sigmoid-like transition using cosine
+ * Returns 0 before transition, 1 after, with smooth cosine blend.
+ *
+ * @param phase - Current phase angle
+ * @param transitionPhase - Center of the transition
+ * @param transitionWidth - Width of the transition region
+ */
+const sigmoidPhase = (
+  phase: number,
+  transitionPhase: number,
+  transitionWidth: number = minutesToPhaseWidth(45)
+): number => {
+  // Normalize phase difference to [-π, π]
+  let diff = phase - transitionPhase;
+  while (diff > Math.PI) diff -= TWO_PI;
+  while (diff < -Math.PI) diff += TWO_PI;
+
+  if (diff < -transitionWidth / 2) return 0;
+  if (diff > transitionWidth / 2) return 1;
+
+  // Cosine blend in the transition region
+  return 0.5 * (1 + Math.sin(Math.PI * diff / transitionWidth));
+};
+
+// ============================================================================
+// END PHASE-BASED HELPERS
+// ============================================================================
 
 const getDayOfCycle = (
   minute: Minute,
@@ -253,7 +370,8 @@ export const SIGNAL_DEFS: SignalDef[] = [
     goals: ["sleep", "recovery", "calm"],
     baseline: fnBaseline((minute) => {
       // Peak ~80 pg/mL. Window from 15:00 to 23:30 approx.
-      return 80.0 * periodicWindow(minute, 15, 23.5, 30);
+      const p = minuteToPhase(minute);
+      return 80.0 * windowPhase(p, hourToPhase(15), hourToPhase(23.5), minutesToPhaseWidth(30));
     }),
     metadata: { version: "1.0.0" },
   },
@@ -275,9 +393,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "mid" },
     goals: ["sleep", "recovery"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const couple = gaussian(m, 8, 260);
-      const nightRise = periodicWindow(minute, 16.5, 8, 45);
+      const p = minuteToPhase(minute);
+      const couple = gaussianPhase(p, hourToPhase(8), widthToConcentration(260));
+      const nightRise = windowPhase(p, hourToPhase(16.5), hourToPhase(8), minutesToPhaseWidth(45));
       // Baseline ~2, Peak ~6 pg/mL
       return 1.8 + 3.5 * couple + 3.5 * nightRise;
     }),
@@ -301,9 +419,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "mid" },
     goals: ["energy", "sleep", "productivity"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const day = gaussian(m, 9, 300);
-      const eveningSuppress = periodicWindow(minute, 15, 4, 35);
+      const p = minuteToPhase(minute);
+      const day = gaussianPhase(p, hourToPhase(9), widthToConcentration(300));
+      const eveningSuppress = windowPhase(p, hourToPhase(15), hourToPhase(4), minutesToPhaseWidth(35));
       return 20.0 + 50.0 * day - 25.0 * eveningSuppress;
     }),
     metadata: { version: "1.0.0" },
@@ -323,10 +441,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["focus", "energy", "mood", "productivity"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const morningDrive = gaussian(m, 3.5, 160);
-      const afternoonPlateau = gaussian(m, 6.5, 320);
-      const eveningDrop = gaussian(m, 16, 200);
+      const p = minuteToPhase(minute);
+      const morningDrive = gaussianPhase(p, hourToPhase(3.5), widthToConcentration(160));
+      const afternoonPlateau = gaussianPhase(p, hourToPhase(6.5), widthToConcentration(320));
+      const eveningDrop = gaussianPhase(p, hourToPhase(16), widthToConcentration(200));
       return (
         20.0 +
         45.0 * morningDrive +
@@ -359,9 +477,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "mid" },
     goals: ["mood", "calm", "sleep"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const lateMorning = gaussian(m, 5, 260);
-      const afternoon = gaussian(m, 9, 300);
+      const p = minuteToPhase(minute);
+      const lateMorning = gaussianPhase(p, hourToPhase(5), widthToConcentration(260));
+      const afternoon = gaussianPhase(p, hourToPhase(9), widthToConcentration(300));
       return 20.0 + 25.0 * (lateMorning + afternoon);
     }),
     couplings: [
@@ -394,10 +512,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["focus", "energy"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const dawnPriming = sigmoid((m - minutes(1.5)) / 35);
-      const middayPlateau = gaussian(m, 6.5, 320);
-      const eveningDrop = sigmoid((m - minutes(14.5)) / 45);
+      const p = minuteToPhase(minute);
+      const dawnPriming = sigmoidPhase(p, hourToPhase(1.5), minutesToPhaseWidth(35 * 4));
+      const middayPlateau = gaussianPhase(p, hourToPhase(6.5), widthToConcentration(320));
+      const eveningDrop = sigmoidPhase(p, hourToPhase(14.5), minutesToPhaseWidth(45 * 4));
       const tone =
         25.0 + 45.0 * dawnPriming + 35.0 * middayPlateau - 30.0 * eveningDrop;
       return Math.max(5.0, tone);
@@ -420,7 +538,8 @@ export const SIGNAL_DEFS: SignalDef[] = [
     goals: ["calm", "sleep", "recovery"],
     baseline: fnBaseline((minute) => {
       // High GABA tone from afternoon through night (14:00 -> 09:00)
-      const highTone = periodicWindow(minute, 14, 9, 60);
+      const p = minuteToPhase(minute);
+      const highTone = windowPhase(p, hourToPhase(14), hourToPhase(9), minutesToPhaseWidth(60));
       return 15.0 + 50.0 * highTone;
     }),
     couplings: [
@@ -452,8 +571,8 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["focus", "energy"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const alertness = gaussian(m, 2, 120) + 0.4 * gaussian(m, 7, 200);
+      const p = minuteToPhase(minute);
+      const alertness = gaussianPhase(p, hourToPhase(2), widthToConcentration(120)) + 0.4 * gaussianPhase(p, hourToPhase(7), widthToConcentration(200));
       // Scale to pg/mL range: baseline ~150, peak ~400
       return 150.0 + 250.0 * alertness;
     }),
@@ -474,10 +593,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["energy", "sleep"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const wake = sigmoid((m - minutes(1)) / 35);
-      const day = gaussian(m, 8, 300);
-      const nightFall = sigmoid((m - minutes(15)) / 40);
+      const p = minuteToPhase(minute);
+      const wake = sigmoidPhase(p, hourToPhase(1), minutesToPhaseWidth(35 * 4));
+      const day = gaussianPhase(p, hourToPhase(8), widthToConcentration(300));
+      const nightFall = sigmoidPhase(p, hourToPhase(15), minutesToPhaseWidth(40 * 4));
       const tone = 15.0 + 45.0 * wake + 35.0 * day - 30.0 * nightFall;
       return Math.max(2.0, tone);
     }),
@@ -517,10 +636,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["energy", "sleep", "digestion"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const wakeDrive = sigmoid((m - minutes(1.8)) / 30);
-      const feedingCue = gaussian(m, 4.5, 160) + 0.6 * gaussian(m, 8.5, 280);
-      const sleepPressure = sigmoid((m - minutes(15)) / 45);
+      const p = minuteToPhase(minute);
+      const wakeDrive = sigmoidPhase(p, hourToPhase(1.8), minutesToPhaseWidth(30 * 4));
+      const feedingCue = gaussianPhase(p, hourToPhase(4.5), widthToConcentration(160)) + 0.6 * gaussianPhase(p, hourToPhase(8.5), widthToConcentration(280));
+      const sleepPressure = sigmoidPhase(p, hourToPhase(15), minutesToPhaseWidth(45 * 4));
       // Scale to CSF pg/mL range: baseline ~250, peak ~450
       const tone =
         250.0 + 150.0 * wakeDrive + 80.0 * feedingCue - 100.0 * sleepPressure;
@@ -563,9 +682,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["focus", "energy"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const focusBand = gaussian(m, 7, 260);
-      const eveningDecline = gaussian(m, 14, 200);
+      const p = minuteToPhase(minute);
+      const focusBand = gaussianPhase(p, hourToPhase(7), widthToConcentration(260));
+      const eveningDecline = gaussianPhase(p, hourToPhase(14), widthToConcentration(200));
       const tone = 25.0 + 55.0 * focusBand - 25.0 * eveningDecline;
       return Math.max(5.0, tone);
     }),
@@ -586,9 +705,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "mid" },
     goals: ["calm", "pain", "mood"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const afternoonEase = sigmoid((m - minutes(10.5)) / 55);
-      const nightRise = sigmoid((m - minutes(15.5)) / 35);
+      const p = minuteToPhase(minute);
+      const afternoonEase = sigmoidPhase(p, hourToPhase(10.5), minutesToPhaseWidth(55 * 4));
+      const nightRise = sigmoidPhase(p, hourToPhase(15.5), minutesToPhaseWidth(35 * 4));
       return 12.0 + 40.0 * afternoonEase + 40.0 * nightRise;
     }),
     couplings: [
@@ -620,12 +739,12 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["energy", "recovery"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
+      const p = minuteToPhase(minute);
       // Cortisol Awakening Response (CAR) peak around 07:30
-      const CAR = gaussian(m, 7.5, 90);
+      const CAR = gaussianPhase(p, hourToPhase(7.5), widthToConcentration(90));
       // Active day component (high in morning, drops in evening)
       // Replaces (1 - dayDrop)
-      const dayComponent = periodicWindow(minute, 6, 20, 120);
+      const dayComponent = windowPhase(p, hourToPhase(6), hourToPhase(20), minutesToPhaseWidth(120));
       // Baseline ~2, Peak ~20
       return 2.0 + 18.0 * CAR + 4.0 * dayComponent;
     }),
@@ -671,7 +790,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["energy", "calm", "productivity"],
     baseline: fnBaseline(
-      (minute) => 30.0 + 80.0 * gaussian(wrapMinute(minute), 2, 120)
+      (minute) => 30.0 + 80.0 * gaussianPhase(minuteToPhase(minute), hourToPhase(2), widthToConcentration(120))
     ),
     couplings: [
       {
@@ -751,9 +870,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["digestion", "energy", "weightLoss", "longevity"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const nocturnal = gaussian(m, 23, 160) + 0.8 * gaussian(m, 1.5, 220);
-      const daytimeSuppression = gaussian(m, 7.5, 320);
+      const p = minuteToPhase(minute);
+      const nocturnal = gaussianPhase(p, hourToPhase(23), widthToConcentration(160)) + 0.8 * gaussianPhase(p, hourToPhase(1.5), widthToConcentration(220));
+      const daytimeSuppression = gaussianPhase(p, hourToPhase(7.5), widthToConcentration(320));
       const tone = 40 + 35 * nocturnal - 15 * daytimeSuppression;
       return Math.max(20, tone);
     }),
@@ -791,10 +910,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "mid" },
     goals: ["digestion", "weightLoss", "longevity"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const breakfast = gaussian(m, 3, 90);
-      const lunch = gaussian(m, 7, 90);
-      const dinner = gaussian(m, 12, 120);
+      const p = minuteToPhase(minute);
+      const breakfast = gaussianPhase(p, hourToPhase(3), widthToConcentration(90));
+      const lunch = gaussianPhase(p, hourToPhase(7), widthToConcentration(90));
+      const dinner = gaussianPhase(p, hourToPhase(12), widthToConcentration(120));
       // Base 250 + Peaks up to 600
       return 250.0 + 350.0 * (breakfast + lunch + dinner);
     }),
@@ -838,10 +957,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["digestion"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const bk = gaussian(m, 3.2, 70);
-      const ln = gaussian(m, 7.2, 80);
-      const dn = gaussian(m, 12.5, 90);
+      const p = minuteToPhase(minute);
+      const bk = gaussianPhase(p, hourToPhase(3.2), widthToConcentration(70));
+      const ln = gaussianPhase(p, hourToPhase(7.2), widthToConcentration(80));
+      const dn = gaussianPhase(p, hourToPhase(12.5), widthToConcentration(90));
       const tone = 2.0 + 12.0 * (bk + 0.9 * ln + 0.8 * dn);
       return Math.min(25, tone);
     }),
@@ -874,7 +993,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["digestion", "energy"],
     baseline: fnBaseline(
-      (minute) => 6.0 + 5.0 * sigmoid((wrapMinute(minute) - minutes(10)) / 120)
+      (minute) => 6.0 + 5.0 * sigmoidPhase(minuteToPhase(minute), hourToPhase(10), minutesToPhaseWidth(120 * 4))
     ),
     couplings: [
       {
@@ -912,10 +1031,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["energy", "recovery", "weightLoss", "productivity", "longevity"],
     baseline: fnBaseline((minute, ctx) => {
-      const m = wrapMinute(minute);
-      const active = periodicWindow(minute, 2.5, 23, 80);
-      const midday = gaussian(m, 7.5, 360);
-      const nightDip = gaussian(m, 16.5, 300);
+      const p = minuteToPhase(minute);
+      const active = windowPhase(p, hourToPhase(2.5), hourToPhase(23), minutesToPhaseWidth(80));
+      const midday = gaussianPhase(p, hourToPhase(7.5), widthToConcentration(360));
+      const nightDip = gaussianPhase(p, hourToPhase(16.5), widthToConcentration(300));
       let tone = 1.0 + 2.0 * active + 1.5 * midday - 1.2 * nightDip;
 
       // Scale by metabolic capacity if available (default 1.0)
@@ -957,9 +1076,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["mood", "calm", "pain"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const social = gaussian(m, 10, 260);
-      const evening = sigmoid((m - minutes(14.5)) / 40);
+      const p = minuteToPhase(minute);
+      const social = gaussianPhase(p, hourToPhase(10), widthToConcentration(260));
+      const evening = sigmoidPhase(p, hourToPhase(14.5), minutesToPhaseWidth(40 * 4));
       return 1.5 + 4.0 * social + 5.0 * evening;
     }),
     couplings: [
@@ -997,9 +1116,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "mid" },
     goals: ["recovery", "sleep", "cycle"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const prep = sigmoid((m - minutes(13.5)) / 50);
-      const sleepPulse = gaussian(m, 18, 120) + 0.8 * gaussian(m, 23.5, 200);
+      const p = minuteToPhase(minute);
+      const prep = sigmoidPhase(p, hourToPhase(13.5), minutesToPhaseWidth(50 * 4));
+      const sleepPulse = gaussianPhase(p, hourToPhase(18), widthToConcentration(120)) + 0.8 * gaussianPhase(p, hourToPhase(23.5), widthToConcentration(200));
       return 4.0 + 8.0 * prep + 12.0 * sleepPulse;
     }),
     couplings: [
@@ -1037,9 +1156,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["recovery", "energy", "longevity"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const sleepOnset = gaussian(m, 18.5, 120);
-      const rebound = gaussian(m, 22.5, 90);
+      const p = minuteToPhase(minute);
+      const sleepOnset = gaussianPhase(p, hourToPhase(18.5), widthToConcentration(120));
+      const rebound = gaussianPhase(p, hourToPhase(22.5), widthToConcentration(90));
       const tone = 0.5 + 8.0 * (sleepOnset + 0.6 * rebound);
       return Math.min(15, tone);
     }),
@@ -1139,9 +1258,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["energy", "digestion", "longevity"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const overnight = gaussian(m, 19.5, 400) + gaussian(m, 22.5, 260);
-      const daySuppression = gaussian(m, 7.5, 300);
+      const p = minuteToPhase(minute);
+      const overnight = gaussianPhase(p, hourToPhase(19.5), widthToConcentration(400)) + gaussianPhase(p, hourToPhase(22.5), widthToConcentration(260));
+      const daySuppression = gaussianPhase(p, hourToPhase(7.5), widthToConcentration(300));
       // Baseline ~0.3 mmol/L. Fasting -> 1.5 mmol/L.
       const tone = 0.3 + 1.2 * overnight - 0.5 * daySuppression;
       return Math.max(0.1, tone);
@@ -1177,10 +1296,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["energy", "weightLoss", "productivity"],
     baseline: fnBaseline((minute, ctx) => {
-      const m = wrapMinute(minute);
-      const morning = gaussian(m, 2.5, 180);
-      const afternoon = gaussian(m, 6, 260);
-      const slump = gaussian(m, 14, 200);
+      const p = minuteToPhase(minute);
+      const morning = gaussianPhase(p, hourToPhase(2.5), widthToConcentration(180));
+      const afternoon = gaussianPhase(p, hourToPhase(6), widthToConcentration(260));
+      const slump = gaussianPhase(p, hourToPhase(14), widthToConcentration(200));
       const tone = 3.0 + 4.0 * (morning + afternoon) - 1.5 * slump;
 
       const metabolicScale = ctx.physiology?.metabolicCapacity ?? 1.0;
@@ -1233,10 +1352,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["calm", "recovery", "sleep"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
+      const p = minuteToPhase(minute);
       // High vagal tone from afternoon through sleep (13:00 -> 07:00)
-      const parasym = periodicWindow(minute, 13, 7, 60);
-      const drop = gaussian(m, 1, 60);
+      const parasym = windowPhase(p, hourToPhase(13), hourToPhase(7), minutesToPhaseWidth(60));
+      const drop = gaussianPhase(p, hourToPhase(1), widthToConcentration(60));
       return 0.4 + 0.35 * parasym - 0.15 * drop;
     }),
     couplings: [
@@ -1290,8 +1409,8 @@ export const SIGNAL_DEFS: SignalDef[] = [
       let val = 0;
       if (subject.sex === "male") {
         // Diurnal rhythm for males: peak in morning ~600 ng/dL
-        const m = wrapMinute(minute);
-        const circadian = 400.0 + 300.0 * gaussian(m, 8, 240);
+        const p = minuteToPhase(minute);
+        const circadian = 400.0 + 300.0 * gaussianPhase(p, hourToPhase(8), widthToConcentration(240));
         val = circadian * ageFactor;
       } else {
         // Lower, steady baseline for females ~40 ng/dL
@@ -1595,7 +1714,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
   },
   {
     key: "magnesium",
-    label: "Magnesium status",
+    label: "Magnesium",
     group: "Metabolic",
     isPremium: true,
     semantics: DEFAULT_SEMANTICS.Metabolic,
@@ -1892,14 +2011,14 @@ const baselineFnFromSpec = (spec: BaselineSpec): BaselineFn => {
       return (minute: Minute) =>
         spec.terms.reduce(
           (sum, term) =>
-            sum + term.gain * gaussian(minute, term.centerHours, term.widthMin),
+            sum + term.gain * gaussianPhase(minuteToPhase(minute), hourToPhase(term.centerHours), widthToConcentration(term.widthMin)),
           0
         );
     case "sigmoidCombo":
       return (minute: Minute) => {
-        const m = wrapMinute(minute);
-        const rise = sigmoid((m - minutes(spec.riseHour)) / spec.riseSlope);
-        const fall = sigmoid((m - minutes(spec.fallHour)) / spec.fallSlope);
+        const p = minuteToPhase(minute);
+        const rise = sigmoidPhase(p, hourToPhase(spec.riseHour), minutesToPhaseWidth(spec.riseSlope * 4));
+        const fall = sigmoidPhase(p, hourToPhase(spec.fallHour), minutesToPhaseWidth(spec.fallSlope * 4));
         return Math.max(0, rise - fall);
       };
     default:
