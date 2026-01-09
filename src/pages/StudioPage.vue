@@ -515,23 +515,36 @@ interface RootTabOption {
 }
 
 const goalSpecs = computed(() => {
-  const goals = profiles.selectedGoals;
-  if (goals.length === 0) return [];
   const relevantKeys = (Object.values(SIGNAL_LIBRARY) as any[])
-    .filter(sig => sig.goals?.some((g: Goal) => goals.includes(g)))
-    .map(sig => sig.key as Signal);
+    .map(sig => sig.key as Signal)
+    .filter(key => enabledSignals.value[key] === true);
   return buildSpecs(relevantKeys, true);
 });
 
 const autoSpecs = computed(() => {
-  // Aggregate all signals touched by interventions currently on the timeline
-  const activeInterventionKeys = new Set(timeline.items.map(it => it.meta.key));
-  const signalsToShow = new Set<Signal>();
+  // Use selected item(s) if active, otherwise use all items on timeline
+  const sourceItems = timeline.selectedId
+    ? timeline.items.filter((it) => it.id === timeline.selectedId)
+    : timeline.items;
 
-  activeInterventionKeys.forEach(key => {
-    const def = library.defs.find(d => d.key === key);
+  const activeInterventionKeys = new Set(sourceItems.map((it) => it.meta.key));
+  const directSignals = new Set<Signal>();
+
+  activeInterventionKeys.forEach((key) => {
+    const def = library.defs.find((d) => d.key === key);
     if (def?.kernels) {
-      Object.keys(def.kernels).forEach(sigKey => signalsToShow.add(sigKey as Signal));
+      Object.keys(def.kernels).forEach((sigKey) => directSignals.add(sigKey as Signal));
+    }
+  });
+
+  const signalsToShow = new Set(directSignals);
+
+  // Include signals that are coupled to the directly modified signals (downstream effects)
+  Object.values(SIGNAL_LIBRARY).forEach((def) => {
+    if (!def.couplings) return;
+    const isCoupled = def.couplings.some((c) => directSignals.has(c.source));
+    if (isCoupled) {
+      signalsToShow.add(def.key);
     }
   });
 

@@ -92,8 +92,12 @@ import { DEFAULT_SUBJECT, getMenstrualHormones } from "./subject";
 const MINUTES_IN_DAY = 24 * 60;
 const minutes = (hours: number) => hours * 60;
 
-const gaussian = (minute: Minute, centerHours: number, widthMinutes: number) =>
-  Math.exp(-Math.pow((minute - minutes(centerHours)) / widthMinutes, 2));
+const gaussian = (minute: Minute, centerHours: number, widthMinutes: number) => {
+  const center = minutes(centerHours);
+  const diff = Math.abs(minute - center);
+  const d = Math.min(diff, MINUTES_IN_DAY - diff);
+  return Math.exp(-Math.pow(d / widthMinutes, 2));
+};
 
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x));
 
@@ -101,6 +105,31 @@ const wrapMinute = (minute: Minute) => {
   let m = minute % MINUTES_IN_DAY;
   if (m < 0) m += MINUTES_IN_DAY;
   return m as Minute;
+};
+
+const periodicWindow = (minute: Minute, startHour: number, endHour: number, slopeMinutes: number = 45) => {
+  const m = minute; // Work with raw minute, don't wrap yet for the logic below
+  let start = minutes(startHour);
+  let end = minutes(endHour);
+  
+  // Normalize interval to be [start, end] with end > start
+  if (end < start) {
+    end += MINUTES_IN_DAY;
+  }
+  
+  // Sum windows from previous, current, and next day to ensure continuity
+  let val = 0;
+  for (let k = -1; k <= 1; k++) {
+    const shift = k * MINUTES_IN_DAY;
+    const s = start + shift;
+    const e = end + shift;
+    // Standard boxcar: sigmoid rise - sigmoid fall
+    const rise = sigmoid((m - s) / slopeMinutes);
+    const fall = sigmoid((m - e) / slopeMinutes);
+    val += (rise - fall);
+  }
+  
+  return val;
 };
 
 const getDayOfCycle = (
@@ -223,11 +252,8 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "higher" },
     goals: ["sleep", "recovery", "calm"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const rise = sigmoid((m - minutes(15)) / 30);
-      const fall = sigmoid((m - minutes(23.5)) / 25);
-      // Peak ~80 pg/mL
-      return 80.0 * Math.max(0, rise - fall);
+      // Peak ~80 pg/mL. Window from 15:00 to 23:30 approx.
+      return 80.0 * periodicWindow(minute, 15, 23.5, 30);
     }),
     metadata: { version: "1.0.0" },
   },
@@ -251,7 +277,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const couple = gaussian(m, 8, 260);
-      const nightRise = sigmoid((m - minutes(16.5)) / 45);
+      const nightRise = periodicWindow(minute, 16.5, 8, 45);
       // Baseline ~2, Peak ~6 pg/mL
       return 1.8 + 3.5 * couple + 3.5 * nightRise;
     }),
@@ -277,7 +303,7 @@ export const SIGNAL_DEFS: SignalDef[] = [
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
       const day = gaussian(m, 9, 300);
-      const eveningSuppress = sigmoid((m - minutes(15)) / 35);
+      const eveningSuppress = periodicWindow(minute, 15, 4, 35);
       return 20.0 + 50.0 * day - 25.0 * eveningSuppress;
     }),
     metadata: { version: "1.0.0" },
@@ -393,10 +419,9 @@ export const SIGNAL_DEFS: SignalDef[] = [
     display: { tendency: "mid" },
     goals: ["calm", "sleep", "recovery"],
     baseline: fnBaseline((minute) => {
-      const m = wrapMinute(minute);
-      const evening = sigmoid((m - minutes(14)) / 45);
-      const night = sigmoid((m - minutes(17)) / 30);
-      return 15.0 + 50.0 * (evening + night);
+      // High GABA tone from afternoon through night (14:00 -> 09:00)
+      const highTone = periodicWindow(minute, 14, 9, 60);
+      return 15.0 + 50.0 * highTone;
     }),
     couplings: [
       {
@@ -598,9 +623,11 @@ export const SIGNAL_DEFS: SignalDef[] = [
       const m = wrapMinute(minute);
       // Cortisol Awakening Response (CAR) peak around 07:30
       const CAR = gaussian(m, 7.5, 90);
-      const dayDrop = sigmoid((m - minutes(12)) / 120);
+      // Active day component (high in morning, drops in evening)
+      // Replaces (1 - dayDrop)
+      const dayComponent = periodicWindow(minute, 6, 20, 120);
       // Baseline ~2, Peak ~20
-      return 2.0 + 18.0 * CAR + 4.0 * (1 - dayDrop);
+      return 2.0 + 18.0 * CAR + 4.0 * dayComponent;
     }),
     couplings: [
       {
@@ -886,10 +913,10 @@ export const SIGNAL_DEFS: SignalDef[] = [
     goals: ["energy", "recovery", "weightLoss", "productivity", "longevity"],
     baseline: fnBaseline((minute, ctx) => {
       const m = wrapMinute(minute);
-      const ramp = sigmoid((m - minutes(2.5)) / 80);
+      const active = periodicWindow(minute, 2.5, 23, 80);
       const midday = gaussian(m, 7.5, 360);
       const nightDip = gaussian(m, 16.5, 300);
-      let tone = 1.0 + 2.0 * ramp + 1.5 * midday - 1.2 * nightDip;
+      let tone = 1.0 + 2.0 * active + 1.5 * midday - 1.2 * nightDip;
 
       // Scale by metabolic capacity if available (default 1.0)
       const scale = ctx.physiology?.metabolicCapacity ?? 1.0;
@@ -1207,7 +1234,8 @@ export const SIGNAL_DEFS: SignalDef[] = [
     goals: ["calm", "recovery", "sleep"],
     baseline: fnBaseline((minute) => {
       const m = wrapMinute(minute);
-      const parasym = sigmoid((m - minutes(13)) / 60);
+      // High vagal tone from afternoon through sleep (13:00 -> 07:00)
+      const parasym = periodicWindow(minute, 13, 7, 60);
       const drop = gaussian(m, 1, 60);
       return 0.4 + 0.35 * parasym - 0.15 * drop;
     }),

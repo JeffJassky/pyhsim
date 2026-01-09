@@ -18,7 +18,13 @@
       @click="prevQuestion"
     >
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M12 5L7 10L12 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path
+          d="M12 5L7 10L12 15"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
       </svg>
       Back
     </button>
@@ -31,10 +37,15 @@
           <div class="profile__ai">
             <div class="profile__ai-avatar">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L14.5 9H22L16 14L18.5 21L12 17L5.5 21L8 14L2 9H9.5L12 2Z" fill="currentColor"/>
+                <path
+                  d="M12 2L14.5 9H22L16 14L18.5 21L12 17L5.5 21L8 14L2 9H9.5L12 2Z"
+                  fill="currentColor"
+                />
               </svg>
             </div>
-            <p class="profile__ai-text">{{ questions[currentQuestion].hint }}</p>
+            <p class="profile__ai-text">
+              {{ questions[currentQuestion].hint }}
+            </p>
           </div>
 
           <!-- Question -->
@@ -52,14 +63,28 @@
               :class="{ 'is-selected': isSelected(option.value) }"
               @click="selectOption(option.value)"
             >
-              <span v-if="option.icon" class="profile__option-icon">{{ option.icon }}</span>
+              <span
+                v-if="option.icon"
+                class="profile__option-icon"
+                >{{ option.icon }}</span
+              >
               <div class="profile__option-content">
                 <span class="profile__option-label">{{ option.label }}</span>
-                <span v-if="option.desc" class="profile__option-desc">{{ option.desc }}</span>
+                <span
+                  v-if="option.desc"
+                  class="profile__option-desc"
+                  >{{ option.desc }}</span
+                >
               </div>
               <div class="profile__option-check">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M3 7L6 10L11 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path
+                    d="M3 7L6 10L11 4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
                 </svg>
               </div>
             </button>
@@ -115,7 +140,7 @@ const goalDescriptions: Record<string, string> = {
 
 const questions = computed<Question[]>(() => {
   const archetype = ARCHETYPES.find(a => a.id === store.persona);
-  const filteredGoals = archetype 
+  const filteredGoals = archetype
     ? GOAL_CATEGORIES.filter(g => archetype.commonGoals.includes(g.id))
         .sort((a, b) => archetype.commonGoals.indexOf(a.id) - archetype.commonGoals.indexOf(b.id))
     : GOAL_CATEGORIES;
@@ -148,7 +173,7 @@ const questions = computed<Question[]>(() => {
     {
       id: 'sex',
       hint: 'This helps calibrate hormonal and metabolic baselines.',
-      title: 'Biological sex',
+      title: 'Sex assignment at birth',
       layout: 'row',
       options: [
         { value: 'male', label: 'Male' },

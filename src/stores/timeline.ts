@@ -32,11 +32,17 @@ const createRoutineItem = (key: InterventionKey, startMin: number, durationMin: 
 };
 
 const createDefaultRoutineItems = (): TimelineItem[] => [
-  createRoutineItem('wake', DEFAULT_WAKE_MINUTE, 15),
+  createRoutineItem('wake', DEFAULT_WAKE_MINUTE, 60),
   createRoutineItem('sleep', DEFAULT_SLEEP_START_MINUTE, DEFAULT_SLEEP_DURATION_MIN),
 ];
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 export const useTimelineStore = defineStore('timeline', {
   state: (): TimelineStoreState => ({

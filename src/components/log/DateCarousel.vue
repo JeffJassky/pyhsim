@@ -29,9 +29,14 @@ const trackRef = ref<HTMLDivElement | null>(null);
 const range = 3;
 
 const buildDate = (iso: string, offset: number) => {
-  const date = new Date(iso);
+  const date = new Date(iso + 'T00:00:00');
   date.setDate(date.getDate() + offset);
-  const isoOut = date.toISOString().slice(0, 10);
+  
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  const isoOut = `${y}-${m}-${d}`;
+
   return {
     iso: isoOut,
     day: date.getDate(),

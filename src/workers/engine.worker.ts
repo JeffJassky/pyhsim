@@ -129,34 +129,6 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
 
   const defsMap = new Map(defs.map((def) => [def.key, def]));
 
-  const lastStepValues: Partial<Record<Signal, number>> = {};
-
-  // Pre-populate lastStepValues with baselines at t=0 to avoid startup transients
-  const startMinute = gridMins[0];
-  const startAdjustedMinute = (((startMinute - wakeOffsetMin) % minutesPerDay) + minutesPerDay) % minutesPerDay;
-  
-  const isAsleepAtStart = items.some(item => {
-    const def = defsMap.get(item.meta.key);
-    return def?.key === 'sleep' &&
-           startMinute >= item.startMin &&
-           startMinute <= item.startMin + item.durationMin;
-  });
-
-  for (const signal of includeSignals) {
-    const baselineAdj = baselineAdjustments[signal];
-    const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
-    const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
-    const shiftedMinute = (((startAdjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
-
-    const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
-    let val = baseVal * amplitude;
-    
-    if (isAsleepAtStart) {
-      val = applySleepAdjustment(signal, val, sleepQuality);
-    }
-    
-    lastStepValues[signal] = val;
-  }
 
   const couplings: CouplingMap = { ...SIGNAL_COUPLINGS };
   const profileCouplings: ProfileCouplingAdjustments = options?.profileCouplings ?? {};
@@ -282,156 +254,194 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
     return Math.min(1, tryptophan);
   };
 
-  gridMins.forEach((minute, idx) => {
-    const adjustedMinute = (((minute - wakeOffsetMin) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+  // Initialization of lastStepValues using analytical baselines
+  const lastStepValues: Partial<Record<Signal, number>> = {};
+  const startMinute = gridMins[0];
+  const startAdjustedMinute = (((startMinute - wakeOffsetMin) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+  const isAsleepAtStart = items.some(item => {
+    const def = defsMap.get(item.meta.key);
+    return def?.key === 'sleep' &&
+           startMinute >= item.startMin &&
+           startMinute <= item.startMin + item.durationMin;
+  });
 
-    // 1. First, calculate all analytical values (Baseline + Kernels + Couplings) for this step
-    const analyticalValues: Partial<Record<Signal, number>> = {};
-    for (const signal of includeSignals) {
-      const baselineAdj = baselineAdjustments[signal];
-      const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
-      const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
-      const shiftedMinute = (((adjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
-
-      const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
-      let val = baseVal * amplitude;
-
+  for (const signal of includeSignals) {
+    const baselineAdj = baselineAdjustments[signal];
+    const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
+    const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
+    const shiftedMinute = (((startAdjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+    const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
+    let val = baseVal * amplitude;
+    if (isAsleepAtStart) {
       val = applySleepAdjustment(signal, val, sleepQuality);
-      
-      // Kernels
-      for (const item of items) {
-        const def = defsMap.get(item.meta.key);
-        if (!def) continue;
-        const kernelSet = getKernelSet(def.key, def.kernels);
-        val += computeItemEffect(signal, kernelSet, minute as number, item, options?.physiology, options?.subject);
+    }
+    lastStepValues[signal] = val;
+  }
+
+  // Simulation Loop: Pass 0 = Warmup, Pass 1 = Record
+  for (let pass = 0; pass < 2; pass++) {
+    gridMins.forEach((minute, idx) => {
+      const adjustedMinute = (((minute - wakeOffsetMin) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+
+      // 1. Calculate analytical values (Baseline + Kernels + Couplings)
+      const analyticalValues: Partial<Record<Signal, number>> = {};
+      for (const signal of includeSignals) {
+        const baselineAdj = baselineAdjustments[signal];
+        const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
+        const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
+        const shiftedMinute = (((adjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+
+        const baseVal = baselineFns[signal]?.((shiftedMinute as Minute), baselineContext) ?? 0;
+        let val = baseVal * amplitude;
+
+        val = applySleepAdjustment(signal, val, sleepQuality);
+        
+        // Kernels
+        for (const item of items) {
+          const def = defsMap.get(item.meta.key);
+          if (!def) continue;
+          const kernelSet = getKernelSet(def.key, def.kernels);
+          // Sum effect from "today" (minute) and "yesterday" (minute + 1440) to handle wrapping
+          val += computeItemEffect(signal, kernelSet, minute as number, item, options?.physiology, options?.subject);
+          val += computeItemEffect(signal, kernelSet, (minute as number) + 1440, item, options?.physiology, options?.subject);
+        }
+
+        // Couplings
+        const modifiers = couplings[signal];
+        if (modifiers?.length) {
+          for (const modifier of modifiers) {
+            if (!includeSignalSet.has(modifier.source)) continue;
+            
+            // If homeostasis is enabled, skip couplings that are handled by the ODE system
+            if (enableHomeostasis && modifier.isManagedByHomeostasis) continue;
+
+            // Use series only if in recording pass and not at very beginning
+            // In warmup pass, or idx=0 of recording, rely on lastStepValues
+            const driver = (pass === 1 && idx > 0)
+              ? getCouplingDriver(modifier.source, series, idx, modifier.delay, gridStep, lastStepValues)
+              : lastStepValues[modifier.source] ?? 0;
+
+            let contribution = applyResponseSpec(modifier.mapping, driver);
+            if (modifier.saturation) {
+              contribution = applyResponseSpec(modifier.saturation, contribution);
+            }
+            val += contribution;
+          }
+        }
+        analyticalValues[signal] = val;
       }
 
-      // Couplings
-      const modifiers = couplings[signal];
-      if (modifiers?.length) {
-        for (const modifier of modifiers) {
-          if (!includeSignalSet.has(modifier.source)) continue;
-          
-          // If homeostasis is enabled, skip couplings that are handled by the ODE system
-          if (enableHomeostasis && modifier.isManagedByHomeostasis) continue;
+      // 2. Step Homeostasis System
+      let homeostasisCorrections: Record<string, number> = {};
+      if (enableHomeostasis) {
+        const isAsleep = items.some(item => {
+          const def = defsMap.get(item.meta.key);
+          if (def?.key !== 'sleep') return false;
+          // Check if current minute falls within item duration OR if it falls in the "wrapped" duration (previous day)
+          // For yesterday's item: check if (minute + 1440) is within [start, start + duration]
+          // This handles sleep spanning midnight correctly (e.g. 23:00-07:00)
+          const inRange = (minute >= item.startMin && minute <= item.startMin + item.durationMin);
+          const inWrappedRange = ((minute + 1440) >= item.startMin && (minute + 1440) <= item.startMin + item.durationMin);
+          return inRange || inWrappedRange;
+        });
 
-          const driver = getCouplingDriver(
-            modifier.source,
-            series,
-            idx,
-            modifier.delay,
-            gridStep,
-            lastStepValues
-          );
-          let contribution = applyResponseSpec(modifier.mapping, driver);
-          if (modifier.saturation) {
-            contribution = applyResponseSpec(modifier.saturation, contribution);
-          }
-          val += contribution;
+        const effectiveDopamine = (lastStepValues['dopamine'] ?? 50) / datActivity;
+        const effectiveNorepi = (lastStepValues['norepi'] ?? 30) / netActivity;
+        const effectiveSerotonin = (lastStepValues['serotonin'] ?? 50) / sertActivity;
+
+        const homeostasisInputs: HomeostasisInputs = {
+          baselineCortisol: analyticalValues['cortisol'] ?? 12,
+          baselineGlucose: analyticalValues['glucose'] ?? 90,
+          baselineDopamine: effectiveDopamine,
+          baselineSerotonin: effectiveSerotonin,
+          baselineNorepi: effectiveNorepi,
+          baselineGaba: analyticalValues['gaba'] ?? 50,
+          baselineGlutamate: analyticalValues['glutamate'] ?? 50,
+          baselineAcetylcholine: analyticalValues['acetylcholine'] ?? 50,
+          baselineEnergy: analyticalValues['energy'] ?? 100,
+          baselineMelatonin: analyticalValues['melatonin'] ?? 20,
+          baselineBdnf: analyticalValues['bdnf'] ?? 50,
+          baselineGrowthHormone: analyticalValues['growthHormone'] ?? 50,
+          baselineAdrenaline: analyticalValues['adrenaline'] ?? 50,
+
+          glucoseAppearance: getInterventionEffect('glucose', minute as number),
+          caffeineLevel: getInterventionEffect('dopamine', minute as number),
+          exerciseIntensity: getInterventionEffect('adrenaline', minute as number) / 100,
+          stressLevel: Math.max(0, (lastStepValues['cortisol'] ?? 12) - 15) / 20,
+          alcoholLevel: getInterventionEffect('gaba', minute as number) * 0.02,
+          meditationEffect: 0,
+
+          dopamineFiringRate: Math.min(1, Math.max(0, effectiveDopamine / 100)),
+          serotoninFiringRate: Math.min(1, Math.max(0, effectiveSerotonin / 100)),
+          norepiFiringRate: Math.min(1, Math.max(0, effectiveNorepi / 100)),
+          stimulantEffect: getStimulantEffect(minute as number, items, defsMap),
+          tryptophanAvailability: getTryptophanAvailability(minute as number, items, defsMap),
+          gabaBoost: getInterventionEffect('gaba', minute as number) / 50,
+          glutamateBlock: getInterventionEffect('glutamate', minute as number) < 0
+            ? Math.abs(getInterventionEffect('glutamate', minute as number)) / 50
+            : 0,
+
+          isAsleep,
+          minuteOfDay: adjustedMinute,
+        };
+
+        // Pass 0 (Warmup): idx=0 use dt=0 to init.
+        // Pass 1 (Record): idx=0 use dt=gridStep (continue from warmup).
+        const dt = (pass === 0 && idx === 0) ? 0 : gridStep;
+
+        const { newState, corrections } = stepHomeostasis(
+          homeostasisState,
+          homeostasisInputs,
+          homeostasisParams,
+          dt
+        );
+
+        homeostasisState = newState;
+        homeostasisCorrections = corrections;
+      }
+
+      // 3. Apply corrections and write to series (only in Pass 1)
+      for (const signal of includeSignals) {
+        let value = analyticalValues[signal] ?? 0;
+
+        if (enableHomeostasis && homeostasisCorrections[signal] !== undefined) {
+          value += homeostasisCorrections[signal];
+        }
+
+        if (signal === 'dopamine' && datActivity !== 1) value /= datActivity;
+        if (signal === 'norepi' && netActivity !== 1) value /= netActivity;
+        if (signal === 'serotonin' && sertActivity !== 1) value /= sertActivity;
+
+        if (signal === 'histamine' && histamineEnzymeGain !== 0) {
+          value *= (1 + histamineEnzymeGain);
+        }
+        if ((signal === 'dopamine' || signal === 'norepi' || signal === 'serotonin') && monoamineClearanceRate !== 1) {
+          value *= 1 / Math.max(0.5, monoamineClearanceRate);
+        }
+        if ((signal === 'dopamine' || signal === 'norepi' || signal === 'adrenaline') && catecholamineClearanceRate !== 1) {
+          value *= 1 / Math.max(0.5, catecholamineClearanceRate);
+        }
+
+        let finalVal = value;
+        const isOrganScore = [
+          'brain','eyes','heart','lungs','liver','pancreas','stomach',
+          'si','colon','adrenals','thyroid','muscle','adipose','skin'
+        ].includes(signal);
+
+        if (!isOrganScore) finalVal = Math.max(0, finalVal);
+        
+        if (isNaN(finalVal) || !isFinite(finalVal)) finalVal = 0;
+        
+        // Update lastStepValues for next iteration
+        lastStepValues[signal] = finalVal;
+
+        // Record only in Pass 1
+        if (pass === 1) {
+          series[signal][idx] = finalVal;
         }
       }
-      analyticalValues[signal] = val;
-    }
-
-    // 2. Step Homeostasis System using the current analytical values
-    let homeostasisCorrections: Record<string, number> = {};
-    if (enableHomeostasis && idx > 0) {
-      const isAsleep = items.some(item => {
-        const def = defsMap.get(item.meta.key);
-        return def?.key === 'sleep' &&
-               minute >= item.startMin &&
-               minute <= item.startMin + item.durationMin;
-      });
-
-      const effectiveDopamine = (lastStepValues['dopamine'] ?? 50) / datActivity;
-      const effectiveNorepi = (lastStepValues['norepi'] ?? 30) / netActivity;
-      const effectiveSerotonin = (lastStepValues['serotonin'] ?? 50) / sertActivity;
-
-      const homeostasisInputs: HomeostasisInputs = {
-        baselineCortisol: analyticalValues['cortisol'] ?? 12,
-        baselineGlucose: analyticalValues['glucose'] ?? 90,
-        baselineDopamine: effectiveDopamine,
-        baselineSerotonin: effectiveSerotonin,
-        baselineNorepi: effectiveNorepi,
-        baselineGaba: analyticalValues['gaba'] ?? 50,
-        baselineGlutamate: analyticalValues['glutamate'] ?? 50,
-        baselineAcetylcholine: analyticalValues['acetylcholine'] ?? 50,
-        baselineEnergy: analyticalValues['energy'] ?? 100,
-        baselineMelatonin: analyticalValues['melatonin'] ?? 20,
-        baselineBdnf: analyticalValues['bdnf'] ?? 50,
-        baselineGrowthHormone: analyticalValues['growthHormone'] ?? 50,
-        baselineAdrenaline: analyticalValues['adrenaline'] ?? 50,
-
-        glucoseAppearance: getInterventionEffect('glucose', minute as number),
-        caffeineLevel: getInterventionEffect('dopamine', minute as number),
-        exerciseIntensity: getInterventionEffect('adrenaline', minute as number) / 100,
-        stressLevel: Math.max(0, (lastStepValues['cortisol'] ?? 12) - 15) / 20,
-        alcoholLevel: getInterventionEffect('gaba', minute as number) * 0.02,
-        meditationEffect: 0,
-
-        dopamineFiringRate: Math.min(1, Math.max(0, effectiveDopamine / 100)),
-        serotoninFiringRate: Math.min(1, Math.max(0, effectiveSerotonin / 100)),
-        norepiFiringRate: Math.min(1, Math.max(0, effectiveNorepi / 100)),
-        stimulantEffect: getStimulantEffect(minute as number, items, defsMap),
-        tryptophanAvailability: getTryptophanAvailability(minute as number, items, defsMap),
-        gabaBoost: getInterventionEffect('gaba', minute as number) / 50,
-        glutamateBlock: getInterventionEffect('glutamate', minute as number) < 0
-          ? Math.abs(getInterventionEffect('glutamate', minute as number)) / 50
-          : 0,
-
-        isAsleep,
-        minuteOfDay: adjustedMinute,
-      };
-
-      const { newState, corrections } = stepHomeostasis(
-        homeostasisState,
-        homeostasisInputs,
-        homeostasisParams,
-        gridStep
-      );
-
-      homeostasisState = newState;
-      homeostasisCorrections = corrections;
-    }
-
-    // 3. Apply corrections and clearances to get final values
-    for (const signal of includeSignals) {
-      let value = analyticalValues[signal] ?? 0;
-
-      if (enableHomeostasis && homeostasisCorrections[signal] !== undefined) {
-        value += homeostasisCorrections[signal];
-      }
-
-      if (signal === 'dopamine' && datActivity !== 1) value /= datActivity;
-      if (signal === 'norepi' && netActivity !== 1) value /= netActivity;
-      if (signal === 'serotonin' && sertActivity !== 1) value /= sertActivity;
-
-      if (signal === 'histamine' && histamineEnzymeGain !== 0) {
-        value *= (1 + histamineEnzymeGain);
-      }
-      if ((signal === 'dopamine' || signal === 'norepi' || signal === 'serotonin') && monoamineClearanceRate !== 1) {
-        value *= 1 / Math.max(0.5, monoamineClearanceRate);
-      }
-      if ((signal === 'dopamine' || signal === 'norepi' || signal === 'adrenaline') && catecholamineClearanceRate !== 1) {
-        value *= 1 / Math.max(0.5, catecholamineClearanceRate);
-      }
-
-      let finalVal = value;
-      const isOrganScore = [
-        'brain','eyes','heart','lungs','liver','pancreas','stomach',
-        'si','colon','adrenals','thyroid','muscle','adipose','skin'
-      ].includes(signal);
-
-      if (!isOrganScore) finalVal = Math.max(0, finalVal);
-      
-      if (isNaN(finalVal) || !isFinite(finalVal)) finalVal = 0;
-      series[signal][idx] = finalVal;
-    }
-
-    for (const signal of includeSignals) {
-      lastStepValues[signal] = series[signal][idx];
-    }
-  });
+    });
+  }
 
   // Sample data check
   const samples: any = {};

@@ -24,11 +24,13 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch, h, render, withDirectives } from 'vue';
 import { DataSet } from 'vis-data';
 import { Timeline as VisTimeline, type TimelineOptions } from 'vis-timeline/standalone';
+import { VTooltip } from 'floating-vue';
 import '@/assets/vis-timeline.css';
 import type { Minute, TimelineItem, UUID } from '@/types';
+import { useLibraryStore } from '@/stores/library';
 
 const props = withDefaults(
   defineProps<{
@@ -55,6 +57,7 @@ const container = ref<HTMLDivElement | null>(null);
 const hoverMinute = ref<number | null>(null);
 let timeline: VisTimeline | null = null;
 let dataset: DataSet<any> | null = null;
+const library = useLibraryStore();
 
 const MINUTES_IN_DAY = 24 * 60;
 
@@ -77,14 +80,20 @@ const handlePlayheadAdd = (m: number) => {
 };
 
 const toVisItems = (items: TimelineItem[]) =>
-  items.map((item) => ({
-    id: item.id,
-    content: item.content ?? item.meta.labelOverride ?? item.meta.key,
-    start: item.start,
-    end: item.end,
-    type: item.type,
-    className: item.meta.locked ? 'timeline-item--locked' : undefined,
-  }));
+  items.map((item) => {
+    const def = library.defs.find((d) => d.key === item.meta.key);
+    const icon = def?.icon ? `${def.icon} ` : '';
+    const label = item.content ?? item.meta.labelOverride ?? def?.label ?? item.meta.key;
+    return {
+      id: item.id,
+      content: `${icon}${label}`,
+      start: item.start,
+      end: item.end,
+      type: item.type,
+      _tooltip: label,
+      className: item.meta.locked ? 'timeline-item--locked' : undefined,
+    };
+  });
 
 const syncItems = () => {
   if (!dataset) return;
@@ -119,7 +128,7 @@ const getDayBounds = () => {
 const options = (): TimelineOptions => {
   const { start, end } = getDayBounds();
   return {
-    stack: false,
+    stack: true,
     selectable: true,
     multiselect: false,
     orientation: 'top',
@@ -159,6 +168,28 @@ const options = (): TimelineOptions => {
     onRemove: (item, callback) => {
       emit('remove', item.id as UUID);
       callback(item);
+    },
+    template: (item: any, element: any, data: any) => {
+      const container = document.createElement('div');
+      
+      const vnode = h('div', {
+        innerHTML: item.content,
+        style: { width: '100%', height: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+      });
+      
+      const tooltip = item._tooltip;
+      if (tooltip) {
+        const vnWithTooltip = withDirectives(vnode, [[VTooltip, {
+          content: tooltip,
+          placement: 'top',
+          theme: 'tooltip'
+        }]]);
+        render(vnWithTooltip, container);
+      } else {
+        render(vnode, container);
+      }
+      
+      return container;
     },
   };
 };

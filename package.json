@@ -17,6 +17,7 @@
     "@types/sortablejs": "^1.15.9",
     "@vueuse/core": "^10.7.2",
     "component-emitter": "^2.0.0",
+    "floating-vue": "^5.2.2",
     "keycharm": "^0.4.0",
     "markdown-it": "^14.1.0",
     "moment": "^2.30.1",
