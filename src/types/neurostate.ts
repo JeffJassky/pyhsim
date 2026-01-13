@@ -323,8 +323,7 @@ export interface InterventionDef {
   icon?: string; // emoji or icon key
   defaultDurationMin: number;
   params: ParamDef[];
-  kernels: KernelSet; // per-signal kernels (as strings)
-  pharmacology?: PharmacologyDef;
+  pharmacology: PharmacologyDef; // Required in mechanistic foundation
   /** Optional grouping for UI (e.g., "Food", "Light", "Movement") */
   group?: string;
   /** Optional explainers for tooltips */
@@ -413,8 +412,11 @@ export type BaselineMapSerialized = Partial<Record<Signal, string>>; // stringif
 
 export interface WorkerComputeResponse {
   series: Record<Signal, Float32Array>;
+  auxiliarySeries: Record<string, Float32Array>;
   /** Final homeostasis state after simulation (for chaining multi-day scenarios) */
   finalHomeostasisState?: HomeostasisStateSnapshot;
+  /** Time series of homeostasis state variables for visualization */
+  homeostasisSeries?: HomeostasisSeries;
 }
 
 /* ===========================
@@ -527,8 +529,45 @@ export interface HomeostasisStateSnapshot {
   bdnfExpression: number;
   ghReserve: number;
 
-  // Receptor States (tolerance/sensitization)
+  // Modern Unified State (Supersedes above)
+  signals?: Record<string, number>;
+  auxiliary?: Record<string, number>;
+  receptors?: Record<string, number>; // Renamed from receptorStates
+  pk?: Record<string, number>;
+  accumulators?: Record<string, number>;
+
+  // Legacy (Keep for back-compat)
   receptorStates: Record<string, number>;
+}
+
+/**
+ * Time series of homeostasis state variables across the simulation.
+ * Each array has the same length as the signal grid.
+ */
+export interface HomeostasisSeries {
+  // Glucose-Insulin Axis
+  glucosePool: Float32Array;
+  insulinPool: Float32Array;
+  hepaticGlycogen: Float32Array;
+
+  // Sleep Pressure
+  adenosinePressure: Float32Array;
+
+  // HPA Axis
+  cortisolPool: Float32Array;
+  cortisolIntegral: Float32Array;
+  adrenalineReserve: Float32Array;
+
+  // Neurotransmitter Pools
+  dopamineVesicles: Float32Array;
+  norepinephrineVesicles: Float32Array;
+  serotoninPrecursor: Float32Array;
+  acetylcholineTone: Float32Array;
+  gabaPool: Float32Array;
+
+  // Growth Factors
+  bdnfExpression: Float32Array;
+  ghReserve: Float32Array;
 }
 
 /* ===========================
@@ -562,8 +601,8 @@ export interface Scenario {
 export interface EngineState {
   gridStepMin: number;
   gridMins: Minute[];
-  baselines: BaselineMap; // runtime functions
   series: Record<Signal, Float32Array>; // last computed
+  auxiliarySeries: Record<string, Float32Array>; // last computed aux
   lastComputedAt?: number;
 }
 

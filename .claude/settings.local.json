@@ -6,7 +6,10 @@
       "Bash(npm test:*)",
       "Bash(tree:*)",
       "Bash(mkdir:*)",
-      "Bash(npm run check:*)"
+      "Bash(npm run check:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run typecheck:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

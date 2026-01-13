@@ -1,18 +1,64 @@
-import type { KernelFn, ParamValues, Signal, WorkerComputeResponse } from '@/types';
-import { SIGNALS_ALL } from '@/types';
+import type { Signal } from '@/types';
+import type { SimulationState, ActiveIntervention, DynamicsContext } from '@/types/unified';
+import { 
+  integrateStep, 
+  createInitialState, 
+  SIGNAL_DEFINITIONS, 
+  AUXILIARY_DEFINITIONS, 
+  getAllUnifiedDefinitions 
+} from '@/models/unified';
+import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/subject';
 
-self.onmessage = (event: MessageEvent<{ kernel: string | { fn: string; desc: string }; signal: Signal; params: ParamValues }>) => {
-  const { kernel, signal, params } = event.data;
-  const fnBody = typeof kernel === 'string' ? kernel : kernel.fn;
-  // eslint-disable-next-line no-new-func
-  const fn: KernelFn = new Function(`return (${fnBody})`)();
-  const minutes = Array.from({ length: 120 }, (_, idx) => idx * 5);
-  const series: WorkerComputeResponse['series'] = {} as WorkerComputeResponse['series'];
-  for (const sig of SIGNALS_ALL) {
-    series[sig] = new Float32Array(minutes.length);
-  }
-  minutes.forEach((minute, idx) => {
-    series[signal][idx] = fn(minute, params);
+self.onmessage = (event: MessageEvent<{ 
+  intervention: any; 
+  signal: Signal; 
+}>) => {
+  const { intervention } = event.data;
+  
+  const subject = DEFAULT_SUBJECT;
+  const physiology = derivePhysiology(subject);
+  
+  const unifiedDefs = getAllUnifiedDefinitions();
+  
+  let state = createInitialState(unifiedDefs, AUXILIARY_DEFINITIONS, {
+    subject,
+    physiology,
+    isAsleep: false
   });
-  self.postMessage({ series });
+
+  const activeInterventions: ActiveIntervention[] = [
+    {
+      id: 'preview',
+      key: intervention.key,
+      startTime: 0,
+      duration: intervention.defaultDurationMin ?? 60,
+      intensity: 1.0,
+      params: {},
+      pharmacology: intervention.pharmacology
+    }
+  ];
+
+  const points: number[] = [];
+  const dt = 5;
+  const steps = 48; // 4 hours
+
+  for (let i = 0; i < steps; i++) {
+    const t = i * dt;
+    const ctx: DynamicsContext = {
+      minuteOfDay: t % 1440,
+      circadianMinuteOfDay: t % 1440,
+      dayOfYear: 1,
+      isAsleep: false,
+      subject,
+      physiology
+    };
+    
+    // Step ODE
+    state = integrateStep(state, t, dt, ctx, unifiedDefs, AUXILIARY_DEFINITIONS, activeInterventions);
+    
+    // Collect specific signal value
+    points.push(state.signals[event.data.signal] ?? 0);
+  }
+
+  self.postMessage({ points });
 };

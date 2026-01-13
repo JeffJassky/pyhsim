@@ -1,8 +1,5 @@
 <template>
   <AppShell :show-right-sidebar="showChat">
-    <template #header-center>
-      <DateCarousel v-model="selectedDate" />
-    </template>
     <template #right-sidebar>
       <AIChatPanel />
     </template>
@@ -12,7 +9,6 @@
           :items="timeline.items"
           :selected-id="timeline.selectedId"
           :playhead-min="minute"
-          :date-iso="timeline.selectedDate"
           :day-start-min="dayStartMin"
           @select="handleTimelineSelect"
           @remove="timeline.removeItem"
@@ -97,9 +93,12 @@
           :playhead-min="minute"
           :interventions="interventionBands"
           :day-start-min="dayStartMin"
+          :view-minutes="viewMinutes"
           @playhead="(val) => setMinute(val as Minute)"
         />
       </Panel>
+
+      <BodyStatusPanel />
     </section>
 
     <template #floating>
@@ -149,16 +148,17 @@ import SignalChart from '@/components/charts/SignalChart.vue';
 import FloatingInspector from '@/components/inspector/FloatingInspector.vue';
 import AIChatPanel from '@/components/ai/AIChatPanel.vue';
 import NutritionCarousel from '@/components/log/NutritionCarousel.vue';
-import DateCarousel from '@/components/log/DateCarousel.vue';
 import AddItemModal from '@/components/launcher/AddItemModal.vue';
 import UserProfileModal from '@/components/launcher/UserProfileModal.vue';
 import TargetsModal from '@/components/log/TargetsModal.vue';
 import StudioTour from '@/components/onboarding/StudioTour.vue';
+import BodyStatusPanel from '@/components/status/BodyStatusPanel.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
 import { useProfilesStore } from '@/stores/profiles';
 import { useMetersStore } from '@/stores/meters';
 import { useUIStore } from '@/stores/ui';
+import { useEngineStore } from '@/stores/engine';
 import { useEngine } from '@/composables/useEngine';
 import { usePlayhead } from '@/composables/usePlayhead';
 import { useMeters } from '@/composables/useMeters';
@@ -180,7 +180,9 @@ import type {
 } from '@/types';
 import { minuteToISO } from '@/utils/time';
 import { toMinuteOfDay } from '@/core/serialization';
-import { SIGNAL_LIBRARY } from '@/models';
+import { getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS } from '@/models/unified';
+
+const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
 const library = useLibraryStore();
 const timeline = useTimelineStore();
@@ -189,18 +191,15 @@ const metersStore = useMetersStore();
 const heatmapStore = useHeatmapStore();
 const arousalStore = useArousalStore();
 const uiStore = useUIStore();
+const engineStore = useEngineStore();
 
-// Selected date for day navigation
-const selectedDate = computed({
-  get: () => timeline.selectedDate,
-  set: (val: string) => timeline.setDate(val),
-});
+const viewMinutes = computed(() => engineStore.durationDays * 1440);
 
 // Day view starts at the wake event's time
 const dayStartMin = computed(() => {
-  const wakeItem = timeline.items.find((it) => it.meta.key === 'wake');
-  if (!wakeItem) return 7 * 60; // Default to 7 AM if no wake event
-  return toMinuteOfDay(wakeItem.start);
+  const sleepItem = timeline.items.find((it) => it.meta.key === 'sleep');
+  if (!sleepItem) return 7 * 60; // Default to 7 AM if no sleep event
+  return toMinuteOfDay(sleepItem.end);
 });
 
 const foodTotals = computed(() => timeline.currentFoodTotals);
@@ -379,31 +378,49 @@ const viewSignalSets = {
 const enabledSignals = computed(() => profiles.enabledSignals);
 const subscriptionTier = computed(() => profiles.subscriptionTier);
 
-const buildSpecs = (keys: readonly Signal[], filterByEnabled = true): ChartSeriesSpec[] =>
+const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSeriesSpec[] =>
   keys
-    .filter((key) => !filterByEnabled || enabledSignals.value[key] !== false)
+    .filter((key) => !filterByEnabled || enabledSignals.value[key as Signal] !== false)
     .map((key) => {
-      const def = SIGNAL_LIBRARY[key];
-      if (!def) return null;
-      return {
-        key: def.key,
-        label: def.label,
-        isPremium: def.isPremium,
-        unit: def.semantics.unit,
-        yMin: def.semantics.referenceRange?.min,
-        yMax: def.semantics.referenceRange?.max,
-        color: def.display.color,
-        tendency: def.display.tendency,
-        info: {
-          physiology: def.description.physiology,
-          application: def.description.application,
-          couplings: def.couplings?.map((c) => ({
-            source: SIGNAL_LIBRARY[c.source]?.label ?? c.source,
-            mapping: c.mapping,
-            description: c.description,
-          })),
-        },
-      } as ChartSeriesSpec;
+      const def = UNIFIED_DEFS[key as Signal];
+      const auxDef = AUXILIARY_DEFINITIONS[key];
+      
+      if (def) {
+        return {
+          key: def.key,
+          label: def.label,
+          isPremium: def.isPremium,
+          unit: def.unit,
+          yMin: def.min ?? 0,
+          yMax: def.max ?? 100,
+          color: def.display.color,
+          tendency: 'neutral', // Unified doesn't have tendency yet
+          info: {
+            physiology: (def as any).description?.physiology ?? 'Unified ODE Signal',
+            application: (def as any).description?.application ?? 'Dynamic simulation',
+            couplings: def.dynamics.couplings?.map((c) => ({
+              source: UNIFIED_DEFS[c.source]?.label ?? c.source,
+              mapping: { kind: 'linear', gain: c.strength }, // Approximate for display
+              description: `${c.effect} (strength ${c.strength})`,
+            })),
+          },
+        } as ChartSeriesSpec;
+      } else if (auxDef) {
+        return {
+          key: auxDef.key,
+          label: auxDef.key, // Auxiliary defs might not have pretty labels yet
+          unit: 'activity',
+          yMin: 0,
+          yMax: 2,
+          color: '#94a3b8',
+          tendency: 'neutral',
+          info: {
+            physiology: 'Auxiliary variable (enzyme, transporter, or pool)',
+            application: 'Mechanistic state tracking',
+          }
+        } as ChartSeriesSpec;
+      }
+      return null;
     })
     .filter((spec): spec is ChartSeriesSpec => spec !== null);
 
@@ -428,7 +445,12 @@ const toChartData = (record: Record<string, Float32Array | number[]> | undefined
   return result;
 };
 
-const signalSeriesData = computed(() => toChartData(series.value));
+const signalSeriesData = computed(() => {
+  const main = toChartData(series.value);
+  const aux = toChartData(engineStore.auxiliarySeries);
+
+  return { ...main, ...aux };
+});
 
 const meterTendency: Record<MeterKey, ChartSeriesSpec['tendency']> = {
   energy: 'higher',
@@ -517,11 +539,31 @@ interface RootTabOption {
 }
 
 const goalSpecs = computed(() => {
-  const relevantKeys = (Object.values(SIGNAL_LIBRARY) as any[])
+  const relevantKeys = (Object.values(UNIFIED_DEFS) as any[])
     .map(sig => sig.key as Signal)
     .filter(key => enabledSignals.value[key] === true);
   return buildSpecs(relevantKeys, true);
 });
+
+// Maps PD targets (receptors, transporters) to the signals they affect
+const targetToSignalsMap: Record<string, Signal[]> = {
+  // Transporters (reuptake inhibitors affect these signals)
+  'DAT': ['dopamine'],
+  'NET': ['norepi'],
+  'SERT': ['serotonin'],
+  // Adenosine receptors (antagonism disinhibits these)
+  'Adenosine_A2a': ['dopamine'],
+  'Adenosine_A1': ['dopamine', 'acetylcholine'],
+  // Other receptors
+  'GABA_A': ['gaba'],
+  'NMDA': ['glutamate'],
+  'Beta_Adrenergic': ['norepi', 'adrenaline'],
+  'MT1': ['melatonin'],
+  'MT2': ['melatonin'],
+  'H1': ['histamine'],
+  'OX1R': ['orexin'],
+  'OX2R': ['orexin'],
+};
 
 const autoSpecs = computed(() => {
   // Use selected item(s) if active, otherwise use all items on timeline
@@ -534,17 +576,25 @@ const autoSpecs = computed(() => {
 
   activeInterventionKeys.forEach((key) => {
     const def = library.defs.find((d) => d.key === key);
-    if (def?.kernels) {
-      Object.keys(def.kernels).forEach((sigKey) => directSignals.add(sigKey as Signal));
+    if (def?.pharmacology?.pd) {
+      def.pharmacology.pd.forEach((effect) => {
+        // Add the target itself if it's a signal
+        directSignals.add(effect.target as Signal);
+        // Also add signals affected by this target (for transporters/receptors)
+        const affectedSignals = targetToSignalsMap[effect.target];
+        if (affectedSignals) {
+          affectedSignals.forEach((sig) => directSignals.add(sig));
+        }
+      });
     }
   });
 
   const signalsToShow = new Set(directSignals);
 
   // Include signals that are coupled to the directly modified signals (downstream effects)
-  Object.values(SIGNAL_LIBRARY).forEach((def) => {
-    if (!def.couplings) return;
-    const isCoupled = def.couplings.some((c) => directSignals.has(c.source));
+  Object.values(UNIFIED_DEFS).forEach((def) => {
+    if (!def.dynamics.couplings) return;
+    const isCoupled = def.dynamics.couplings.some((c) => directSignals.has(c.source));
     if (isCoupled) {
       signalsToShow.add(def.key);
     }
@@ -899,17 +949,27 @@ const panelTitle = computed(() => `${activeRootTabMeta.value.label}: ${activeGro
 const panelIcon = computed(() => activeGroup.value.icon);
 const rootInfoText = computed(() => activeRootTabMeta.value.info);
 
-const interventionBands = computed(() =>
-  timeline.items.map((item) => {
-    const def = library.defs.find((d) => d.key === item.meta.key);
-    return {
-      key: item.id,
-      start: toMinuteOfDay(item.start),
-      end: toMinuteOfDay(item.end),
-      color: def?.color ? `${def.color}33` : 'rgba(255,255,255,0.1)',
-    };
-  })
-);
+const interventionBands = computed(() => {
+  const bands: any[] = [];
+  const days = engineStore.durationDays;
+  
+  for (let d = 0; d < days; d++) {
+    timeline.items.forEach((item) => {
+      const def = library.defs.find((it) => it.key === item.meta.key);
+      const startMin = toMinuteOfDay(item.start);
+      let endMin = toMinuteOfDay(item.end);
+      if (endMin < startMin) endMin = (endMin + 1440) as Minute; // Handle wrap
+      
+      bands.push({
+        key: `${item.id}_${d}`,
+        start: startMin + (d * 1440),
+        end: endMin + (d * 1440),
+        color: def?.color ? `${def.color}33` : 'rgba(255,255,255,0.1)',
+      });
+    });
+  }
+  return bands;
+});
 </script>
 
 <style scoped>

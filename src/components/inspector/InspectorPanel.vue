@@ -4,25 +4,35 @@
       <h3>{{ def.label }}</h3>
       <span v-if="isFood" class="total-kcal">{{ totalKcal }} kcal</span>
     </div>
-    <p>{{ def.notes }}</p>
+    <p v-if="def.notes">{{ def.notes }}</p>
 
     <div v-if="isFood" class="macro-breakdown">
       <div class="macro-bar">
-        <div class="macro-segment protein" :style="{ width: macroPercentages.protein + '%' }" title="Protein"></div>
-        <div class="macro-segment carbs" :style="{ width: macroPercentages.carbs + '%' }" title="Carbs"></div>
-        <div class="macro-segment fat" :style="{ width: macroPercentages.fat + '%' }" title="Fat"></div>
+        <div
+          class="macro-segment protein"
+          :style="{ width: macroPercentages.protein + '%' }"
+          title="Protein"
+        ></div>
+        <div
+          class="macro-segment carbs"
+          :style="{ width: macroPercentages.carbs + '%' }"
+          title="Carbs"
+        ></div>
+        <div
+          class="macro-segment fat"
+          :style="{ width: macroPercentages.fat + '%' }"
+          title="Fat"
+        ></div>
       </div>
       <div class="macro-labels">
-        <span class="macro-label protein">P: {{ macroPercentages.protein }}%</span>
+        <span class="macro-label protein"
+          >P: {{ macroPercentages.protein }}%</span
+        >
         <span class="macro-label carbs">C: {{ macroPercentages.carbs }}%</span>
         <span class="macro-label fat">F: {{ macroPercentages.fat }}%</span>
       </div>
     </div>
 
-    <IntensityControl
-      :value="local.intensity"
-      @update:value="updateIntensity"
-    />
     <ParamEditor
       v-for="param in def.params"
       :key="param.key"
@@ -31,11 +41,18 @@
       @update="(val) => updateParam(param.key, val)"
     />
 
-    <div v-if="Object.keys(def.kernels).length" class="effects">
+    <div v-if="def.pharmacology?.pd?.length" class="effects">
       <h4>Biological Effects</h4>
-      <div v-for="(spec, signal) in def.kernels" :key="signal" class="effect">
-        <span class="effect-signal">{{ signal }}</span>
-        <p class="effect-desc">{{ spec?.desc }}</p>
+      <div
+        v-for="(effect, index) in def.pharmacology.pd"
+        :key="index"
+        class="effect"
+      >
+        <span class="effect-signal">{{ effect.target }}</span>
+        <p class="effect-desc">
+          {{ effect.mechanism }}
+          {{ effect.effectGain ? `(Gain: ${effect.effectGain})` : '' }}
+        </p>
       </div>
     </div>
   </div>
@@ -45,16 +62,14 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
 import type { InterventionDef, ParamValues, TimelineItem } from '@/types';
-import IntensityControl from './IntensityControl.vue';
 import ParamEditor from './ParamEditor.vue';
 import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/models/constants/nutrients';
 
 const props = defineProps<{ item?: TimelineItem; def?: InterventionDef; readonly?: boolean }>();
 const emit = defineEmits<{ change: [TimelineItem] }>();
 
-const local = reactive<{ params: ParamValues; intensity: number }>({
+const local = reactive<{ params: ParamValues }>({
   params: {} as ParamValues,
-  intensity: 1,
 });
 
 const isFood = computed(() => props.def?.key === 'food');
@@ -73,9 +88,9 @@ const macroPercentages = computed(() => {
   const fKcal = Number(local.params.fat || 0) * KCAL_PER_GRAM_FAT;
   const cKcal = (Number(local.params.carbSugar || 0) + Number(local.params.carbStarch || 0)) * KCAL_PER_GRAM_CARB;
   const total = pKcal + fKcal + cKcal;
-  
+
   if (total === 0) return { protein: 0, carbs: 0, fat: 0 };
-  
+
   return {
     protein: Math.round((pKcal / total) * 100),
     carbs: Math.round((cKcal / total) * 100),
@@ -88,7 +103,6 @@ watch(
   (item) => {
     if (!item) return;
     local.params = { ...(item.meta.params as ParamValues) };
-    local.intensity = item.meta.intensity;
   },
   { immediate: true }
 );
@@ -100,18 +114,12 @@ const pushChange = () => {
     meta: {
       ...props.item.meta,
       params: { ...local.params },
-      intensity: local.intensity,
     },
   });
 };
 
 const updateParam = (key: string, value: string | number | boolean) => {
   local.params = { ...local.params, [key]: value };
-  pushChange();
-};
-
-const updateIntensity = (value: number) => {
-  local.intensity = value;
   pushChange();
 };
 </script>

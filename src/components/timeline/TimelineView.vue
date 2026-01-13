@@ -4,6 +4,20 @@
     @mousemove="handleMouseMove"
     @mouseleave="hoverMinute = null"
   >
+    <div class="timeline-controls">
+      <div class="segment-picker">
+        <button 
+          v-for="days in [1, 7, 30]" 
+          :key="days"
+          class="segment-btn"
+          :class="{ active: durationDays === days }"
+          @click="engineStore.setDuration(days)"
+        >
+          {{ days }}D
+        </button>
+      </div>
+    </div>
+
     <div ref="container" class="timeline-vis" />
 
     <!-- Hover Playhead -->
@@ -30,13 +44,14 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch, h, render, withDirectives } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, watch, h, render, withDirectives, computed } from 'vue';
 import { DataSet } from 'vis-data';
 import { Timeline as VisTimeline, type TimelineOptions } from 'vis-timeline/standalone';
 import { VTooltip } from 'floating-vue';
 import '@/assets/vis-timeline.css';
 import type { Minute, TimelineItem, UUID } from '@/types';
 import { useLibraryStore } from '@/stores/library';
+import { useEngineStore } from '@/stores/engine';
 import { INTERVENTION_CATEGORIES } from '@/models/categories';
 
 const props = withDefaults(
@@ -66,7 +81,9 @@ let timeline: VisTimeline | null = null;
 let dataset: DataSet<any> | null = null;
 let groupDataset: DataSet<any> | null = null;
 const library = useLibraryStore();
+const engineStore = useEngineStore();
 
+const durationDays = computed(() => engineStore.durationDays);
 const MINUTES_IN_DAY = 24 * 60;
 
 const getMinutePercent = (minute: number) => {
@@ -82,14 +99,31 @@ const getMinutePercent = (minute: number) => {
   const startMins = props.dayStartMin % 60;
   windowStart.setHours(startHours, startMins, 0, 0);
 
-  const currentMs = (minute * 60 * 1000);
-  const startMs = (props.dayStartMin * 60 * 1000);
-
-  const offset = ((minute - props.dayStartMin + MINUTES_IN_DAY) % MINUTES_IN_DAY);
-  const percent = (offset / MINUTES_IN_DAY) * 100;
+  // Determine absolute minute from start of simulation window
+  // If multi-day, 'minute' argument is minute-of-simulation (can be > 1440)
+  // But wait, the prop `playheadMin` passed down is usually wrapped 0-1440.
+  // If we support multi-day, we need `playheadTotalMin` or similar.
+  // For now, let's assume `minute` wraps for display if days > 1, OR we map it relative to the window.
+  // Actually, `playheadMin` in app is currently day-based.
+  // If we view 7 days, we might want to see where the playhead is relative to TODAY (day 1).
+  // Let's assume the playhead is on the first day for now.
+  
+  // Actually, to support full multi-day playhead, the upstream store needs to track absolute time.
+  // But for this view, let's just project the 0-1440 minute onto the first day of the view.
+  const currentMs = (minute * 60 * 1000); 
+  
+  // Percent within the *total duration* window
+  // If duration is 7 days, 1 day is 14.2% width.
+  // We need to map `minute` (0-1440) to the correct day if we tracked day.
+  // Since we don't track day index in playhead yet, we show it on day 1.
+  
+  const offsetMs = currentMs - (props.dayStartMin * 60 * 1000);
+  // Handle wrap around start time
+  const adjustedOffset = offsetMs < 0 ? offsetMs + (24 * 60 * 60 * 1000) : offsetMs;
+  
+  const percent = (adjustedOffset / totalMs) * 100;
 
   // Since we have a left panel (group labels), we need to factor that in
-  // vis-timeline's internal mapping is complex, but we can try to find the panel width
   const leftPanel = container.value?.querySelector('.vis-panel.vis-left') as HTMLElement;
   const leftWidth = leftPanel?.offsetWidth || 0;
   const centerPanel = container.value?.querySelector('.vis-panel.vis-center') as HTMLElement;
@@ -106,6 +140,9 @@ const handleMouseMove = (event: MouseEvent) => {
   if (!timeline || !container.value) return;
   const props = timeline.getEventProperties(event);
   if (props.time) {
+    // This gives absolute time. We need to map back to minute-of-day (0-1440)
+    // regardless of which day we hovered on, if we treat schedule as cyclic.
+    // Or if we treat it as linear, we return absolute minute.
     const m = props.time.getHours() * 60 + props.time.getMinutes();
     hoverMinute.value = m;
   }
@@ -121,53 +158,92 @@ const getItemGroup = (item: TimelineItem) => {
   return def?.categories?.[0] || 'general';
 };
 
-const toVisItems = (items: TimelineItem[]) =>
-  items.map((item) => {
-    const def = library.defs.find((d) => d.key === item.meta.key);
-    const icon = def?.icon ? `${def.icon} ` : '';
-    let label = item.content ?? item.meta.labelOverride ?? def?.label ?? item.meta.key;
-    let content = `${icon}${label}`;
+const toVisItems = (items: TimelineItem[]) => {
+  const visItems: any[] = [];
+  
+  // If multi-day, we might want to repeat items across days?
+  // Currently, the timeline store stores items for ONE generic day.
+  // To visualize 7 days, we should replicate these items for each day in the view.
+  
+  const days = durationDays.value;
+  const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
+  
+  for (let d = 0; d < days; d++) {
+    const dayOffset = d * 24 * 60 * 60 * 1000;
+    
+    items.forEach(item => {
+      const def = library.defs.find((d) => d.key === item.meta.key);
+      const icon = def?.icon ? `${def.icon} ` : '';
+      let label = item.content ?? item.meta.labelOverride ?? def?.label ?? item.meta.key;
+      let content = `${icon}${label}`;
 
-    if (item.meta.key === 'sleep') {
-      const start = new Date(item.start);
-      const end = new Date(item.end);
-      let diffMs = end.getTime() - start.getTime();
-      // Handle overnight wrap (if end < start, assume next day)
-      if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+      if (item.meta.key === 'sleep') {
+        const start = new Date(item.start);
+        const end = new Date(item.end);
+        let diffMs = end.getTime() - start.getTime();
+        if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
 
-      const hours = Math.floor(diffMs / (1000 * 60 * 60));
-      const mins = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-      const durationStr = `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const mins = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const durationStr = `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
 
-      content = `
-        <div class="timeline-item-sleep">
-          <span class="sleep-label">${icon}Sleep <span style="opacity:0.7; font-weight:400; font-size:0.8em; margin-left:4px;">${durationStr}</span></span>
-          <span class="wake-label">Wake ☀️</span>
-        </div>
-      `;
-    }
+        content = `
+          <div class="timeline-item-sleep">
+            <span class="sleep-label">${icon}Sleep <span style="opacity:0.7; font-weight:400; font-size:0.8em; margin-left:4px;">${durationStr}</span></span>
+            <span class="wake-label">Wake ☀️</span>
+          </div>
+        `;
+      }
 
-    return {
-      id: item.id,
-      content,
-      start: item.start,
-      end: item.end,
-      type: item.type,
-      group: getItemGroup(item),
-      _tooltip: label,
-      className: item.meta.locked ? 'timeline-item--locked' : undefined,
-    };
-  });
+      // Shift item time by 'd' days
+      const itemStart = new Date(item.start).getTime();
+      const itemEnd = new Date(item.end).getTime();
+      
+      // We need to preserve the time-of-day but shift the date
+      // The store items usually have a dummy date (e.g. 2022-01-01)
+      // We should map them to the view's base date + d
+      
+      const mapTime = (iso: string) => {
+        const t = new Date(iso);
+        const mapped = new Date(baseDate);
+        mapped.setDate(mapped.getDate() + d);
+        mapped.setHours(t.getHours(), t.getMinutes(), t.getSeconds(), 0);
+        return mapped;
+      };
+      
+      const startMapped = mapTime(item.start);
+      let endMapped = mapTime(item.end);
+      
+      // Handle wrap around end time if it was originally overnight
+      if (endMapped < startMapped) {
+        endMapped = new Date(endMapped.getTime() + 24 * 60 * 60 * 1000);
+      }
+
+      visItems.push({
+        id: `${item.id}_${d}`, // Unique ID for each day's instance
+        _originalId: item.id,
+        content,
+        start: startMapped,
+        end: endMapped,
+        type: item.type,
+        group: getItemGroup(item),
+        _tooltip: label,
+        className: item.meta.locked ? 'timeline-item--locked' : undefined,
+        editable: d === 0, // Only allow editing on day 1 for now to avoid sync hell
+      });
+    });
+  }
+  
+  return visItems;
+};
 
 const syncItems = () => {
   if (!dataset || !groupDataset) return;
   const selectedId = props.selectedId;
 
-  // Dynamic group management
   const activeGroups = new Set(props.items.map(getItemGroup));
   const existingGroups = groupDataset.getIds();
 
-  // Add missing groups
   activeGroups.forEach(gid => {
     if (!existingGroups.includes(gid)) {
       const cat = INTERVENTION_CATEGORIES.find(c => c.id === gid);
@@ -189,7 +265,9 @@ const toISO = (value: any) => new Date(value).toISOString();
 
 const setSelection = (id?: UUID) => {
   if (!timeline) return;
-  if (id) timeline.setSelection(id);
+  // Select day 0 instance
+  const instanceId = id ? `${id}_0` : undefined;
+  if (instanceId) timeline.setSelection(instanceId);
   else timeline.setSelection([]);
 };
 
@@ -201,7 +279,7 @@ const getDayBounds = () => {
   const startMins = props.dayStartMin % 60;
   start.setHours(startHours, startMins, 0, 0);
   const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+  end.setDate(end.getDate() + durationDays.value);
   return { start, end };
 };
 
@@ -221,18 +299,24 @@ const options = (): TimelineOptions => {
       minorLabels: {
         minute: 'h:mm A',
         hour: 'h A',
-        day: 'ddd h A',
+        weekday: 'D',
+        day: 'D',
+        month: 'D',
+        year: ''
       },
       majorLabels: {
-        minute: 'MMM D',
-        hour: 'MMM D',
-        day: 'MMMM YYYY',
+        minute: '',
+        hour: '',
+        weekday: '',
+        day: '',
+        month: '',
+        year: ''
       },
     },
     zoomable: true,
 	  moveable: true,
 	  zoomMin: 3600000, // 1 hour
-	zoomMax: 86400000, // 1 day
+	  zoomMax: durationDays.value * 86400000,
     groupEditable: true,
     editable: props.editable
       ? {
@@ -241,17 +325,31 @@ const options = (): TimelineOptions => {
           overrideItems: false,
         }
       : false,
-    onMove: (item, callback) => {
+    onMove: (item: any, callback) => {
+      // Map back to generic day time
+      // We only support moving items on day 0 for now (enforced by editable: d===0)
+      // But we need to make sure we don't accidentally shift date
+      const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
+      
+      const newStart = new Date(item.start);
+      // Normalize to base date
+      newStart.setFullYear(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+      
+      const newEnd = item.end ? new Date(item.end) : newStart;
+      newEnd.setFullYear(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+      // Handle wrap
+      if (newEnd < newStart) newEnd.setDate(newEnd.getDate() + 1);
+
       emit('update', {
-        id: item.id as UUID,
-        start: toISO(item.start),
-        end: toISO(item.end ?? item.start),
+        id: item._originalId as UUID,
+        start: newStart.toISOString(),
+        end: newEnd.toISOString(),
         group: item.group,
       });
       callback(item);
     },
-    onRemove: (item, callback) => {
-      emit('remove', item.id as UUID);
+    onRemove: (item: any, callback) => {
+      emit('remove', item._originalId as UUID);
       callback(item);
     },
     template: (item: any, element: any, data: any) => {
@@ -291,8 +389,10 @@ const initTimeline = () => {
   syncItems();
 
   timeline.on('select', (event) => {
-    const id = (event.items?.[0] as UUID) || undefined;
-    emit('select', id);
+    const id = (event.items?.[0] as string);
+    // ID format is uuid_dayIndex. We need uuid.
+    const uuid = id ? id.split('_')[0] : undefined;
+    emit('select', uuid as UUID);
   });
 
   const shouldHandlePlayheadClick = (event: any) => {
@@ -352,12 +452,57 @@ watch(
     timeline?.setOptions(options());
   }
 );
+
+// Watch for duration changes
+watch(durationDays, () => {
+  timeline?.setOptions(options());
+  syncItems();
+});
 </script>
 
 <style scoped>
 .timeline-container {
   position: relative;
   border-radius: 16px;
+}
+
+.timeline-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+}
+
+.segment-picker {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+  backdrop-filter: blur(4px);
+}
+
+.segment-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.segment-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.segment-btn.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .timeline-vis {

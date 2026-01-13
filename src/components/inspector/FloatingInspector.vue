@@ -1,7 +1,7 @@
 <template>
   <transition name="float-fade">
     <aside v-if="visible" ref="inspectorEl" class="floating-inspector">
-      <Panel title="Inspector" icon="🛠">
+      <Panel>
         <InspectorPanel
           :item="item"
           :def="def"

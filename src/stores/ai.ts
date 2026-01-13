@@ -6,7 +6,7 @@ import { useLibraryStore } from "@/stores/library";
 import { useMetersStore } from "@/stores/meters";
 import { minuteToISO } from "@/utils/time";
 import type { Minute, InterventionKey, Goal, Signal } from "@/types";
-import { PROFILE_LIBRARY, SIGNAL_LIBRARY } from "@/models";
+import { PROFILE_LIBRARY } from "@/models";
 import { SIGNALS_ALL } from "@/types";
 import type { ProfileKey } from "@/models/profiles";
 

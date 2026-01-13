@@ -58,62 +58,89 @@ const finalStateJson = computed(() => {
               </p>
 
               <div class="toggles">
-                <label class="toggle-row">
-                  <span>Baselines</span>
-                  <input
-                    type="checkbox"
-                    :checked="engineStore.debug.enableBaselines"
-                    @change="engineStore.updateDebug({ enableBaselines: ($event.target as HTMLInputElement).checked })"
-                  />
-                </label>
-                <label class="toggle-row">
-                  <span>Interventions</span>
-                  <input
-                    type="checkbox"
-                    :checked="engineStore.debug.enableInterventions"
-                    @change="engineStore.updateDebug({ enableInterventions: ($event.target as HTMLInputElement).checked })"
-                  />
-                </label>
-                <label class="toggle-row">
-                  <span>Couplings</span>
-                  <input
-                    type="checkbox"
-                    :checked="engineStore.debug.enableCouplings"
-                    @change="engineStore.updateDebug({ enableCouplings: ($event.target as HTMLInputElement).checked })"
-                  />
-                </label>
-                <label class="toggle-row">
-                  <span>Homeostasis</span>
-                  <input
-                    type="checkbox"
-                    :checked="engineStore.debug.enableHomeostasis"
-                    @change="engineStore.updateDebug({ enableHomeostasis: ($event.target as HTMLInputElement).checked })"
-                  />
-                </label>
-                <label class="toggle-row">
-                  <span>Receptors</span>
-                  <input
-                    type="checkbox"
-                    :checked="engineStore.debug.enableReceptors"
-                    @change="engineStore.updateDebug({ enableReceptors: ($event.target as HTMLInputElement).checked })"
-                  />
-                </label>
-                <label class="toggle-row">
-                  <span>Transporters</span>
-                  <input
-                    type="checkbox"
-                    :checked="engineStore.debug.enableTransporters"
-                    @change="engineStore.updateDebug({ enableTransporters: ($event.target as HTMLInputElement).checked })"
-                  />
-                </label>
-                <label class="toggle-row">
-                  <span>Enzymes</span>
-                  <input
-                    type="checkbox"
-                    :checked="engineStore.debug.enableEnzymes"
-                    @change="engineStore.updateDebug({ enableEnzymes: ($event.target as HTMLInputElement).checked })"
-                  />
-                </label>
+                <div class="toggle-item">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Baselines</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableBaselines"
+                      @change="engineStore.updateDebug({ enableBaselines: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Circadian and ultradian setpoint drivers.</p>
+                </div>
+
+                <div class="toggle-item">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Interventions</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableInterventions"
+                      @change="engineStore.updateDebug({ enableInterventions: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">External forcing functions (food, drugs, exercise).</p>
+                </div>
+
+                <div class="toggle-item">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Couplings</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableCouplings"
+                      @change="engineStore.updateDebug({ enableCouplings: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Signal-to-signal interactions and feedback loops.</p>
+                </div>
+
+                <div class="toggle-item">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Auxiliary Dynamics</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableHomeostasis"
+                      @change="engineStore.updateDebug({ enableHomeostasis: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Internal state pools (vesicles, sleep pressure, glycogen).</p>
+                </div>
+
+                <div class="toggle-item">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Receptors</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableReceptors"
+                      @change="engineStore.updateDebug({ enableReceptors: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Dynamic receptor sensitivity and density adaptation.</p>
+                </div>
+
+                <div class="toggle-item">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Transporters</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableTransporters"
+                      @change="engineStore.updateDebug({ enableTransporters: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Reuptake transporter activity modulation.</p>
+                </div>
+
+                <div class="toggle-item">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Enzymes</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableEnzymes"
+                      @change="engineStore.updateDebug({ enableEnzymes: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Metabolic enzyme activity modulation.</p>
+                </div>
               </div>
             </div>
 
@@ -287,15 +314,30 @@ const finalStateJson = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem;
+  cursor: pointer;
+}
+
+.toggle-item {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  cursor: pointer;
+  padding: 0.75rem;
   transition: background 0.2s;
 }
 
-.toggle-row:hover {
-  background: rgba(255, 255, 255, 0.1);
+.toggle-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toggle-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.toggle-desc {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  line-height: 1.3;
 }
 
 .toggle-row input[type="checkbox"] {

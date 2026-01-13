@@ -174,9 +174,11 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import type { ChartSeriesSpec, ResponseSpec, Signal } from '@/types';
 import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/colors';
-import { SIGNAL_LIBRARY } from '@/models';
+import { getAllUnifiedDefinitions } from '@/models/unified';
 import Sortable from 'sortablejs';
 import { useProfilesStore } from '@/stores/profiles';
+
+const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
 const props = withDefaults(
   defineProps<{
@@ -186,8 +188,9 @@ const props = withDefaults(
     playheadMin: number;
     interventions?: Array<{ key: string; start: number; end: number; color?: string }>;
     dayStartMin?: number; // Minute of day where the view starts (e.g., 420 for 7 AM)
+    viewMinutes?: number;
   }>(),
-  { dayStartMin: 0 }
+  { dayStartMin: 0, viewMinutes: 1440 }
 );
 
 const emit = defineEmits<{ playhead: [number] }>();
@@ -200,19 +203,18 @@ const MINUTES_IN_DAY = 24 * 60;
 
 const isLocked = (key: string) => {
   const data = props.seriesData[key];
-  return SIGNAL_LIBRARY[key as Signal]?.isPremium && (!data || data.length === 0);
+  return UNIFIED_DEFS[key as Signal]?.isPremium && (!data || data.length === 0);
 };
 
-// Convert a minute-of-day to display percentage, offset by dayStartMin
+// Convert a minute-of-day to display percentage
 const minToPercent = (minute: number) => {
-  const offset = ((minute - props.dayStartMin + MINUTES_IN_DAY) % MINUTES_IN_DAY);
-  return (offset / MINUTES_IN_DAY) * 100;
+  const rel = minute - props.dayStartMin;
+  return (rel / props.viewMinutes) * 100;
 };
 
 // Convert a display percentage back to minute-of-day
 const percentToMin = (percent: number) => {
-  const offset = (percent / 100) * MINUTES_IN_DAY;
-  return (offset + props.dayStartMin) % MINUTES_IN_DAY;
+  return props.dayStartMin + (percent / 100) * props.viewMinutes;
 };
 
 const lineColor = (spec: ChartSeriesSpec) =>
@@ -226,14 +228,17 @@ const gradientStops = (spec: ChartSeriesSpec) =>
 const gradientId = (spec: ChartSeriesSpec) => `grad-${spec.key}`;
 const strokeUrl = (spec: ChartSeriesSpec) => `url(#${gradientId(spec)})`;
 
+const getStep = () => {
+  if (props.grid.length < 2) return 5;
+  return props.grid[1] - props.grid[0];
+};
+
 const latestValue = (key: string) => {
   const data = props.seriesData[key] ?? [];
   if (!data.length) return 0;
-  const idx = Math.min(
-    data.length - 1,
-    Math.max(0, Math.round((props.playheadMin / MINUTES_IN_DAY) * (data.length - 1)))
-  );
-  return data[idx] ?? 0;
+  const step = getStep();
+  const idx = Math.max(0, Math.floor(props.playheadMin / step));
+  return data[Math.min(idx, data.length - 1)] ?? 0;
 };
 
 const normalize = (val: number, spec: ChartSeriesSpec) => {
@@ -245,27 +250,24 @@ const normalize = (val: number, spec: ChartSeriesSpec) => {
   return Math.max(0, Math.min(1, (val - min) / range));
 };
 
-// Get reordered data starting from dayStartMin
-const reorderedData = (data: number[]) => {
-  if (!data.length) return [];
-  // Calculate start index based on dayStartMin ratio of total day
-  const startIdx = Math.round((props.dayStartMin / MINUTES_IN_DAY) * data.length) % data.length;
-  const result: { value: number; displayIdx: number }[] = [];
-  for (let i = 0; i < data.length; i++) {
-    const srcIdx = (startIdx + i) % data.length;
-    result.push({ value: data[srcIdx], displayIdx: i });
-  }
-  return result;
+const getSliceIndices = () => {
+  const step = getStep();
+  const startIdx = Math.floor(props.dayStartMin / step);
+  const count = Math.ceil(props.viewMinutes / step);
+  return { start: startIdx, end: startIdx + count };
 };
 
 const points = (spec: ChartSeriesSpec) => {
   const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
-  const reordered = reorderedData(data);
-  return reordered
-    .map(({ value, displayIdx }) => {
+  
+  const { start, end } = getSliceIndices();
+  const sliced = Array.from(data.slice(start, end));
+  
+  return sliced
+    .map((value, i) => {
       const norm = normalize(value, spec);
-      return `${(displayIdx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
+      return `${(i / Math.max(1, sliced.length - 1)) * 100},${28 - norm * 22}`;
     })
     .join(' ');
 };
@@ -273,11 +275,14 @@ const points = (spec: ChartSeriesSpec) => {
 const fillPoints = (spec: ChartSeriesSpec) => {
   const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
-  const reordered = reorderedData(data);
-  const pts = reordered
-    .map(({ value, displayIdx }) => {
+  
+  const { start, end } = getSliceIndices();
+  const sliced = Array.from(data.slice(start, end));
+  
+  const pts = sliced
+    .map((value, i) => {
       const norm = normalize(value, spec);
-      return `${(displayIdx / Math.max(1, data.length - 1)) * 100},${28 - norm * 22}`;
+      return `${(i / Math.max(1, sliced.length - 1)) * 100},${28 - norm * 22}`;
     })
     .join(' ');
   return `0,30 ${pts} 100,30`;
@@ -288,12 +293,12 @@ const playheadPercent = computed(() => `${minToPercent(props.playheadMin)}%`);
 const normalizedBands = computed(() => {
   if (!props.interventions?.length) return [] as Array<{ key: string; left: string; width: string; color: string }>;
   return props.interventions.map((band) => {
-    const left = minToPercent(band.start);
-    // Handle width carefully - if band wraps around, just show the duration directly
-    const duration = band.end >= band.start
-      ? band.end - band.start
-      : (MINUTES_IN_DAY - band.start) + band.end;
-    const width = (duration / MINUTES_IN_DAY) * 100;
+    const startRel = band.start - props.dayStartMin;
+    const endRel = band.end - props.dayStartMin;
+    
+    const left = (startRel / props.viewMinutes) * 100;
+    const width = ((band.end - band.start) / props.viewMinutes) * 100;
+    
     return {
       key: band.key,
       left: `${left}%`,

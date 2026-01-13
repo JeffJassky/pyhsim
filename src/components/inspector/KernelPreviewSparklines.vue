@@ -1,21 +1,28 @@
 <template>
-  <div class="sparklines">
-    <div v-for="signal in signals" :key="signal" class="sparkline">
-      <small>{{ signal }}</small>
-      <svg viewBox="0 0 100 30">
-        <polyline :points="points(signal)" fill="none" stroke="currentColor" stroke-width="1" />
-      </svg>
-    </div>
+  <div class="sparkline-box">
+    <svg viewBox="0 0 100 30">
+      <polyline :points="points" fill="none" stroke="currentColor" stroke-width="1" />
+    </svg>
   </div>
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ signals: string[]; previewData: Record<string, number[]> }>();
-const points = (signal: string) => {
-  const data = props.previewData[signal] ?? [];
+import { computed } from 'vue';
+const props = defineProps<{ previewData: number[] }>();
+const points = computed(() => {
+  const data = props.previewData ?? [];
   if (!data.length) return '';
-  return data.map((value, idx) => `${(idx / (data.length - 1)) * 100},${30 - value * 20}`).join(' ');
-};
+  
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  return data.map((value, idx) => {
+    const x = (idx / (data.length - 1)) * 100;
+    const y = 30 - ((value - min) / range) * 25 - 2;
+    return `${x},${y}`;
+  }).join(' ');
+});
 </script>
 
 <style scoped>

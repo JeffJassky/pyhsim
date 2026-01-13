@@ -378,7 +378,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import { useProfilesStore } from '@/stores/profiles';
-import { PROFILE_LIBRARY, SIGNAL_DEFS } from '@/models';
+import { PROFILE_LIBRARY } from '@/models';
+import { getAllUnifiedDefinitions } from '@/models/unified';
 import { GOAL_CATEGORIES } from '@/models/goals';
 import type { ProfileKey } from '@/models/profiles';
 import type { Subject } from '@/models/subject';
@@ -395,6 +396,7 @@ const emit = defineEmits<{
 
 const profilesStore = useProfilesStore();
 const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'charts' | 'subscription'>('categories');
+const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
 const subject = computed(() => profilesStore.subject);
 const profileDefs = PROFILE_LIBRARY;
@@ -420,7 +422,7 @@ const handleSetTier = (tier: 'free' | 'premium') => {
 };
 
 const getSignalsByGoal = (goalId: Goal) => {
-  const filtered = SIGNAL_DEFS.filter(sig => (sig.goals as Goal[])?.includes(goalId));
+  const filtered = Object.values(UNIFIED_DEFS).filter(sig => (sig.goals as Goal[])?.includes(goalId));
   
   // Create a map for quick lookup of current signal order
   const orderMap = new Map(signalOrder.value.map((key, idx) => [key, idx]));

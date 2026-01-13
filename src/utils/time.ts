@@ -17,9 +17,9 @@ export const minuteToLabel = (minute: Minute) => {
 export const snapMinute = (minute: Minute, step: number): Minute =>
   (Math.round(minute / step) * step) as Minute;
 
-export const rangeMinutes = (step: number): Minute[] => {
+export const rangeMinutes = (step: number, durationMinutes: number = MINUTES_IN_DAY): Minute[] => {
   const arr: Minute[] = [];
-  for (let i = 0 as Minute; i < MINUTES_IN_DAY; i = (i + step) as Minute) {
+  for (let i = 0 as Minute; i < durationMinutes; i = (i + step) as Minute) {
     arr.push(i);
   }
   return arr;
