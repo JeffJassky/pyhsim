@@ -10,13 +10,13 @@ import type {
   HomeostasisSeries,
 } from "@/types";
 import { SIGNALS_ALL } from "@/types";
-import { rangeMinutes } from "@/utils/time";
-import { buildInterventionLibrary } from "@/models/interventions";
-import { buildWorkerRequest, toMinuteOfDay } from "@/core/serialization";
-import { useProfilesStore } from "./profiles";
+import { rangeMinutes, toMinuteOfDay } from "@/utils/time";
+import { buildInterventionLibrary } from "@/models/library/interventions";
+import { buildProfileAdjustments } from "@/models/library/profiles";
+import { derivePhysiology } from "@/models/domain/subject";
 import { useTimelineStore } from "./timeline";
-import { buildProfileAdjustments } from "@/models/profiles";
-import { derivePhysiology } from "@/models/subject";
+import { useProfilesStore } from "./profiles";
+import { buildWorkerRequest } from "@/core/serialization";
 
 interface EngineStoreState extends EngineState {
   durationDays: number;

@@ -136,8 +136,8 @@ import { ref, computed, nextTick, watch } from 'vue';
 import { useLibraryStore } from '@/stores/library';
 import { searchFoods } from '@/api/openfoodfacts';
 import type { InterventionDef, FoodSearchHit } from '@/types';
-import { INTERVENTION_CATEGORIES, type InterventionCategory } from '@/models/categories';
-import { GOAL_CATEGORIES } from '@/models/goals';
+import { INTERVENTION_CATEGORIES, type InterventionCategory } from '@/models/ui/categories';
+import { GOAL_CATEGORIES } from '@/models/domain/goals';
 
 const props = defineProps<{
   modelValue: boolean;

@@ -1,5 +1,5 @@
 import type { InterventionDef } from "@/types";
-import type { Subject, Physiology } from "../subject";
+import type { Subject, Physiology } from "../../domain/subject";
 import { PRESCRIPTION_INTERVENTIONS } from "./prescription.interventions";
 import { SUPPLEMENT_INTERVENTIONS } from "./supplements.interventions";
 import { LIFESTYLE_INTERVENTIONS } from "./lifestyle.interventions";

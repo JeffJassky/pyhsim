@@ -6,8 +6,8 @@ import {
   SIGNAL_DEFINITIONS, 
   AUXILIARY_DEFINITIONS, 
   getAllUnifiedDefinitions 
-} from '@/models/unified';
-import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/subject';
+} from '@/models/engine/unified';
+import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
 
 self.onmessage = (event: MessageEvent<{ 
   intervention: any; 

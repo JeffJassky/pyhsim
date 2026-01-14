@@ -1,7 +1,7 @@
 // types/neurostate.ts
 
-import type { Physiology, Subject } from '@/models/subject';
-import type { PharmacologicalTarget, PDMechanism } from '@/models/pharmacology/types';
+import type { Physiology, Subject } from '@/models/domain/subject';
+import type { PharmacologicalTarget, PDMechanism } from '@/models/library/pharmacology/types';
 import type { PhysiologicalUnit } from './units';
 export type { Physiology, Subject };
 

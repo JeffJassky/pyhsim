@@ -61,7 +61,7 @@ import { computed, ref } from 'vue';
 import { useOnboardingStore } from '@/stores/onboarding';
 import { useTimelineStore } from '@/stores/timeline';
 import { useLibraryStore } from '@/stores/library';
-import { GOAL_CATEGORIES, type RecommendedIntervention } from '@/models/goals';
+import { GOAL_CATEGORIES, type RecommendedIntervention } from '@/models/domain/goals';
 import { minuteToISO, toMinute } from '@/utils/time';
 
 const emit = defineEmits(['next']);

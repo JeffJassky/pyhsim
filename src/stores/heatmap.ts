@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { HeatmapState, OrganKey, OrganScoreVector } from '@/types';
-import { ORGAN_WEIGHTS } from '@/models/weights';
+import { ORGAN_WEIGHTS } from '@/models/ui/weights';
 
 interface HeatmapStoreState extends HeatmapState {}
 

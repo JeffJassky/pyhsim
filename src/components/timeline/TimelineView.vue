@@ -52,7 +52,7 @@ import '@/assets/vis-timeline.css';
 import type { Minute, TimelineItem, UUID } from '@/types';
 import { useLibraryStore } from '@/stores/library';
 import { useEngineStore } from '@/stores/engine';
-import { INTERVENTION_CATEGORIES } from '@/models/categories';
+import { INTERVENTION_CATEGORIES } from '@/models/ui/categories';
 
 const props = withDefaults(
   defineProps<{

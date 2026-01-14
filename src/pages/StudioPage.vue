@@ -180,7 +180,7 @@ import type {
 } from '@/types';
 import { minuteToISO } from '@/utils/time';
 import { toMinuteOfDay } from '@/core/serialization';
-import { getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS } from '@/models/unified';
+import { getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS } from '@/models/engine/unified';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 

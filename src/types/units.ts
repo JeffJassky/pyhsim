@@ -1,19 +1,25 @@
 export type ConcentrationUnit =
   | 'mg/dL'      // Glucose, ethanol
+  | 'g/dL'       // High ethanol
   | 'µg/dL'      // Cortisol
+  | 'ng/dL'      // Testosterone
   | 'ng/mL'      // Leptin, BDNF, growth hormone
   | 'pg/mL'      // Catecholamines, melatonin, orexin
   | 'µIU/mL'     // Insulin
   | 'pmol/L'     // GLP-1, thyroid
+  | 'nmol/L'     // SHBG
   | 'nM'         // Synaptic neurotransmitters
   | 'µM'         // Glutamate (extracellular)
   | 'IU/L'       // LH, FSH
+  | 'U/L'        // Enzymes (ALT, AST)
   | 'mmol/L';    // Ketones, electrolytes
+
+export type RateUnit = 'mL/min/1.73m²'; // eGFR
 
 export type TimeUnit = 'ms' | 'sec' | 'min' | 'hr';
 export type PressureUnit = 'mmHg';
-export type RatioUnit = 'fold-change' | 'ratio';
-export type CompositeUnit = 'index';  // Explicitly marks as computed index, not a measurement
+export type RatioUnit = 'fold-change' | 'ratio' | 'relative' | 'a.u.';
+export type CompositeUnit = 'index' | 'units';  // Explicitly marks as computed index, not a measurement
 export type PercentUnit = '% baseline' | '%'; // For legacy/transitional support
 
-export type PhysiologicalUnit = ConcentrationUnit | TimeUnit | PressureUnit | RatioUnit | CompositeUnit | PercentUnit;
+export type PhysiologicalUnit = ConcentrationUnit | RateUnit | TimeUnit | PressureUnit | RatioUnit | CompositeUnit | PercentUnit;

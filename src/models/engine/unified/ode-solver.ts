@@ -11,7 +11,7 @@ import type {
 import { type Signal } from '@/types/neurostate';
 import { addStates, scaleState, initializeZeroState } from './state';
 import { clamp, hill } from './utils';
-import { isReceptor, getReceptorSignals } from '@/models/pharmacology';
+import { isReceptor, getReceptorSignals } from '../../library/pharmacology';
 
 /**
  * Calculate volume of distribution in Liters based on PK spec and subject
@@ -205,8 +205,20 @@ export function computeDerivatives(
                   response = (concentration * (effect.effectGain ?? 10) * density) / signalTau;
                 } else {
                   // Drug-based: use Hill function with Ki or EC50
+                  let effectiveConc = concentration;
+                  const molarMass = intervention.pharmacology?.molecule?.molarMass;
+                  
+                  // Convert mg/L to nM or uM if specified and molar mass is available
+                  if (molarMass && molarMass > 0) {
+                    if (effect.unit === 'nM') {
+                      effectiveConc = (concentration / molarMass) * 1000000;
+                    } else if (effect.unit === 'uM' || effect.unit === 'µM') {
+                      effectiveConc = (concentration / molarMass) * 1000;
+                    }
+                  }
+
                   const EC50 = effect.EC50 ?? effect.Ki ?? 100;
-                  const occupancy = hill(concentration, EC50, 1.2);
+                  const occupancy = hill(effectiveConc, EC50, 1.2);
                   const efficacy = effect.tau ?? 10;
                   
                   // Normalize by signalTau so effectGain represents steady-state unit shift
@@ -214,14 +226,21 @@ export function computeDerivatives(
                 }
 
                 // Apply pathway polarity
-                // Agonist: +response * sign
-                // Antagonist: -response * sign
                 if (effect.mechanism === 'agonist' || effect.mechanism === 'PAM') {
                   dSignal += response * targetSpec.sign;
                 } else if (effect.mechanism === 'antagonist') {
-                  // Antagonist reduces signal proportionally to current value (if sign is positive)
-                  // If sign is negative (inhibitory coupling), antagonist stimulates (disinhibits)
-                  dSignal -= response * targetSpec.sign * (currentValue / (currentValue + 20));
+                  // Antagonist logic:
+                  // 1. Blocking an EXCITATORY target (sign > 0) -> Reduces signal.
+                  //    Scale by current value to prevent going below zero (cannot block what isn't there).
+                  // 2. Blocking an INHIBITORY target (sign < 0) -> Increases signal (Disinhibition).
+                  //    Add directly (like an agonist) since we are releasing the brake.
+                  
+                  if (targetSpec.sign > 0) {
+                    dSignal -= response * targetSpec.sign * (currentValue / (currentValue + 20));
+                  } else {
+                    // sign is negative, so -response * sign is positive
+                    dSignal -= response * targetSpec.sign; 
+                  }
                 }
               }
             }
@@ -377,7 +396,7 @@ function EmaxModel(occupancy: number, tau: number): number {
 
 /**
  * Get signals affected by a pharmacological target.
- * Uses centralized registry from @/models/pharmacology.
+ * Uses centralized registry from @/models/library/pharmacology.
  * Transporters/enzymes return empty (they work via clearance, not direct coupling).
  */
 function getSignalTargets(target: string): Array<{ signal: Signal, sign: number }> {

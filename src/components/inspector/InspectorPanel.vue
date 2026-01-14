@@ -68,8 +68,8 @@
 import { computed, reactive, watch } from 'vue';
 import type { InterventionDef, ParamValues, TimelineItem, Signal } from '@/types';
 import ParamEditor from './ParamEditor.vue';
-import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/models/constants/nutrients';
-import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@/models/unified/signal-units';
+import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/models/library/constants/nutrients';
+import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@/models/engine/unified/signal-units';
 
 const props = defineProps<{ item?: TimelineItem; def?: InterventionDef; readonly?: boolean }>();
 const emit = defineEmits<{ change: [TimelineItem] }>();

@@ -99,8 +99,8 @@
 import { ref, computed } from 'vue';
 import { useOnboardingStore } from '@/stores/onboarding';
 import { useProfilesStore } from '@/stores/profiles';
-import { GOAL_CATEGORIES } from '@/models/goals';
-import { ARCHETYPES, type ArchetypeId } from '@/models/archetypes';
+import { GOAL_CATEGORIES } from '@/models/domain/goals';
+import { ARCHETYPES, type ArchetypeId } from '@/models/domain/archetypes';
 
 const emit = defineEmits(['next']);
 const store = useOnboardingStore();

@@ -18,7 +18,10 @@ export const melatonin: UnifiedSignalDefinition = {
     clearance: [
       { type: 'linear', rate: 0.03 }
     ],
-    couplings: []
+    couplings: [
+      // 2.0 * 10 = 20.0 (strong inhibition from high dopamine/caffeine)
+      { source: 'dopamine', effect: 'inhibit', strength: 2.0 }
+    ]
   },
   initialValue: 5,
   min: 0,

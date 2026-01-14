@@ -36,7 +36,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
         readout: 'A brief sleep cycle that reduces sleep pressure without causing grogginess.'
       },
       {
-        key: 'exercise',
+        key: 'exercise_cardio',
         label: 'Morning Run',
         icon: '🏃',
         improvements: ['Spikes cortisol (healthy)', 'Increases blood flow'],
@@ -78,7 +78,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: '⚖️',
     recommendedInterventions: [
       {
-        key: 'exercise',
+        key: 'exercise_hiit',
         label: 'HIIT Workout',
         icon: '🔥',
         improvements: ['Metabolic spike', 'Insulin sensitivity'],
@@ -99,7 +99,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: '🎭',
     recommendedInterventions: [
       {
-        key: 'exercise',
+        key: 'exercise_cardio',
         label: 'Cardio',
         icon: '🏃',
         improvements: ['Endorphin release', 'Serotonin boost'],
@@ -246,7 +246,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: '🌝',
     recommendedInterventions: [
       {
-        key: 'exercise',
+        key: 'exercise_cardio',
         label: 'Adaptive Movement',
         icon: '🏃',
         improvements: ['Hormone balance', 'Energy match'],
@@ -295,7 +295,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     icon: '🏃',
     recommendedInterventions: [
       {
-        key: 'exercise',
+        key: 'exercise_cardio',
         label: 'Zone 2 Cardio',
         icon: '🏃',
         improvements: ['Mitochondrial health', 'Metabolic flexibility'],

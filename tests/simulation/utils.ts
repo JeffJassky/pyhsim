@@ -17,9 +17,17 @@ import type {
 } from '@/types';
 import { SIGNALS_ALL } from '@/types';
 import { rangeMinutes } from '@/utils/time';
-import { buildInterventionLibrary } from '@/models/interventions';
-import { buildProfileAdjustments, type ProfileKey, type ProfileStateSnapshot } from '@/models/profiles';
-import { derivePhysiology, type Subject as SubjectType } from '@/models/subject';
+import { buildInterventionLibrary } from '@/models/library/interventions';
+import { buildProfileAdjustments, type ProfileKey, type ProfileStateSnapshot } from '@/models/library/profiles';
+import { derivePhysiology, type Subject as SubjectType } from '@/models/domain/subject';
+import {
+  integrateStep,
+  createInitialState,
+  getAllUnifiedDefinitions,
+  AUXILIARY_DEFINITIONS,
+  SIGNAL_DEFINITIONS,
+} from "@/models/engine/unified";
+import type { SimulationState, DynamicsContext, ActiveIntervention } from '@/types/unified';
 
 // --- Types ---
 
@@ -214,279 +222,132 @@ async function computeEngineSync(
   request: WorkerComputeRequest,
   includeSignals: Signal[]
 ): Promise<Record<Signal, Float32Array>> {
-  // Dynamic import to avoid circular dependencies
-  const { SIGNAL_BASELINES, SIGNAL_COUPLINGS } = await import('@/models');
-  const {
-    stepHomeostasis,
-    DEFAULT_HOMEOSTASIS_STATE,
-    DEFAULT_HOMEOSTASIS_PARAMS,
-  } = await import('@/models/homeostasis');
-
   const { gridMins, items, defs, options } = request;
 
-  // Initialize series
+  const enableInterventions = options?.debug?.enableInterventions ?? true;
+  const gridStep = gridMins.length > 1 ? gridMins[1] - gridMins[0] : 5;
+  const minutesPerDay = 24 * 60;
+
   const series: Record<Signal, Float32Array> = {} as Record<Signal, Float32Array>;
   for (const signal of includeSignals) {
     series[signal] = new Float32Array(gridMins.length);
   }
 
   const defsMap = new Map(defs.map((def) => [def.key, def]));
-  const baselineFns = { ...SIGNAL_BASELINES };
-  const baselineAdjustments = options?.profileBaselines ?? {};
-  const couplings = { ...SIGNAL_COUPLINGS };
+  const unifiedDefinitions = getAllUnifiedDefinitions();
+  
+  // Initialize state
+  let initialState: SimulationState = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
+    subject: options?.subject ?? ({} as any),
+    physiology: options?.physiology ?? ({} as any),
+    isAsleep: false 
+  }, options?.debug);
 
-  // Apply profile couplings
-  const profileCouplings = options?.profileCouplings ?? {};
-  for (const [target, extras] of Object.entries(profileCouplings)) {
-    const signal = target as Signal;
-    if (!extras?.length) continue;
-    couplings[signal] = [...(couplings[signal] ?? []), ...extras];
-  }
-
-  // Transporter and enzyme activities
-  const transporterActivities = options?.transporterActivities ?? {};
-  const datActivity = 1.0 + (transporterActivities['DAT'] ?? 0);
-  const netActivity = 1.0 + (transporterActivities['NET'] ?? 0);
-  const sertActivity = 1.0 + (transporterActivities['SERT'] ?? 0);
-
-  const enzymeActivities = options?.enzymeActivities ?? {};
-  const daoActivity = 1.0 + (enzymeActivities['DAO'] ?? 0);
-  const histamineEnzymeGain = daoActivity < 1.0 ? (1.0 - daoActivity) * 0.4 : 0;
-  const maoAActivity = 1.0 + (enzymeActivities['MAO_A'] ?? 0);
-  const maoBActivity = 1.0 + (enzymeActivities['MAO_B'] ?? 0);
-  const comtActivity = 1.0 + (enzymeActivities['COMT'] ?? 0);
-  const monoamineClearanceRate = (maoAActivity + maoBActivity) / 2;
-  const catecholamineClearanceRate = comtActivity;
-
-  const wakeOffsetMin = options?.wakeOffsetMin ?? 0;
-  const sleepMinutes = options?.sleepMinutes ?? 8 * 60;
-  const sleepQuality = Math.min(1.2, Math.max(0.5, sleepMinutes / (8 * 60)));
-  const minutesPerDay = 24 * 60;
-  const gridStep = gridMins.length > 1 ? gridMins[1] - gridMins[0] : 5;
-
-  const baselineContext = {
-    chronotypeShiftMin: wakeOffsetMin,
-    sleepDebt: 0,
-    subject: options?.subject,
-    physiology: options?.physiology,
-  };
-
-  // Homeostasis state
-  let homeostasisState = { ...DEFAULT_HOMEOSTASIS_STATE };
-  const homeostasisParams = { ...DEFAULT_HOMEOSTASIS_PARAMS };
-
-  const lastStepValues: Partial<Record<Signal, number>> = {};
-  const includeSignalSet = new Set(includeSignals);
-
-  // Kernel cache and hydration
-  const kernelCache = new Map<string, Partial<Record<Signal, Function>>>();
-
-  function hydrateKernel(fnString: string): Function {
-    try {
-      // Import helpers
-      const { pk1, pk2, hill, receptorOccupancy, operationalAgonism, doseToConcentration } =
-        require('@/models/pharmacokinetics');
-      return new Function(
-        'pk1', 'pk2', 'hill', 'receptorOccupancy', 'operationalAgonism', 'doseToConcentration',
-        `return (${fnString})`
-      )(pk1, pk2, hill, receptorOccupancy, operationalAgonism, doseToConcentration);
-    } catch {
-      return () => 0;
-    }
-  }
-
-  function getKernelSet(defId: string, kernels: any) {
-    if (!kernelCache.has(defId)) {
-      const hydrated: Partial<Record<Signal, Function>> = {};
-      for (const [signal, spec] of Object.entries(kernels)) {
-        if (!spec) continue;
-        hydrated[signal as Signal] = hydrateKernel((spec as any).fn);
+  // Apply profile adjustments to initial state auxiliary variables (enzymes, transporters)
+  if (options?.enzymeActivities) {
+    for (const [key, val] of Object.entries(options.enzymeActivities)) {
+      if (initialState.auxiliary[key] !== undefined) {
+        initialState.auxiliary[key] += val;
       }
-      kernelCache.set(defId, hydrated);
     }
-    return kernelCache.get(defId)!;
   }
-
-  function computeItemEffect(
-    signal: Signal,
-    kernels: Partial<Record<Signal, Function>>,
-    minute: number,
-    item: ItemForWorker
-  ) {
-    const kernel = kernels[signal];
-    if (!kernel) return 0;
-    const t = minute - item.startMin;
-    const params = {
-      ...item.meta.params,
-      duration: item.durationMin,
-      clearanceScalar: options?.physiology?.drugClearance ?? 1.0,
-      metabolicScalar: options?.physiology?.metabolicCapacity ?? 1.0,
-      weight: options?.subject?.weight ?? 70,
-    };
-    const I = typeof item.meta.intensity === 'number' ? item.meta.intensity : 1.0;
-    return (kernel as any)(t, params, I);
-  }
-
-  function applySleepAdjustment(signal: Signal, value: number, quality: number) {
-    switch (signal) {
-      case 'cortisol':
-        return value * (0.7 + 0.4 * quality);
-      case 'dopamine':
-      case 'serotonin':
-      case 'energy':
-      case 'norepi':
-        return value * (0.6 + 0.5 * quality);
-      case 'melatonin':
-      case 'gaba':
-        return value * (1.3 - 0.3 * quality);
-      default:
-        return value;
+  if (options?.transporterActivities) {
+    for (const [key, val] of Object.entries(options.transporterActivities)) {
+      if (initialState.auxiliary[key] !== undefined) {
+        initialState.auxiliary[key] += val;
+      }
     }
   }
 
-  // Main computation loop
-  for (let idx = 0; idx < gridMins.length; idx++) {
-    const minute = gridMins[idx];
-    const adjustedMinute = (((minute - wakeOffsetMin) % minutesPerDay) + minutesPerDay) % minutesPerDay;
+  // Apply receptor profile adjustments
+  if (options?.receptorDensities) {
+    for (const [key, val] of Object.entries(options.receptorDensities)) {
+      initialState.receptors[`${key}_density`] = 1.0 + val;
+    }
+  }
 
-    // Homeostasis step (simplified for testing)
-    let homeostasisCorrections: Record<string, number> = {};
-    if (idx > 0) {
-      const isAsleep = items.some(item => {
-        const def = defsMap.get(item.meta.key);
-        return def?.key === 'sleep' &&
-               minute >= item.startMin &&
-               minute <= item.startMin + item.durationMin;
-      });
+  let currentState: SimulationState = initialState;
 
-      const effectiveDopamine = (lastStepValues['dopamine'] ?? 50) / datActivity;
-      const effectiveNorepi = (lastStepValues['norepi'] ?? 30) / netActivity;
-      const effectiveSerotonin = (lastStepValues['serotonin'] ?? 50) / sertActivity;
+  // Prepare mechanistic interventions
+  const activeInterventions: ActiveIntervention[] = [];
+  let wakeTimeMin = 480; // Default 8:00 AM
+  let foundWakeTime = false;
 
-      const homeostasisInputs = {
-        baselineCortisol: lastStepValues['cortisol'] ?? 12,
-        baselineGlucose: lastStepValues['glucose'] ?? 90,
-        baselineDopamine: effectiveDopamine,
-        baselineSerotonin: effectiveSerotonin,
-        baselineNorepi: effectiveNorepi,
-        baselineGaba: lastStepValues['gaba'] ?? 50,
-        baselineGlutamate: lastStepValues['glutamate'] ?? 50,
-        baselineAcetylcholine: lastStepValues['acetylcholine'] ?? 50,
-        baselineEnergy: lastStepValues['energy'] ?? 100,
-        baselineMelatonin: lastStepValues['melatonin'] ?? 20,
-        baselineBdnf: lastStepValues['bdnf'] ?? 50,
-        baselineGrowthHormone: lastStepValues['growthHormone'] ?? 50,
-        baselineAdrenaline: lastStepValues['adrenaline'] ?? 50,
-        glucoseAppearance: 0,
-        caffeineLevel: 0,
-        exerciseIntensity: 0,
-        stressLevel: Math.max(0, (lastStepValues['cortisol'] ?? 12) - 15) / 20,
-        alcoholLevel: 0,
-        meditationEffect: 0,
-        dopamineFiringRate: Math.min(1, Math.max(0, effectiveDopamine / 100)),
-        serotoninFiringRate: Math.min(1, Math.max(0, effectiveSerotonin / 100)),
-        norepiFiringRate: Math.min(1, Math.max(0, effectiveNorepi / 100)),
-        stimulantEffect: 0,
-        tryptophanAvailability: 0.7,
-        gabaBoost: 0,
-        glutamateBlock: 0,
-        isAsleep,
-        minuteOfDay: adjustedMinute,
-      };
+  if (enableInterventions) {
+    // Find wake time
+    for (const item of items) {
+      if (foundWakeTime) break;
+      const def = defsMap.get(item.meta.key);
+      if (!def) continue;
 
-      const result = stepHomeostasis(
-        homeostasisState,
-        homeostasisInputs,
-        homeostasisParams,
-        gridStep
-      );
-      homeostasisState = result.newState;
-      homeostasisCorrections = result.corrections;
+      if (def.key === 'wake') {
+        wakeTimeMin = item.startMin % 1440;
+        foundWakeTime = true;
+      } else if (def.key === 'sleep') {
+        wakeTimeMin = (item.startMin + item.durationMin) % 1440;
+        foundWakeTime = true;
+      }
     }
 
-    // Compute each signal
-    for (const signal of includeSignals) {
-      const baselineAdj = baselineAdjustments[signal];
-      const phaseShift = baselineAdj?.phaseShiftMin ?? 0;
-      const amplitude = Math.max(0, 1 + (baselineAdj?.amplitude ?? 0));
-      const shiftedMinute = (((adjustedMinute + phaseShift) % minutesPerDay) + minutesPerDay) % minutesPerDay;
-
-      const baseVal = baselineFns[signal]?.(shiftedMinute as Minute, baselineContext) ?? 0;
-      let value = baseVal * amplitude;
-
-      value = applySleepAdjustment(signal, value, sleepQuality);
-
-      // Apply intervention effects
+    const numDays = Math.ceil((gridMins[gridMins.length - 1] + gridStep) / 1440);
+    for (let d = 0; d < numDays; d++) {
       for (const item of items) {
         const def = defsMap.get(item.meta.key);
         if (!def) continue;
-        const kernelSet = getKernelSet(def.key, def.kernels);
-        value += computeItemEffect(signal, kernelSet, minute, item);
-      }
 
-      // Apply couplings (simplified)
-      const modifiers = couplings[signal];
-      if (modifiers?.length && idx > 0) {
-        for (const modifier of modifiers) {
-          if (!includeSignalSet.has(modifier.source)) continue;
-          const driver = lastStepValues[modifier.source] ?? 0;
-          let contribution = 0;
-          if (modifier.mapping.kind === 'linear') {
-            contribution = modifier.mapping.gain * driver;
-          }
-          value += contribution;
-        }
+        activeInterventions.push({
+          id: item.id,
+          key: def.key,
+          startTime: item.startMin + (d * 1440),
+          duration: item.durationMin,
+          intensity: item.meta.intensity ?? 1.0,
+          params: item.meta.params,
+          pharmacology: def.pharmacology
+        });
       }
-
-      // Apply homeostasis corrections
-      if (homeostasisCorrections[signal] !== undefined) {
-        value += homeostasisCorrections[signal];
-      }
-
-      // Apply transporter effects
-      if (signal === 'dopamine' && datActivity !== 1) {
-        value /= datActivity;
-      }
-      if (signal === 'norepi' && netActivity !== 1) {
-        value /= netActivity;
-      }
-      if (signal === 'serotonin' && sertActivity !== 1) {
-        value /= sertActivity;
-      }
-
-      // Apply enzyme effects
-      if (signal === 'histamine' && histamineEnzymeGain !== 0) {
-        value *= (1 + histamineEnzymeGain);
-      }
-      if ((signal === 'dopamine' || signal === 'norepi' || signal === 'serotonin') && monoamineClearanceRate !== 1) {
-        value *= 1 / Math.max(0.5, monoamineClearanceRate);
-      }
-      if ((signal === 'dopamine' || signal === 'norepi' || signal === 'adrenaline') && catecholamineClearanceRate !== 1) {
-        value *= 1 / Math.max(0.5, catecholamineClearanceRate);
-      }
-
-      // Clamp to valid range
-      const isOrganScore = [
-        'brain', 'eyes', 'heart', 'lungs', 'liver', 'pancreas', 'stomach',
-        'si', 'colon', 'adrenals', 'thyroid', 'muscle', 'adipose', 'skin'
-      ].includes(signal);
-
-      if (!isOrganScore) {
-        value = Math.max(0, value);
-      }
-
-      if (isNaN(value) || !isFinite(value)) {
-        value = 0;
-      }
-
-      series[signal][idx] = value;
-    }
-
-    // Update last step values
-    for (const signal of includeSignals) {
-      lastStepValues[signal] = series[signal][idx];
     }
   }
+
+  const standardWakeTime = 480;
+  const circadianShift = standardWakeTime - wakeTimeMin;
+
+  // Simulation Loop
+  gridMins.forEach((minute, idx) => {
+    const adjustedMinute = minute % minutesPerDay;
+    const circadianMinuteOfDay = (adjustedMinute + circadianShift + minutesPerDay) % minutesPerDay;
+    
+    const isAsleep = enableInterventions && items.some(item => {
+      const def = defsMap.get(item.meta.key);
+      if (def?.key !== 'sleep') return false;
+      const inRange = (minute >= item.startMin && minute <= item.startMin + item.durationMin);
+      const inWrappedRange = ((minute + 1440) >= item.startMin && (minute + 1440) <= item.startMin + item.durationMin);
+      return inRange || inWrappedRange;
+    });
+
+    const dynamicsCtx: DynamicsContext = {
+      minuteOfDay: adjustedMinute,
+      circadianMinuteOfDay,
+      dayOfYear: 1, 
+      isAsleep,
+      subject: options?.subject ?? ({} as any),
+      physiology: options?.physiology ?? ({} as any),
+    };
+
+    const dt = idx === 0 ? 0 : gridStep;
+    if (dt > 0) {
+      const subSteps = Math.max(1, Math.ceil(dt / 1.0));
+      const subDt = dt / subSteps;
+      for (let s = 0; s < subSteps; s++) {
+        currentState = integrateStep(currentState, minute - dt + s * subDt, subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug);
+      }
+    } else {
+      currentState = integrateStep(currentState, minute, 0, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug);
+    }
+
+    for (const signal of includeSignals) {
+      series[signal][idx] = currentState.signals[signal] ?? 0;
+    }
+  });
 
   return series;
 }

@@ -14,13 +14,14 @@ import {
   hill,
   receptorOccupancy,
   operationalAgonism,
+  doseToConcentration,
   competitiveAntagonism,
   nonCompetitiveAntagonism,
   gammaPulse,
   carbAppearance,
   michaelisMentenPK,
-  alcoholBAC,
-} from '@/models/pharmacokinetics';
+  alcoholBAC
+} from '@/models/engine/pharmacokinetics';
 
 describe('Pharmacokinetics (PK)', () => {
   describe('pk1 - One-Compartment Model', () => {

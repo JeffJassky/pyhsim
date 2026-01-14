@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { ArousalComponentKey, ArousalComponents, ArousalState } from '@/types';
-import { DEFAULT_AROUSAL_WEIGHTS } from '@/models/weights';
+import { DEFAULT_AROUSAL_WEIGHTS } from '@/models/ui/weights';
 
 interface ArousalStoreState extends ArousalState {}
 

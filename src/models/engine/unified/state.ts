@@ -1,6 +1,6 @@
 import type { SimulationState, UnifiedSignalDefinition, AuxiliaryDefinition, SolverDebugOptions } from '@/types/unified';
 import { SIGNALS_ALL, type Signal } from '@/types/neurostate';
-import type { Subject, Physiology } from '@/models/subject';
+import type { Subject, Physiology } from '@/models/domain/subject';
 
 /**
  * Initialize a zeroed simulation state

@@ -1,10 +1,11 @@
 import type { UnifiedSignalDefinition } from '@/types/unified';
+import type { PhysiologicalUnit } from '@/types/units';
 
 /**
  * Very slow moving biomarkers
  */
 
-const createBiomarker = (key: any, label: string, unit: string, initial: number, color: string): UnifiedSignalDefinition => ({
+const createBiomarker = (key: any, label: string, unit: PhysiologicalUnit, initial: number, color: string): UnifiedSignalDefinition => ({
   key,
   label,
   unit,

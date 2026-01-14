@@ -1,6 +1,6 @@
 import type { UnifiedSignalDefinition, AuxiliaryDefinition } from '@/types/unified';
 import { minuteToPhase, hourToPhase, windowPhase, gaussianPhase, sigmoidPhase, widthToConcentration, minutesToPhaseWidth } from '../utils';
-import { getMenstrualHormones } from '../../subject';
+import { getMenstrualHormones } from '../../../domain/subject';
 
 /**
  * CORTISOL

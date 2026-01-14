@@ -8,12 +8,10 @@ import { minuteToISO } from "@/utils/time";
 import type { Minute, InterventionKey, Goal, Signal } from "@/types";
 import { PROFILE_LIBRARY } from "@/models";
 import { SIGNALS_ALL } from "@/types";
-import type { ProfileKey } from "@/models/profiles";
-
-// Internal configuration imports
+import type { ProfileKey } from "@/models/library/profiles";
+import { META_TAG_ID } from "@/models/library/constants/meta";
 import { DEFAULT_CONFIG_TOKEN } from "@/core/sys_config";
 import { LEGACY_HASH_MAP } from "@/utils/data_utils";
-import { META_TAG_ID } from "@/models/constants/meta";
 
 export interface ChatMessage {
   id: string;

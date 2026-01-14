@@ -17,7 +17,7 @@ import {
   getAllUnifiedDefinitions,
   AUXILIARY_DEFINITIONS,
   SIGNAL_DEFINITIONS,
-} from "@/models/unified";
+} from "@/models/engine/unified";
 
 self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const { gridMins, items, defs, options } = event.data;

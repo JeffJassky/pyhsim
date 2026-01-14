@@ -50,32 +50,32 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         {
           target: "Adenosine_A2a",
           mechanism: "antagonist",
-          Ki: 0.5,
-          effectGain: 4.0, // 20 * 0.2
+          Ki: 2400,
+          effectGain: 15.0, // Stronger dopamine disinhibition
           unit: "nM",
         },
         {
           target: "Adenosine_A1",
           mechanism: "antagonist",
-          Ki: 1.0,
-          effectGain: 2.4, // 12 * 0.2
+          Ki: 12000,
+          effectGain: 8.0, // Stronger release disinhibition
           unit: "nM",
         },
         {
           target: "cortisol",
           mechanism: "agonist",
-          EC50: 1.0,
+          EC50: 25000,
           effectGain: 8.0,
           unit: "µg/dL",
         },
         {
           target: "adrenaline",
           mechanism: "agonist",
-          EC50: 1.5,
+          EC50: 30000,
           effectGain: 12.0,
           unit: "pg/mL",
         },
-        { target: "norepi", mechanism: "agonist", EC50: 1.5, effectGain: 93.75, unit: "pg/mL" }, // 15 * 6.25
+        { target: "norepi", mechanism: "agonist", EC50: 30000, effectGain: 93.75, unit: "pg/mL" }, // 15 * 6.25
       ],
     },
     group: "Stimulants",

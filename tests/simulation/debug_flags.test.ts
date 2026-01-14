@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { computeDerivatives } from '@/models/unified/ode-solver';
-import { initializeZeroState } from '@/models/unified/state';
-import { dopamine } from '@/models/unified/signal-definitions/neurotransmitters';
-import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/subject';
+import { computeDerivatives } from '@/models/engine/unified/ode-solver';
+import { initializeZeroState } from '@/models/engine/unified/state';
+import { dopamine } from '@/models/engine/unified/signal-definitions/neurotransmitters';
+import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
 import type { DynamicsContext } from '@/types/unified';
 
 describe('Solver Debug Flags', () => {

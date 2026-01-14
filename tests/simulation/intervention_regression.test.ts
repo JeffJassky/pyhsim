@@ -11,13 +11,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  SIGNAL_DEFINITIONS,
-  AUXILIARY_DEFINITIONS,
-  createInitialState,
-  integrateStep,
-} from '@/models/unified';
-import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/subject';
+import { integrateStep, createInitialState, SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, getAllUnifiedDefinitions } from '@/models/engine/unified';
+import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
 import type { DynamicsContext, SimulationState, ActiveIntervention } from '@/types/unified';
 
 describe('Intervention Processing Regressions', () => {
@@ -192,7 +187,7 @@ describe('Intervention Processing Regressions', () => {
       const exerciseIntervention: ActiveIntervention[] = [
         {
           id: 'exercise-test',
-          key: 'exercise',
+          key: 'exercise_cardio',
           startTime: 480,
           duration: 30,
           intensity: 1.0,
@@ -554,7 +549,7 @@ describe('Intervention Processing Regressions', () => {
       const exerciseIntervention: ActiveIntervention[] = [
         {
           id: 'exercise-full',
-          key: 'exercise',
+          key: 'exercise_cardio',
           startTime: 480,
           duration: 45,
           intensity: 0.7,
@@ -574,6 +569,60 @@ describe('Intervention Processing Regressions', () => {
 
       expect(state.signals.adrenaline).toBeGreaterThan(baselineAdrenaline + 10);
       expect(state.signals.dopamine).toBeGreaterThan(baselineDopamine + 2);
+    });
+
+    it('caffeine should suppress melatonin via dopamine coupling', () => {
+      // Run simulation at night (22:00 = 1320 min) when melatonin is high
+      const nightTime = 1320;
+      
+      // 1. Simulate baseline night (no caffeine)
+      let baselineState = initialState;
+      for(let i=0; i<nightTime; i++) {
+        baselineState = integrateStep(
+          baselineState, i, 1.0, 
+          { ...ctx, minuteOfDay: i, circadianMinuteOfDay: i }, 
+          SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, []
+        );
+      }
+      const baselineMelatonin = baselineState.signals.melatonin;
+      
+      // 2. Simulate with caffeine taken at 18:00 (1080 min)
+      const caffeineIntervention: ActiveIntervention[] = [{
+        id: 'caffeine-test',
+        key: 'caffeine',
+        startTime: 1080,
+        duration: 240, 
+        intensity: 1.0,
+        params: { mg: 200 },
+        pharmacology: {
+          molecule: { name: 'Caffeine', molarMass: 194.19 },
+          pk: { model: '1-compartment', bioavailability: 0.99, halfLifeMin: 300, volume: { kind: 'tbw', fraction: 0.6 } },
+          pd: [
+            { target: 'Adenosine_A2a', mechanism: 'antagonist', Ki: 2400, effectGain: 15.0, unit: 'nM' },
+            { target: 'Adenosine_A1', mechanism: 'antagonist', Ki: 12000, effectGain: 8.0, unit: 'nM' }
+          ]
+        }
+      }];
+
+      let cafState = initialState;
+      for(let i=0; i<nightTime; i++) {
+        cafState = integrateStep(
+          cafState, i, 1.0, 
+          { ...ctx, minuteOfDay: i, circadianMinuteOfDay: i }, 
+          SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, caffeineIntervention
+        );
+      }
+      
+      const cafMelatonin = cafState.signals.melatonin;
+      const cafDopamine = cafState.signals.dopamine;
+      const baseDopamine = baselineState.signals.dopamine;
+
+      // Verify caffeine actually raised dopamine (the mechanism of action)
+      expect(cafDopamine).toBeGreaterThan(baseDopamine + 5); 
+
+      // Verify melatonin is suppressed
+      // With strength 2.0 coupling, we expect significant suppression
+      expect(cafMelatonin).toBeLessThan(baselineMelatonin * 0.8); // Expect at least 20% suppression
     });
   });
 });

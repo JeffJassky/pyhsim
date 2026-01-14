@@ -200,75 +200,121 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
     goals: ["sleep", "recovery", "energy", "longevity"],
   },
   {
-    key: "exercise",
-    label: "Exercise",
+    key: "exercise_cardio",
+    label: "Cardio",
     color: "#ef4444",
     icon: "🏃",
     defaultDurationMin: 45,
     params: [
       {
-        key: "type",
-        label: "Type",
-        type: "select",
-        options: [
-          { value: "cardio", label: "Cardio" },
-          { value: "resistance", label: "Resistance" },
-          { value: "hiit", label: "HIIT" },
-        ],
-        default: "cardio",
-      },
+        key: "intensity",
+        label: "Intensity",
+        type: "slider",
+        min: 0.5,
+        max: 1.5,
+        step: 0.1,
+        default: 1.0,
+      }
     ],
     pharmacology: {
-      molecule: { name: "Exercise", molarMass: 0 },
+      molecule: { name: "Cardio", molarMass: 0 },
       pk: { model: "activity-dependent" },
       pd: [
-        { target: "Beta_Adrenergic", mechanism: "agonist", effectGain: 100.0, unit: "pg/mL" },
-        { target: "norepi", mechanism: "agonist", effectGain: 281.0, unit: "pg/mL", tau: 5 }, // 45 * 6.25
-        {
-          target: "adrenaline",
-          mechanism: "agonist",
-          effectGain: 200.0,
-          unit: "pg/mL",
-          tau: 2,
-        },
-        { target: "cortisol", mechanism: "agonist", effectGain: 15.0, unit: "µg/dL", tau: 10 },
-        { target: "dopamine", mechanism: "agonist", effectGain: 4.0, unit: "nM", tau: 5 }, // 20 * 0.2
-        {
-          target: "serotonin",
-          mechanism: "agonist",
-          effectGain: 1.2, // 12 * 0.1
-          unit: "nM",
-          tau: 15,
-        },
-        {
-          target: "endocannabinoid",
-          mechanism: "agonist",
-          effectGain: 6.0, // 30 * 0.2
-          unit: "nM",
-          tau: 20,
-        },
-        {
-          target: "growthHormone",
-          mechanism: "agonist",
-          effectGain: 6.0,
-          unit: "ng/mL",
-          tau: 15,
-        },
-        {
-          target: "testosterone",
-          mechanism: "agonist",
-          effectGain: 4.0,
-          unit: "ng/dL",
-          tau: 20,
-        },
-        { target: "bdnf", mechanism: "agonist", effectGain: 25.0, unit: "ng/mL", tau: 30 },
-        { target: "ampk", mechanism: "agonist", effectGain: 15.0, unit: "index", tau: 10 },
-        { target: "glutamate", mechanism: "agonist", effectGain: 0.83, unit: "µM", tau: 5 }, // 10 * 0.0833
+        { target: "Beta_Adrenergic", mechanism: "agonist", effectGain: 80.0, unit: "pg/mL" },
+        { target: "norepi", mechanism: "agonist", effectGain: 200.0, unit: "pg/mL", tau: 5 },
+        { target: "adrenaline", mechanism: "agonist", effectGain: 150.0, unit: "pg/mL", tau: 2 },
+        { target: "cortisol", mechanism: "agonist", effectGain: 12.0, unit: "µg/dL", tau: 10 },
+        { target: "dopamine", mechanism: "agonist", effectGain: 4.0, unit: "nM", tau: 5 },
+        { target: "serotonin", mechanism: "agonist", effectGain: 1.5, unit: "nM", tau: 15 }, // Higher serotonin (mood)
+        { target: "endocannabinoid", mechanism: "agonist", effectGain: 8.0, unit: "nM", tau: 20 }, // Runner's high
+        { target: "growthHormone", mechanism: "agonist", effectGain: 4.0, unit: "ng/mL", tau: 15 },
+        { target: "testosterone", mechanism: "agonist", effectGain: 2.0, unit: "ng/dL", tau: 20 },
+        { target: "bdnf", mechanism: "agonist", effectGain: 30.0, unit: "ng/mL", tau: 30 }, // Strong BDNF
+        { target: "ampk", mechanism: "agonist", effectGain: 10.0, unit: "index", tau: 10 },
+        { target: "glutamate", mechanism: "agonist", effectGain: 0.5, unit: "µM", tau: 5 },
       ],
     },
     group: "Lifestyle",
     categories: ["exercise"],
-    goals: ["energy", "mood", "recovery", "hormones", "longevity"],
+    goals: ["energy", "mood", "longevity", "calm"],
+  },
+  {
+    key: "exercise_resistance",
+    label: "Resistance Training",
+    color: "#dc2626",
+    icon: "🏋️",
+    defaultDurationMin: 60,
+    params: [
+      {
+        key: "intensity",
+        label: "Intensity",
+        type: "slider",
+        min: 0.5,
+        max: 1.5,
+        step: 0.1,
+        default: 1.0,
+      }
+    ],
+    pharmacology: {
+      molecule: { name: "Resistance", molarMass: 0 },
+      pk: { model: "activity-dependent" },
+      pd: [
+        { target: "Beta_Adrenergic", mechanism: "agonist", effectGain: 120.0, unit: "pg/mL" },
+        { target: "norepi", mechanism: "agonist", effectGain: 250.0, unit: "pg/mL", tau: 5 },
+        { target: "adrenaline", mechanism: "agonist", effectGain: 180.0, unit: "pg/mL", tau: 2 },
+        { target: "cortisol", mechanism: "agonist", effectGain: 10.0, unit: "µg/dL", tau: 10 }, // Moderate cortisol
+        { target: "dopamine", mechanism: "agonist", effectGain: 5.0, unit: "nM", tau: 5 },
+        { target: "serotonin", mechanism: "agonist", effectGain: 0.8, unit: "nM", tau: 15 },
+        { target: "endocannabinoid", mechanism: "agonist", effectGain: 4.0, unit: "nM", tau: 20 },
+        { target: "growthHormone", mechanism: "agonist", effectGain: 12.0, unit: "ng/mL", tau: 15 }, // High GH
+        { target: "testosterone", mechanism: "agonist", effectGain: 8.0, unit: "ng/dL", tau: 20 }, // High Testosterone
+        { target: "bdnf", mechanism: "agonist", effectGain: 15.0, unit: "ng/mL", tau: 30 },
+        { target: "mtor", mechanism: "agonist", effectGain: 2.0, unit: "index", tau: 60 }, // High mTOR
+        { target: "glutamate", mechanism: "agonist", effectGain: 0.6, unit: "µM", tau: 5 },
+      ],
+    },
+    group: "Lifestyle",
+    categories: ["exercise"],
+    goals: ["recovery", "hormones", "longevity", "energy"],
+  },
+  {
+    key: "exercise_hiit",
+    label: "HIIT",
+    color: "#b91c1c",
+    icon: "🔥",
+    defaultDurationMin: 20,
+    params: [
+      {
+        key: "intensity",
+        label: "Intensity",
+        type: "slider",
+        min: 0.5,
+        max: 1.5,
+        step: 0.1,
+        default: 1.0,
+      }
+    ],
+    pharmacology: {
+      molecule: { name: "HIIT", molarMass: 0 },
+      pk: { model: "activity-dependent" },
+      pd: [
+        { target: "Beta_Adrenergic", mechanism: "agonist", effectGain: 150.0, unit: "pg/mL" },
+        { target: "norepi", mechanism: "agonist", effectGain: 400.0, unit: "pg/mL", tau: 5 }, // Very high sympathetic
+        { target: "adrenaline", mechanism: "agonist", effectGain: 350.0, unit: "pg/mL", tau: 2 }, // Very high adrenaline
+        { target: "cortisol", mechanism: "agonist", effectGain: 20.0, unit: "µg/dL", tau: 10 }, // High cortisol spike
+        { target: "dopamine", mechanism: "agonist", effectGain: 6.0, unit: "nM", tau: 5 },
+        { target: "serotonin", mechanism: "agonist", effectGain: 1.0, unit: "nM", tau: 15 },
+        { target: "endocannabinoid", mechanism: "agonist", effectGain: 5.0, unit: "nM", tau: 20 },
+        { target: "growthHormone", mechanism: "agonist", effectGain: 10.0, unit: "ng/mL", tau: 15 },
+        { target: "testosterone", mechanism: "agonist", effectGain: 5.0, unit: "ng/dL", tau: 20 },
+        { target: "bdnf", mechanism: "agonist", effectGain: 35.0, unit: "ng/mL", tau: 30 }, // Very high BDNF
+        { target: "ampk", mechanism: "agonist", effectGain: 25.0, unit: "index", tau: 10 }, // Strong metabolic stress
+        { target: "glutamate", mechanism: "agonist", effectGain: 1.2, unit: "µM", tau: 5 }, // Lactate/Glutamate spike
+      ],
+    },
+    group: "Lifestyle",
+    categories: ["exercise"],
+    goals: ["weightLoss", "energy", "hormones", "longevity"],
   },
   {
     key: "alcohol",

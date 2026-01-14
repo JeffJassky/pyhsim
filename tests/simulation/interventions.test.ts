@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { INTERVENTIONS } from '@/models/interventions';
-import { SIGNAL_UNITS } from '@/models/unified/signal-units';
-import type { Signal } from '@/types/neurostate';
-import { isReceptor, getReceptorSignals } from '@/models/pharmacology';
+import { INTERVENTIONS } from '@/models/library/interventions';
+import { SIGNAL_UNITS } from '@/models/engine/unified/signal-units';
+import { isReceptor, getReceptorSignals } from '@/models/library/pharmacology';
 
 describe('Intervention Unit Integrity', () => {
   it('should have matching units for all pharmacological effects', () => {

@@ -1,6 +1,6 @@
 /**
  * Pharmacokinetics & Pharmacodynamics Library
- * 
+ *
  * Provides standardized mathematical models for drug absorption, elimination,
  * and receptor-effector coupling.
  */
@@ -33,26 +33,28 @@ export function halfLife(t_half: number): number {
 export function pk1(t: number, k_a: number, k_e: number, tlag = 0) {
   if (t <= tlag) return 0;
   const tau = t - tlag;
-  
+
   // Handle k_a ~= k_e (te^-kt case)
   if (Math.abs(k_a - k_e) < 1e-6) {
-     const k = k_e;
-     const val = k * tau * Math.exp(-k * tau);
-     return val * Math.E; 
+    const k = k_e;
+    const val = k * tau * Math.exp(-k * tau);
+    return val * Math.E;
   }
 
   const t_max = Math.log(k_a / k_e) / (k_a - k_e);
-  const peak = (k_a / (k_a - k_e)) * (Math.exp(-k_e * t_max) - Math.exp(-k_a * t_max));
+  const peak =
+    (k_a / (k_a - k_e)) * (Math.exp(-k_e * t_max) - Math.exp(-k_a * t_max));
   const norm = 1 / Math.max(1e-9, peak);
-  
-  const val = (k_a / (k_a - k_e)) * (Math.exp(-k_e * tau) - Math.exp(-k_a * tau));
+
+  const val =
+    (k_a / (k_a - k_e)) * (Math.exp(-k_e * tau) - Math.exp(-k_a * tau));
   return Math.max(0, val * norm);
 }
 
 /**
  * PHYSICALLY ACCURATE Pharmacokinetic Model (One-Compartment).
  * Returns Concentration in [Mass_Unit / Volume_Unit].
- * 
+ *
  * @param t Time in minutes
  * @param k_a Absorption rate (1/min)
  * @param k_e Elimination rate (1/min) = CL / Vd
@@ -76,18 +78,18 @@ export function pk_conc(
   const tau = t - tlag;
   // Batavia-Equation for 1-compartment extravascular dosing:
   // C(t) = (F * Dose * k_a) / (Vd * weight * (k_a - k_e)) * (e^-ket - e^-kat)
-  
+
   // Safety: Avoid divide by zero if k_a == k_e
-  const den = (k_a - k_e);
+  const den = k_a - k_e;
   if (Math.abs(den) < 1e-9) return 0; // simplistic fallback
-  
-  // Note: if Vd is absolute (L), weight should be 1.0. 
+
+  // Note: if Vd is absolute (L), weight should be 1.0.
   // If Vd is specific (L/kg), weight is needed.
   // We assume here the caller handles the unit consistency or passes weight=1 if Vd is total.
-  
+
   const scaler = (F * dose * k_a) / (Vd * weight * den);
   const curve = exp(-k_e * tau) - exp(-k_a * tau);
-  
+
   return Math.max(0, scaler * curve);
 }
 
@@ -129,7 +131,7 @@ export function pk2(
 
   const sqrtD = Math.sqrt(discriminant);
   const alpha = (sum + sqrtD) / 2; // Fast (distribution) phase
-  const beta = (sum - sqrtD) / 2;  // Slow (elimination) phase
+  const beta = (sum - sqrtD) / 2; // Slow (elimination) phase
 
   // Coefficients for biexponential curve
   // C(t) = A·e^(-αt) + B·e^(-βt) - (A+B)·e^(-k_a·t)
@@ -146,9 +148,10 @@ export function pk2(
   // Normalize to [0..1] by finding approximate peak
   // For normalization, use a simple heuristic based on the slower phase
   const tPeakApprox = Math.log(k_a / beta) / (k_a - beta);
-  const peakApprox = A * Math.exp(-alpha * tPeakApprox) +
-                     B * Math.exp(-beta * tPeakApprox) -
-                     (A + B) * Math.exp(-k_a * tPeakApprox);
+  const peakApprox =
+    A * Math.exp(-alpha * tPeakApprox) +
+    B * Math.exp(-beta * tPeakApprox) -
+    (A + B) * Math.exp(-k_a * tPeakApprox);
 
   const normalized = curve / Math.max(1e-9, Math.abs(peakApprox));
   return Math.max(0, Math.min(1, normalized));
@@ -202,12 +205,13 @@ export function pk2_conc(
 
   const A = (F * dose * k_a * (k_21 - alpha)) / (V_central * denom_alpha);
   const B = (F * dose * k_a * (k_21 - beta)) / (V_central * denom_beta);
-  const C_abs = (A + B) * (V_central * denom_alpha) / (F * dose * k_a);
+  const C_abs = ((A + B) * (V_central * denom_alpha)) / (F * dose * k_a);
 
   // Concentration
-  const conc = A * Math.exp(-alpha * tau) +
-               B * Math.exp(-beta * tau) -
-               (A + B) * Math.exp(-k_a * tau);
+  const conc =
+    A * Math.exp(-alpha * tau) +
+    B * Math.exp(-beta * tau) -
+    (A + B) * Math.exp(-k_a * tau);
 
   return Math.max(0, conc);
 }
@@ -304,7 +308,8 @@ export function competitiveAntagonism(
   antagonistConc: number,
   antagonistKi: number
 ): number {
-  const apparentKd = agonistKd * (1 + antagonistConc / Math.max(1e-9, antagonistKi));
+  const apparentKd =
+    agonistKd * (1 + antagonistConc / Math.max(1e-9, antagonistKi));
   return receptorOccupancy(agonistConc, apparentKd);
 }
 
@@ -455,12 +460,12 @@ export function alcoholBAC(
   t: number,
   gramsEthanol: number,
   weightKg: number = 70,
-  sex: 'male' | 'female' = 'male',
+  sex: "male" | "female" = "male",
   metabolicRate: number = 1.0
 ): number {
   // Widmark r factor (volume of distribution coefficient)
   // Males: 0.68 L/kg, Females: 0.55 L/kg
-  const r = sex === 'male' ? 0.68 : 0.55;
+  const r = sex === "male" ? 0.68 : 0.55;
 
   // Calculate peak BAC (Widmark formula)
   // BAC = (grams / (weight_kg * r)) * 100 (to get mg/dL from g/L)
@@ -470,7 +475,7 @@ export function alcoholBAC(
   // Michaelis-Menten parameters for alcohol
   // Vmax: ~7-10 g/hr = ~0.15-0.20 mg/dL/min (scaled by liver function)
   // Typical elimination: 15-20 mg/dL per hour = 0.25-0.33 mg/dL/min at saturation
-  const Vmax = 0.20 * metabolicRate; // mg/dL per minute
+  const Vmax = 0.2 * metabolicRate; // mg/dL per minute
   const Km = 10; // mg/dL - very low, so mostly zero-order
 
   return michaelisMentenPK(t, Vmax, Km, C0, 15, 10);
@@ -480,7 +485,12 @@ export function alcoholBAC(
  * Simple gamma-like appearance curve for nutrients (meal → blood).
  * k_rise controls onset, k_fall the tail. Shift with tlag to mimic gastric emptying.
  */
-export function gammaPulse(t: number, k_rise: number, k_fall: number, tlag = 0) {
+export function gammaPulse(
+  t: number,
+  k_rise: number,
+  k_fall: number,
+  tlag = 0
+) {
   if (t <= tlag) return 0;
   const tau = t - tlag;
   // (1 - e^{-tau/k_rise}) * e^{-tau/k_fall}
@@ -493,17 +503,17 @@ export function gammaPulse(t: number, k_rise: number, k_fall: number, tlag = 0) 
  * Nutrient parameters for gastric and absorption calculations
  */
 export interface NutrientParams {
-  carbSugar?: number;      // grams of sugar
-  carbStarch?: number;     // grams of starch
-  protein?: number;        // grams of protein
-  fat?: number;            // grams of fat
-  fiberSol?: number;       // grams of soluble fiber
-  fiberInsol?: number;     // grams of insoluble fiber
-  hydration?: number;      // ml of water
-  gi?: number;             // glycemic index (20-100)
-  weight?: number;         // body weight in kg
-  proteinType?: 'whey' | 'casein' | 'mixed';
-  fatType?: 'mct' | 'lct' | 'mixed';
+  carbSugar?: number; // grams of sugar
+  carbStarch?: number; // grams of starch
+  protein?: number; // grams of protein
+  fat?: number; // grams of fat
+  fiberSol?: number; // grams of soluble fiber
+  fiberInsol?: number; // grams of insoluble fiber
+  hydration?: number; // ml of water
+  gi?: number; // glycemic index (20-100)
+  weight?: number; // body weight in kg
+  proteinType?: "whey" | "casein" | "mixed";
+  fatType?: "mct" | "lct" | "mixed";
 }
 
 /**
@@ -528,7 +538,11 @@ export function carbAppearance(t: number, p: NutrientParams): number {
   // Convert GI into relative starch appearance speed factor:
   const giFac = clamp((p.gi ?? 60) / 100, 0.25, 1.0);
   // Blunting from soluble fiber & fat (incretins, viscosity effects)
-  const blunt = clamp(1 - 0.02 * (p.fiberSol || 0) - 0.004 * (p.fat || 0), 0.6, 1);
+  const blunt = clamp(
+    1 - 0.02 * (p.fiberSol || 0) - 0.004 * (p.fat || 0),
+    0.6,
+    1
+  );
 
   // Absolute Units Logic:
   // p.carbSugar/Starch is in grams.
@@ -543,7 +557,8 @@ export function carbAppearance(t: number, p: NutrientParams): number {
 
   // Sugar: faster rise/shorter tail; Starch: slower and GI-scaled
   const sugar = gammaPulse(t, 6, 60, tlag) * (p.carbSugar || 0);
-  const starch = gammaPulse(t, 14 / giFac, 110 / giFac, tlag) * (p.carbStarch || 0);
+  const starch =
+    gammaPulse(t, 14 / giFac, 110 / giFac, tlag) * (p.carbStarch || 0);
 
   return blunt * scaler * (sugar + starch);
 }
@@ -573,23 +588,23 @@ export function proteinAppearance(t: number, p: NutrientParams): number {
   if (proteinGrams <= 0) return 0;
 
   // Protein type affects digestion rate (default: mixed)
-  const proteinType = p.proteinType || 'mixed';
+  const proteinType = p.proteinType || "mixed";
   let fastRate: number, slowRate: number, fastFraction: number;
 
   switch (proteinType) {
-    case 'whey':
+    case "whey":
       // Fast-digesting: peaks around 60-90 min
-      fastRate = 0.03;  // 1/k_a in minutes
+      fastRate = 0.03; // 1/k_a in minutes
       slowRate = 0.01;
       fastFraction = 0.8;
       break;
-    case 'casein':
+    case "casein":
       // Slow-digesting: sustained release over 4-6 hours
       fastRate = 0.015;
       slowRate = 0.004;
       fastFraction = 0.3;
       break;
-    case 'mixed':
+    case "mixed":
     default:
       // Typical mixed meal protein
       fastRate = 0.02;
@@ -619,7 +634,10 @@ export function proteinAppearance(t: number, p: NutrientParams): number {
   const fastPhase = gammaPulse(t, 20 / (fastRate * 100), 90, tlag);
   const slowPhase = gammaPulse(t, 40 / (slowRate * 100), 240, tlag);
 
-  const appearance = proteinGrams * scaler * slowingFactor *
+  const appearance =
+    proteinGrams *
+    scaler *
+    slowingFactor *
     (fastFraction * fastPhase + (1 - fastFraction) * slowPhase);
 
   return appearance;
@@ -649,21 +667,21 @@ export function fatAppearance(t: number, p: NutrientParams): number {
   if (fatGrams <= 0) return 0;
 
   // Fat type affects digestion (MCT vs LCT)
-  const fatType = p.fatType || 'mixed';
+  const fatType = p.fatType || "mixed";
   let absorptionRate: number, peakTime: number;
 
   switch (fatType) {
-    case 'mct':
+    case "mct":
       // Medium-chain triglycerides: faster, direct portal absorption
       absorptionRate = 0.02;
       peakTime = 90;
       break;
-    case 'lct':
+    case "lct":
       // Long-chain triglycerides: slower, lymphatic route
       absorptionRate = 0.006;
       peakTime = 240;
       break;
-    case 'mixed':
+    case "mixed":
     default:
       // Typical dietary fat mix
       absorptionRate = 0.01;
@@ -671,15 +689,19 @@ export function fatAppearance(t: number, p: NutrientParams): number {
   }
 
   // Very high fiber significantly slows fat absorption
-  const fiberSlowing = clamp(1 - 0.02 * (p.fiberSol || 0) - 0.01 * (p.fiberInsol || 0), 0.5, 1);
+  const fiberSlowing = clamp(
+    1 - 0.02 * (p.fiberSol || 0) - 0.01 * (p.fiberInsol || 0),
+    0.5,
+    1
+  );
 
   // Fat absorption efficiency (~95% in healthy individuals)
   const bioavailability = 0.95;
 
   // Lipid pool approximation (plasma triglycerides)
   const weight = p.weight || 70;
-  const volDl = 0.045 * weight * 10;  // ~45 mL/kg plasma volume
-  const scaler = (1000 / volDl) * bioavailability * 0.3;  // Only ~30% as circulating lipid
+  const volDl = 0.045 * weight * 10; // ~45 mL/kg plasma volume
+  const scaler = (1000 / volDl) * bioavailability * 0.3; // Only ~30% as circulating lipid
 
   const tAdj = t - tlag;
   if (tAdj <= 0) return 0;
@@ -691,7 +713,7 @@ export function fatAppearance(t: number, p: NutrientParams): number {
   const envelope = onset * decay;
 
   // Pulsatile chylomicron release (mimics wave-like absorption)
-  const pulsatile = 1 + 0.15 * Math.sin(tAdj * Math.PI / 120);
+  const pulsatile = 1 + 0.15 * Math.sin((tAdj * Math.PI) / 120);
 
   return fatGrams * scaler * fiberSlowing * envelope * pulsatile;
 }
@@ -714,20 +736,20 @@ export function totalNutrientAppearance(t: number, p: NutrientParams): number {
 // --- Generators ---
 
 import type { PharmacologyDef } from "@/types";
-import type { Physiology, Subject } from "./subject";
+import type { Physiology, Subject } from "../domain/subject";
 
 /**
  * Default Volume of Distribution estimates by drug class (L/kg)
  */
 export const DEFAULT_VD: Record<string, number> = {
-  'Caffeine': 0.6,
-  'Methylphenidate': 2.0,
-  'Amphetamine': 3.5,
-  'Ethanol': 0.6,
-  'Melatonin': 1.0,
-  'L-Theanine': 0.7,
-  'Magnesium': 0.5,
-  'default': 1.0,
+  Caffeine: 0.6,
+  Methylphenidate: 2.0,
+  Amphetamine: 3.5,
+  Ethanol: 0.6,
+  Melatonin: 1.0,
+  "L-Theanine": 0.7,
+  Magnesium: 0.5,
+  default: 1.0,
 };
 
 /**
@@ -802,11 +824,11 @@ export function calculateVd(
   subject: Subject
 ): number {
   const vol = pharma.pk?.volume;
-  const moleculeName = pharma.molecule?.name ?? 'default';
+  const moleculeName = pharma.molecule?.name ?? "default";
 
   // Fallback to DEFAULT_VD lookup if no volume spec
   if (!vol) {
-    const vd_kg = DEFAULT_VD[moleculeName] ?? DEFAULT_VD['default'];
+    const vd_kg = DEFAULT_VD[moleculeName] ?? DEFAULT_VD["default"];
     return vd_kg * subject.weight;
   }
 
@@ -824,9 +846,8 @@ export function calculateVd(
 
     case "sex-adjusted":
       // Sex-specific Vd (e.g., alcohol: males 0.68, females 0.55 L/kg)
-      const vd_kg = subject.sex === 'male'
-        ? (vol.male_L_kg ?? 0.7)
-        : (vol.female_L_kg ?? 0.6);
+      const vd_kg =
+        subject.sex === "male" ? vol.male_L_kg ?? 0.7 : vol.female_L_kg ?? 0.6;
       return vd_kg * subject.weight;
 
     default:
@@ -857,7 +878,7 @@ export function generatePKKernel(
 
   const bioavailability = pk.bioavailability ?? 1.0;
   const molarMass = pharma.molecule?.molarMass ?? 200;
-  const moleculeName = pharma.molecule?.name ?? 'default';
+  const moleculeName = pharma.molecule?.name ?? "default";
 
   // Compute k_e and Vd from physiology if available, otherwise use static values
   let k_e_base: number;
@@ -871,24 +892,26 @@ export function generatePKKernel(
   } else {
     const thalf = pk.halfLifeMin ?? 60;
     k_e_base = Math.LN2 / Math.max(1, thalf);
-    Vd = DEFAULT_VD[moleculeName] ?? DEFAULT_VD['default'];
+    Vd = DEFAULT_VD[moleculeName] ?? DEFAULT_VD["default"];
   }
 
-  const k_a_base = pk.absorptionRate ?? (k_e_base * 4);
+  const k_a_base = pk.absorptionRate ?? k_e_base * 4;
 
   // 2-compartment parameters
-  const isTwoCompartment = pk.model === '2-compartment' && pk.k_12 && pk.k_21;
+  const isTwoCompartment = pk.model === "2-compartment" && pk.k_12 && pk.k_21;
   const k_12 = pk.k_12 ?? 0;
   const k_21 = pk.k_21 ?? 0;
 
   // Look up PD target
-  const pd = pharma.pd?.find(t => t.target === targetSignal) ?? pharma.pd?.[0];
-  const mechanism = pd?.mechanism ?? 'agonist';
+  const pd =
+    pharma.pd?.find((t) => t.target === targetSignal) ?? pharma.pd?.[0];
+  const mechanism = pd?.mechanism ?? "agonist";
   const Ki = pd?.Ki ?? null;
   const EC50 = pd?.EC50 ?? null;
   const effectGain = pd?.effectGain ?? 0.1;
   const tauValue = pd?.tau ?? 10;
-  const alphaValue = pd?.alpha ?? (mechanism === 'PAM' ? 3.0 : mechanism === 'NAM' ? 0.3 : 1.0);
+  const alphaValue =
+    pd?.alpha ?? (mechanism === "PAM" ? 3.0 : mechanism === "NAM" ? 0.3 : 1.0);
 
   const hasReceptorData = Ki !== null || EC50 !== null;
   const bindingConstant = Ki ?? EC50 ?? 100;
@@ -919,7 +942,7 @@ export function generatePKKernel(
     else if (p.mcg !== undefined) dose = Number(p.mcg) / 1000;
     else if (p.iu !== undefined) dose = Number(p.iu) * 0.025;
 
-    // PK curve (${isTwoCompartment ? '2-compartment' : '1-compartment'})
+    // PK curve (${isTwoCompartment ? "2-compartment" : "1-compartment"})
     ${pkCurveCalc}
 
     // Plasma concentration (nM) using helper
@@ -928,20 +951,22 @@ export function generatePKKernel(
   `;
 
   if (hasReceptorData) {
-    if (mechanism === 'agonist') {
+    if (mechanism === "agonist") {
       // Use operationalAgonism helper
       return `function(t,p){${preamble}
         // Operational agonism model via helper
-        return operationalAgonism(conc, ${bindingConstant}, ${tauValue}, ${effectGain * 100});
+        return operationalAgonism(conc, ${bindingConstant}, ${tauValue}, ${
+        effectGain * 100
+      });
       }`;
-    } else if (mechanism === 'antagonist') {
+    } else if (mechanism === "antagonist") {
       // Use receptorOccupancy helper
       return `function(t,p){${preamble}
         // Receptor occupancy via helper
         const occupancy = receptorOccupancy(conc, ${bindingConstant});
         return ${effectGain * 100} * occupancy;
       }`;
-    } else if (mechanism === 'PAM') {
+    } else if (mechanism === "PAM") {
       // PAM enhances endogenous signaling
       return `function(t,p){${preamble}
         // PAM occupancy via helper
@@ -949,7 +974,7 @@ export function generatePKKernel(
         const enhancement = 1 + (${alphaValue} - 1) * pamOccupancy;
         return ${effectGain * 100} * (enhancement - 1);
       }`;
-    } else if (mechanism === 'NAM') {
+    } else if (mechanism === "NAM") {
       // NAM reduces signaling
       return `function(t,p){${preamble}
         // NAM occupancy via helper

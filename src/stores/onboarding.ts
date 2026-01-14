@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { ArchetypeId } from '@/models/archetypes';
+import type { ArchetypeId } from '@/models/domain/archetypes';
 
 export enum OnboardingState {
   HOOK_ANIMATION = 'HOOK_ANIMATION',

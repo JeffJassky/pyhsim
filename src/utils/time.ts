@@ -32,3 +32,8 @@ export const minuteToISO = (minute: Minute, day = new Date()): string => {
   date.setHours(hours, minutes, 0, 0);
   return date.toISOString();
 };
+
+export const toMinuteOfDay = (isoString: string): Minute => {
+  const date = new Date(isoString);
+  return (date.getHours() * 60 + date.getMinutes()) as Minute;
+};
