@@ -145,7 +145,6 @@ export const useEngineStore = defineStore("engine", {
       }
       const timelineStore = useTimelineStore();
       const items = payload?.items ?? timelineStore.items;
-      const clonedItems = JSON.parse(JSON.stringify(items));
       const gridCopy = [...this.gridMins] as Minute[];
       const sleepItem = items.find((item) => item.meta.key === "sleep");
       // Wake time is determined by when the sleep block ends
@@ -181,6 +180,37 @@ export const useEngineStore = defineStore("engine", {
       // Build intervention library with dynamic PK parameters based on subject/physiology
       const defs =
         payload?.defs ?? buildInterventionLibrary(subject, physiology);
+      
+      // Resolve dynamic pharmacology on the Main Thread (since functions can't be passed to worker)
+      // We iterate the original items (not cloned yet) to get their params
+      const resolvedItems = items.map(item => {
+        const def = defs.find(d => d.key === item.meta.key);
+        let resolvedPharm: any[] = [];
+        
+        if (def) {
+          if (typeof def.pharmacology === 'function') {
+            try {
+              const result = (def.pharmacology as any)(item.meta.params || {});
+              resolvedPharm = Array.isArray(result) ? result : [result];
+            } catch (e) {
+              console.error(`[EngineStore] Failed to resolve pharmacology for ${item.meta.key}:`, e);
+              resolvedPharm = [];
+            }
+          } else {
+             resolvedPharm = [def.pharmacology];
+          }
+        }
+        
+        // Return a clean object with resolved pharmacology
+        return {
+          ...item,
+          resolvedPharmacology: resolvedPharm
+        };
+      });
+
+      // We clone the resolved items to ensure everything is serializable (though PharmacolyDef should be)
+      const clonedItems = JSON.parse(JSON.stringify(resolvedItems));
+      // We still send clonedDefs for other metadata (labels, colors), but Worker will rely on resolvedPharmacology
       const clonedDefs = JSON.parse(JSON.stringify(defs));
 
       console.debug("[EngineStore] Posting request to worker...");

@@ -1,4 +1,5 @@
 import type { InterventionDef } from "@/types";
+import { Agents } from "../../physiology/agents";
 
 export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
   {
@@ -216,23 +217,13 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         default: 1.0,
       }
     ],
-    pharmacology: {
-      molecule: { name: "Cardio", molarMass: 0 },
-      pk: { model: "activity-dependent" },
-      pd: [
-        { target: "Beta_Adrenergic", mechanism: "agonist", effectGain: 80.0, unit: "pg/mL" },
-        { target: "norepi", mechanism: "agonist", effectGain: 200.0, unit: "pg/mL", tau: 5 },
-        { target: "adrenaline", mechanism: "agonist", effectGain: 150.0, unit: "pg/mL", tau: 2 },
-        { target: "cortisol", mechanism: "agonist", effectGain: 12.0, unit: "µg/dL", tau: 10 },
-        { target: "dopamine", mechanism: "agonist", effectGain: 4.0, unit: "nM", tau: 5 },
-        { target: "serotonin", mechanism: "agonist", effectGain: 1.5, unit: "nM", tau: 15 }, // Higher serotonin (mood)
-        { target: "endocannabinoid", mechanism: "agonist", effectGain: 8.0, unit: "nM", tau: 20 }, // Runner's high
-        { target: "growthHormone", mechanism: "agonist", effectGain: 4.0, unit: "ng/mL", tau: 15 },
-        { target: "testosterone", mechanism: "agonist", effectGain: 2.0, unit: "ng/dL", tau: 20 },
-        { target: "bdnf", mechanism: "agonist", effectGain: 30.0, unit: "ng/mL", tau: 30 }, // Strong BDNF
-        { target: "ampk", mechanism: "agonist", effectGain: 10.0, unit: "fold-change", tau: 10 },
-        { target: "glutamate", mechanism: "agonist", effectGain: 0.5, unit: "µM", tau: 5 },
-      ],
+    // DYNAMIC FACTORY
+    pharmacology: (params) => {
+      const intensity = Number(params.intensity) || 1.0;
+      return [
+        Agents.SympatheticStress(intensity),
+        Agents.MetabolicLoad(intensity)
+      ];
     },
     group: "Lifestyle",
     categories: ["exercise"],
@@ -255,23 +246,12 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         default: 1.0,
       }
     ],
-    pharmacology: {
-      molecule: { name: "Resistance", molarMass: 0 },
-      pk: { model: "activity-dependent" },
-      pd: [
-        { target: "Beta_Adrenergic", mechanism: "agonist", effectGain: 120.0, unit: "pg/mL" },
-        { target: "norepi", mechanism: "agonist", effectGain: 250.0, unit: "pg/mL", tau: 5 },
-        { target: "adrenaline", mechanism: "agonist", effectGain: 180.0, unit: "pg/mL", tau: 2 },
-        { target: "cortisol", mechanism: "agonist", effectGain: 10.0, unit: "µg/dL", tau: 10 }, // Moderate cortisol
-        { target: "dopamine", mechanism: "agonist", effectGain: 5.0, unit: "nM", tau: 5 },
-        { target: "serotonin", mechanism: "agonist", effectGain: 0.8, unit: "nM", tau: 15 },
-        { target: "endocannabinoid", mechanism: "agonist", effectGain: 4.0, unit: "nM", tau: 20 },
-        { target: "growthHormone", mechanism: "agonist", effectGain: 12.0, unit: "ng/mL", tau: 15 }, // High GH
-        { target: "testosterone", mechanism: "agonist", effectGain: 8.0, unit: "ng/dL", tau: 20 }, // High Testosterone
-        { target: "bdnf", mechanism: "agonist", effectGain: 15.0, unit: "ng/mL", tau: 30 },
-        { target: "mtor", mechanism: "agonist", effectGain: 2.0, unit: "fold-change", tau: 60 }, // High mTOR
-        { target: "glutamate", mechanism: "agonist", effectGain: 0.6, unit: "µM", tau: 5 },
-      ],
+    pharmacology: (params) => {
+      const intensity = Number(params.intensity) || 1.0;
+      return [
+        Agents.SympatheticStress(intensity * 0.7), // Less cardio stress
+        Agents.MechanicalLoad(intensity)
+      ];
     },
     group: "Lifestyle",
     categories: ["exercise"],
@@ -294,23 +274,13 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         default: 1.0,
       }
     ],
-    pharmacology: {
-      molecule: { name: "HIIT", molarMass: 0 },
-      pk: { model: "activity-dependent" },
-      pd: [
-        { target: "Beta_Adrenergic", mechanism: "agonist", effectGain: 150.0, unit: "pg/mL" },
-        { target: "norepi", mechanism: "agonist", effectGain: 400.0, unit: "pg/mL", tau: 5 }, // Very high sympathetic
-        { target: "adrenaline", mechanism: "agonist", effectGain: 350.0, unit: "pg/mL", tau: 2 }, // Very high adrenaline
-        { target: "cortisol", mechanism: "agonist", effectGain: 20.0, unit: "µg/dL", tau: 10 }, // High cortisol spike
-        { target: "dopamine", mechanism: "agonist", effectGain: 6.0, unit: "nM", tau: 5 },
-        { target: "serotonin", mechanism: "agonist", effectGain: 1.0, unit: "nM", tau: 15 },
-        { target: "endocannabinoid", mechanism: "agonist", effectGain: 5.0, unit: "nM", tau: 20 },
-        { target: "growthHormone", mechanism: "agonist", effectGain: 10.0, unit: "ng/mL", tau: 15 },
-        { target: "testosterone", mechanism: "agonist", effectGain: 5.0, unit: "ng/dL", tau: 20 },
-        { target: "bdnf", mechanism: "agonist", effectGain: 35.0, unit: "ng/mL", tau: 30 }, // Very high BDNF
-        { target: "ampk", mechanism: "agonist", effectGain: 25.0, unit: "fold-change", tau: 10 }, // Strong metabolic stress
-        { target: "glutamate", mechanism: "agonist", effectGain: 1.2, unit: "µM", tau: 5 }, // Lactate/Glutamate spike
-      ],
+    pharmacology: (params) => {
+      const intensity = Number(params.intensity) || 1.0;
+      return [
+        Agents.SympatheticStress(intensity * 1.5), // Very high stress
+        Agents.MetabolicLoad(intensity * 1.5),
+        Agents.MechanicalLoad(intensity * 0.5)
+      ];
     },
     group: "Lifestyle",
     categories: ["exercise"],
@@ -333,27 +303,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         default: 1.5,
       },
     ],
-    pharmacology: {
-      molecule: { name: "Ethanol", molarMass: 46.07 },
-      pk: {
-        model: "michaelis-menten",
-        bioavailability: 1.0,
-        Vmax: 0.2,
-        Km: 10,
-        volume: { kind: "sex-adjusted", male_L_kg: 0.68, female_L_kg: 0.55 },
-      },
-      pd: [
-        { target: "GABA_A", mechanism: "PAM", effectGain: 2.5, unit: "fold-change" },
-        { target: "ethanol", mechanism: "agonist", effectGain: 1.0, unit: "mg/dL" },
-        { target: "dopamine", mechanism: "agonist", effectGain: 5.0, unit: "nM", tau: 10 }, // 25 * 0.2
-        { target: "NMDA", mechanism: "NAM", Ki: 50000, effectGain: 0.2, unit: "fold-change" },
-        { target: "vasopressin", mechanism: "antagonist", effectGain: 10.0, unit: "pg/mL" },
-        { target: "serotonin", mechanism: "agonist", effectGain: 1.0, unit: "nM" }, // 10 * 0.1
-        { target: "cortisol", mechanism: "agonist", effectGain: 10.0, unit: "µg/dL" },
-        { target: "inflammation", mechanism: "agonist", effectGain: 0.5, unit: "index" },
-        { target: "testosterone", mechanism: "antagonist", effectGain: 5.0, unit: "ng/dL" },
-      ],
-    },
+    pharmacology: (params) => Agents.Alcohol(Number(params.units) || 1.5),
     group: "Lifestyle",
     categories: ["social"],
     goals: ["mood", "calm"],

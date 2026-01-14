@@ -1,4 +1,5 @@
 import type { InterventionDef } from "@/types";
+import { Agents } from "../../physiology/agents";
 
 /**
  * PHARMACOLOGY CALIBRATION NOTES:
@@ -37,47 +38,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         default: 100,
       },
     ],
-    pharmacology: {
-      molecule: { name: "Caffeine", molarMass: 194.19, logP: -0.07 },
-      pk: {
-        model: "1-compartment",
-        bioavailability: 0.99,
-        halfLifeMin: 300,
-        clearance: { hepatic: { baseCL_mL_min: 155, CYP: "CYP1A2" } },
-        volume: { kind: "tbw", fraction: 0.6 },
-      },
-      pd: [
-        {
-          target: "Adenosine_A2a",
-          mechanism: "antagonist",
-          Ki: 2400,
-          effectGain: 15.0, // Stronger dopamine disinhibition
-          unit: "nM",
-        },
-        {
-          target: "Adenosine_A1",
-          mechanism: "antagonist",
-          Ki: 12000,
-          effectGain: 8.0, // Stronger release disinhibition
-          unit: "nM",
-        },
-        {
-          target: "cortisol",
-          mechanism: "agonist",
-          EC50: 25000,
-          effectGain: 8.0,
-          unit: "µg/dL",
-        },
-        {
-          target: "adrenaline",
-          mechanism: "agonist",
-          EC50: 30000,
-          effectGain: 12.0,
-          unit: "pg/mL",
-        },
-        { target: "norepi", mechanism: "agonist", EC50: 30000, effectGain: 93.75, unit: "pg/mL" }, // 15 * 6.25
-      ],
-    },
+    // DYNAMIC PHARMACOLOGY
+    pharmacology: (params) => Agents.Caffeine(Number(params.mg) || 100),
     group: "Stimulants",
     categories: ["medications", "supplements"],
     goals: ["energy", "focus"],
@@ -99,36 +61,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         default: 3,
       },
     ],
-    pharmacology: {
-      molecule: { name: "Melatonin", molarMass: 232.28 },
-      pk: {
-        model: "1-compartment",
-        bioavailability: 0.15,
-        halfLifeMin: 45,
-        clearance: { hepatic: { baseCL_mL_min: 1200, CYP: "CYP1A2" } },
-        volume: { kind: "weight", base_L_kg: 1.0 },
-      },
-      pd: [
-        // MT1/MT2 targets drive the 'melatonin' signal in neurostate
-        { target: "MT1", mechanism: "agonist", Ki: 0.08, effectGain: 25.0, unit: "pg/mL" },
-        { target: "MT2", mechanism: "agonist", Ki: 0.23, effectGain: 20.0, unit: "pg/mL" },
-        {
-          target: "orexin",
-          mechanism: "antagonist",
-          EC50: 50,
-          effectGain: 10.0,
-          unit: "pg/mL",
-        },
-        {
-          target: "cortisol",
-          mechanism: "antagonist",
-          EC50: 100,
-          effectGain: 5.0,
-          unit: "µg/dL",
-        },
-        { target: "GABA_A", mechanism: "PAM", EC50: 200, effectGain: 48.0, unit: "nM" }, // 8 * 6
-      ],
-    },
+    pharmacology: (params) => Agents.Melatonin(Number(params.mg) || 3),
     group: "Supplements",
     categories: ["supplements"],
     goals: ["sleep"],
@@ -150,50 +83,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         default: 200,
       },
     ],
-    pharmacology: {
-      molecule: { name: "L-Theanine", molarMass: 174.2 },
-      pk: {
-        model: "1-compartment",
-        bioavailability: 0.95,
-        halfLifeMin: 75,
-        clearance: {
-          renal: { baseCL_mL_min: 180 },
-          hepatic: { baseCL_mL_min: 80 },
-        },
-        volume: { kind: "tbw", fraction: 0.5 },
-      },
-      pd: [
-        { target: "GABA_A", mechanism: "PAM", EC50: 20.0, effectGain: 72.0, unit: "nM" }, // 12 * 6
-        {
-          target: "NMDA",
-          mechanism: "antagonist",
-          Ki: 50.0,
-          effectGain: 0.42, // 5 * 0.0833
-          unit: "µM",
-        },
-        {
-          target: "serotonin",
-          mechanism: "agonist",
-          EC50: 30.0,
-          effectGain: 0.8, // 8 * 0.1
-          unit: "nM",
-        },
-        {
-          target: "dopamine",
-          mechanism: "agonist",
-          EC50: 35.0,
-          effectGain: 1.0, // 5 * 0.2
-          unit: "nM",
-        },
-        {
-          target: "cortisol",
-          mechanism: "antagonist",
-          EC50: 25.0,
-          effectGain: 6.0,
-          unit: "µg/dL",
-        },
-      ],
-    },
+    pharmacology: (params) => Agents.LTheanine(Number(params.mg) || 200),
     group: "Supplements",
     categories: ["supplements"],
     goals: ["calm", "focus", "mood"],

@@ -41,10 +41,10 @@
       @update="(val) => updateParam(param.key, val)"
     />
 
-    <div v-if="def.pharmacology?.pd?.length" class="effects">
+    <div v-if="resolvedEffects.length" class="effects">
       <h4>Biological Effects</h4>
       <div
-        v-for="(effect, index) in def.pharmacology.pd"
+        v-for="(effect, index) in resolvedEffects"
         :key="index"
         class="effect"
       >
@@ -66,7 +66,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
-import type { InterventionDef, ParamValues, TimelineItem, Signal } from '@/types';
+import type { InterventionDef, ParamValues, TimelineItem, Signal, PharmacologyDef } from '@/types';
 import ParamEditor from './ParamEditor.vue';
 import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/models/physiology/constants/nutrients';
 import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@/models/engine/signal-units';
@@ -79,6 +79,22 @@ const local = reactive<{ params: ParamValues }>({
 });
 
 const isFood = computed(() => props.def?.key === 'food');
+
+const resolvedEffects = computed(() => {
+  if (!props.def) return [];
+  
+  let pharms: PharmacologyDef[] = [];
+  
+  if (typeof props.def.pharmacology === 'function') {
+    const result = (props.def.pharmacology as any)(local.params);
+    pharms = Array.isArray(result) ? result : [result];
+  } else {
+    pharms = [props.def.pharmacology];
+  }
+
+  // Aggregate all PD effects from all agents
+  return pharms.flatMap(p => p.pd || []);
+});
 
 const totalKcal = computed(() => {
   if (!isFood.value) return 0;

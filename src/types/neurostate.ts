@@ -319,6 +319,8 @@ export interface PharmacologyDef {
   }>;
 }
 
+export type DynamicPharmacologyFn = (params: ParamValues) => PharmacologyDef | PharmacologyDef[];
+
 export interface InterventionDef {
   key: InterventionKey;
   label: string;
@@ -326,7 +328,7 @@ export interface InterventionDef {
   icon?: string; // emoji or icon key
   defaultDurationMin: number;
   params: ParamDef[];
-  pharmacology: PharmacologyDef; // Required in mechanistic foundation
+  pharmacology: PharmacologyDef | DynamicPharmacologyFn; // Required in mechanistic foundation
   /** Optional grouping for UI (e.g., "Food", "Light", "Movement") */
   group?: string;
   /** Optional explainers for tooltips */
@@ -366,6 +368,8 @@ export interface ItemForWorker {
   startMin: Minute; // minutes from 0:00 local day
   durationMin: number;
   meta: TimelineItemMeta;
+  /** Pre-calculated pharmacology from the main thread (handles dynamic factories) */
+  resolvedPharmacology?: PharmacologyDef[];
 }
 
 /* ===========================

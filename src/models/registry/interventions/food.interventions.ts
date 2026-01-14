@@ -1,4 +1,5 @@
 import type { InterventionDef } from "@/types";
+import { Agents } from "../../physiology/agents";
 
 export const FOOD_INTERVENTIONS: InterventionDef[] = [
   {
@@ -45,66 +46,42 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
         default: 20,
       },
       {
-        key: "gi",
-        label: "Glycemic index",
+        key: "fiber",
+        label: "Fiber (g)",
         type: "slider",
-        min: 20,
-        max: 100,
-        step: 5,
-        default: 60,
+        min: 0,
+        max: 30,
+        step: 1,
+        default: 5,
       },
     ],
-    pharmacology: {
-      molecule: { name: "Glucose", molarMass: 180.16 },
-      pk: {
-        model: "1-compartment",
-        bioavailability: 1.0,
-        halfLifeMin: 45,
-        timeToPeakMin: 30,
-        volume: { kind: "weight", base_L_kg: 0.2 },
-      },
-      pd: [
-        {
-          target: "glucose",
-          mechanism: "agonist",
-          effectGain: 100.0,
-          EC50: 1000,
-          unit: "mg/dL",
-        },
-        { target: "insulin", mechanism: "agonist", effectGain: 2.4, unit: "µIU/mL", tau: 45 }, // 15 * 0.16
-        {
-          target: "ghrelin",
-          mechanism: "antagonist",
-          effectGain: 200.0,
-          unit: "pg/mL",
-          tau: 30,
-        },
-        { target: "leptin", mechanism: "agonist", effectGain: 5.0, unit: "ng/mL", tau: 120 },
-        { target: "glp1", mechanism: "agonist", effectGain: 10.0, unit: "pmol/L", tau: 45 },
-        { target: "dopamine", mechanism: "agonist", effectGain: 3.0, unit: "nM", tau: 20 }, // 15 * 0.2
-        {
-          target: "serotonin",
-          mechanism: "agonist",
-          effectGain: 1.0, // 10 * 0.1
-          unit: "nM",
-          tau: 30,
-        },
-        // Added from old kernels
-        {
-          target: "gaba",
-          mechanism: "agonist",
-          effectGain: 90.0, // 15 * 6
-          unit: "nM",
-          tau: 30, // Gut fermentation / satiety calm
-        },
-        {
-          target: "mtor",
-          mechanism: "agonist",
-          effectGain: 30.0,
-          unit: "fold-change",
-          tau: 60, // Protein sensing
-        }
-      ],
+    // DYNAMIC PHARMACOLOGY FACTORY
+    // Returns a list of all active agents in the meal
+    pharmacology: (params) => {
+      const sugar = Number(params.carbSugar) || 0;
+      const starch = Number(params.carbStarch) || 0;
+      const protein = Number(params.protein) || 0;
+      const fat = Number(params.fat) || 0;
+      const fiber = Number(params.fiber) || 0;
+
+      // Starch converts to glucose, but with slightly less efficiency/mass than pure sugar
+      const totalGlucoseEquivalent = sugar + (starch * 0.9);
+
+      const agents = [];
+
+      if (totalGlucoseEquivalent > 0) {
+        agents.push(Agents.Glucose(totalGlucoseEquivalent, { fatGrams: fat, fiberGrams: fiber }));
+      }
+      
+      if (fat > 0) {
+        agents.push(Agents.Lipids(fat));
+      }
+
+      if (protein > 0) {
+        agents.push(Agents.Protein(protein));
+      }
+
+      return agents;
     },
     group: "Food",
     categories: ["food"],

@@ -133,17 +133,35 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
         const def = defsMap.get(item.meta.key);
         if (!def) continue;
 
-        const intervention = {
-          id: item.id, // Same ID allows sharing the PK compartment across days
-          key: def.key,
-          startTime: item.startMin + (d * 1440),
-          duration: item.durationMin,
-          intensity: item.meta.intensity ?? 1.0,
-          params: item.meta.params,
-          pharmacology: def.pharmacology
-        };
+        // Use pre-resolved pharmacology passed from Main Thread
+        // Fallback to def.pharmacology only if it's a static object (legacy/test path)
+        let pharmList: any[] = [];
+        
+        if ((item as any).resolvedPharmacology) {
+          pharmList = (item as any).resolvedPharmacology;
+        } else if (def.pharmacology && typeof def.pharmacology !== 'function') {
+           // Fallback for static definitions if not resolved
+           pharmList = [def.pharmacology];
+        }
 
-        activeInterventions.push(intervention);
+        // Create an active intervention for EACH distinct agent/molecule returned
+        pharmList.forEach((pharm, index) => {
+           // We append an index suffix to the ID if there are multiple agents, 
+           // to ensure unique PK tracking (e.g. "meal123_0", "meal123_1")
+           const agentId = pharmList.length > 1 ? `${item.id}_${index}` : item.id;
+
+           const intervention: ActiveIntervention = {
+            id: agentId, 
+            key: def.key,
+            startTime: item.startMin + (d * 1440),
+            duration: item.durationMin,
+            intensity: item.meta.intensity ?? 1.0,
+            params: item.meta.params,
+            pharmacology: pharm
+          };
+
+          activeInterventions.push(intervention);
+        });
       }
     }
   }

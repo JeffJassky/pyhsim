@@ -177,6 +177,7 @@ import type {
   Signal,
   TimelineItem,
   UUID,
+  PharmacologyDef,
 } from '@/types';
 import { minuteToISO } from '@/utils/time';
 import { toMinuteOfDay } from '@/core/serialization';
@@ -574,19 +575,31 @@ const autoSpecs = computed(() => {
   const activeInterventionKeys = new Set(sourceItems.map((it) => it.meta.key));
   const directSignals = new Set<Signal>();
 
-  activeInterventionKeys.forEach((key) => {
-    const def = library.defs.find((d) => d.key === key);
-    if (def?.pharmacology?.pd) {
-      def.pharmacology.pd.forEach((effect) => {
-        // Add the target itself if it's a signal
-        directSignals.add(effect.target as Signal);
-        // Also add signals affected by this target (for transporters/receptors)
-        const affectedSignals = targetToSignalsMap[effect.target];
-        if (affectedSignals) {
-          affectedSignals.forEach((sig) => directSignals.add(sig));
-        }
-      });
+  sourceItems.forEach((item) => {
+    const def = library.defs.find((d) => d.key === item.meta.key);
+    if (!def) return;
+
+    let pharms: PharmacologyDef[] = [];
+    if (typeof def.pharmacology === 'function') {
+      const result = (def.pharmacology as any)(item.meta.params || {});
+      pharms = Array.isArray(result) ? result : [result];
+    } else {
+      pharms = [def.pharmacology];
     }
+
+    pharms.forEach((pharm) => {
+      if (pharm.pd) {
+        pharm.pd.forEach((effect) => {
+          // Add the target itself if it's a signal
+          directSignals.add(effect.target as Signal);
+          // Also add signals affected by this target (for transporters/receptors)
+          const affectedSignals = targetToSignalsMap[effect.target];
+          if (affectedSignals) {
+            affectedSignals.forEach((sig) => directSignals.add(sig));
+          }
+        });
+      }
+    });
   });
 
   const signalsToShow = new Set(directSignals);
