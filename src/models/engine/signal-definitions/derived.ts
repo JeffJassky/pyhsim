@@ -7,7 +7,8 @@ import { minuteToPhase, hourToPhase, windowPhase, gaussianPhase, sigmoidPhase, w
 export const energy: UnifiedSignalDefinition = {
   key: 'energy',
   label: 'Energy',
-  unit: '%',
+  unit: 'index',
+  description: 'Subjective energy index.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.minuteOfDay);
@@ -38,7 +39,7 @@ export const energy: UnifiedSignalDefinition = {
   max: 150,
   display: {
     color: '#facc15',
-    referenceRange: { min: 30, max: 90 }
+    referenceRange: { min: 40, max: 80 }
   }
 };
 
@@ -49,6 +50,7 @@ export const hrv: UnifiedSignalDefinition = {
   key: 'hrv',
   label: 'HRV',
   unit: 'ms',
+  description: 'Heart rate variability (RMSSD).',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.minuteOfDay);
@@ -70,7 +72,7 @@ export const hrv: UnifiedSignalDefinition = {
   max: 150,
   display: {
     color: '#10b981',
-    referenceRange: { min: 40, max: 100 }
+    referenceRange: { min: 20, max: 100 }
   }
 };
 
@@ -81,6 +83,7 @@ export const bloodPressure: UnifiedSignalDefinition = {
   key: 'bloodPressure',
   label: 'Blood Pressure',
   unit: 'mmHg',
+  description: 'Systolic blood pressure proxy.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.minuteOfDay);
@@ -102,7 +105,7 @@ export const bloodPressure: UnifiedSignalDefinition = {
   max: 200,
   display: {
     color: '#ef4444',
-    referenceRange: { min: 90, max: 140 }
+    referenceRange: { min: 90, max: 120 }
   }
 };
 
@@ -112,7 +115,8 @@ export const bloodPressure: UnifiedSignalDefinition = {
 export const inflammation: UnifiedSignalDefinition = {
   key: 'inflammation',
   label: 'Inflammation',
-  unit: 'relative',
+  unit: 'index',
+  description: 'Composite inflammatory index.',
   dynamics: {
     setpoint: (ctx) => 1.0,
     tau: 1440, // Slow dynamics (1 day)
@@ -136,7 +140,7 @@ export const inflammation: UnifiedSignalDefinition = {
   max: 10,
   display: {
     color: '#7f1d1d',
-    referenceRange: { min: 0.5, max: 2.0 }
+    referenceRange: { min: 0, max: 2 }
   }
 };
 
@@ -147,6 +151,7 @@ export const bdnf: UnifiedSignalDefinition = {
   key: 'bdnf',
   label: 'BDNF',
   unit: 'ng/mL',
+  description: 'Brain-derived neurotrophic factor.',
   dynamics: {
     setpoint: (ctx) => 25.0,
     tau: 480,
@@ -166,7 +171,7 @@ export const bdnf: UnifiedSignalDefinition = {
   max: 100,
   display: {
     color: '#8b5cf6',
-    referenceRange: { min: 10, max: 40 }
+    referenceRange: { min: 10, max: 30 }
   }
 };
 
@@ -191,7 +196,8 @@ export const bdnfExpression: AuxiliaryDefinition = {
 export const vagal: UnifiedSignalDefinition = {
   key: 'vagal',
   label: 'Vagal Tone',
-  unit: 'a.u.',
+  unit: 'index',
+  description: 'Vagal tone (HRV proxy).',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.minuteOfDay);
@@ -216,7 +222,7 @@ export const vagal: UnifiedSignalDefinition = {
   max: 1.5,
   display: { 
     color: '#10b981',
-    referenceRange: { min: 0.3, max: 0.8 }
+    referenceRange: { min: 0.3, max: 0.7 }
   }
 };
 
@@ -227,6 +233,7 @@ export const ketone: UnifiedSignalDefinition = {
   key: 'ketone',
   label: 'Ketones',
   unit: 'mmol/L',
+  description: 'Blood beta-hydroxybutyrate.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.minuteOfDay);
@@ -251,7 +258,7 @@ export const ketone: UnifiedSignalDefinition = {
   max: 8.0,
   display: { 
     color: '#8b5cf6',
-    referenceRange: { min: 0.1, max: 5.0 }
+    referenceRange: { min: 0.1, max: 0.5 }
   }
 };
 
@@ -261,7 +268,8 @@ export const ketone: UnifiedSignalDefinition = {
 export const ethanol: UnifiedSignalDefinition = {
   key: 'ethanol',
   label: 'Ethanol',
-  unit: 'g/dL', // Or arbitrary units matching pharmacology
+  unit: 'mg/dL', 
+  description: 'Blood alcohol concentration.',
   dynamics: {
     setpoint: (ctx) => 0,
     tau: 60,
@@ -273,10 +281,10 @@ export const ethanol: UnifiedSignalDefinition = {
   },
   initialValue: 0,
   min: 0,
-  max: 0.5,
+  max: 400,
   display: { 
     color: '#ef4444',
-    referenceRange: { min: 0, max: 0.08 }
+    referenceRange: { min: 0, max: 0 }
   }
 };
 
@@ -286,7 +294,8 @@ export const ethanol: UnifiedSignalDefinition = {
 export const acetaldehyde: UnifiedSignalDefinition = {
   key: 'acetaldehyde',
   label: 'Acetaldehyde',
-  unit: 'relative',
+  unit: 'µM',
+  description: 'Blood acetaldehyde concentration.',
   dynamics: {
     setpoint: (ctx) => 0,
     tau: 60,
@@ -300,10 +309,10 @@ export const acetaldehyde: UnifiedSignalDefinition = {
   },
   initialValue: 0,
   min: 0,
-  max: 10,
+  max: 50,
   display: { 
     color: '#b91c1c',
-    referenceRange: { min: 0, max: 1 }
+    referenceRange: { min: 0, max: 2 }
   }
 };
 
@@ -313,9 +322,10 @@ export const acetaldehyde: UnifiedSignalDefinition = {
 export const magnesium: UnifiedSignalDefinition = {
   key: 'magnesium',
   label: 'Magnesium',
-  unit: 'relative',
+  unit: 'mg/dL',
+  description: 'Serum magnesium.',
   dynamics: {
-    setpoint: (ctx) => 0.6,
+    setpoint: (ctx) => 2.0,
     tau: 10080, // Very slow
     production: [],
     clearance: [
@@ -325,12 +335,12 @@ export const magnesium: UnifiedSignalDefinition = {
       { source: 'adrenaline', effect: 'inhibit', strength: 0.05 } // -0.05
     ]
   },
-  initialValue: 0.6,
+  initialValue: 2.0,
   min: 0,
-  max: 2.0,
+  max: 5.0,
   display: { 
     color: '#3b82f6',
-    referenceRange: { min: 0.4, max: 1.0 }
+    referenceRange: { min: 1.7, max: 2.3 }
   }
 };
 
@@ -340,7 +350,8 @@ export const magnesium: UnifiedSignalDefinition = {
 export const sensoryLoad: UnifiedSignalDefinition = {
   key: 'sensoryLoad',
   label: 'Sensory Load',
-  unit: 'relative',
+  unit: 'index',
+  description: 'Accumulated sensory/cognitive load.',
   dynamics: {
     setpoint: (ctx) => 0.1,
     tau: 15,
@@ -356,10 +367,10 @@ export const sensoryLoad: UnifiedSignalDefinition = {
   },
   initialValue: 0.1,
   min: 0,
-  max: 10,
+  max: 100,
   display: { 
     color: '#f59e0b',
-    referenceRange: { min: 0, max: 1.0 }
+    referenceRange: { min: 0, max: 50 }
   }
 };
 
@@ -370,6 +381,7 @@ export const mtor: UnifiedSignalDefinition = {
   key: 'mtor',
   label: 'mTOR',
   unit: 'fold-change',
+  description: 'mTOR signaling activity.',
   dynamics: {
     setpoint: (ctx) => 1.0,
     tau: 1440,
@@ -386,7 +398,7 @@ export const mtor: UnifiedSignalDefinition = {
   max: 5,
   display: { 
     color: '#f43f5e',
-    referenceRange: { min: 0.5, max: 3.0 }
+    referenceRange: { min: 0.2, max: 0.8 }
   }
 };
 
@@ -397,6 +409,7 @@ export const ampk: UnifiedSignalDefinition = {
   key: 'ampk',
   label: 'AMPK',
   unit: 'fold-change',
+  description: 'AMPK signaling activity.',
   dynamics: {
     setpoint: (ctx) => 1.0,
     tau: 1440,
@@ -415,7 +428,7 @@ export const ampk: UnifiedSignalDefinition = {
   max: 5,
   display: { 
     color: '#10b981',
-    referenceRange: { min: 0.5, max: 3.0 }
+    referenceRange: { min: 0.2, max: 0.8 }
   }
 };
 
@@ -425,7 +438,8 @@ export const ampk: UnifiedSignalDefinition = {
 export const oxygen: UnifiedSignalDefinition = {
   key: 'oxygen',
   label: 'Oxygen',
-  unit: 'relative',
+  unit: '%',
+  description: 'Peripheral oxygen saturation.',
   dynamics: {
     setpoint: (ctx) => 50.0,
     tau: 5,
@@ -440,7 +454,7 @@ export const oxygen: UnifiedSignalDefinition = {
   max: 100,
   display: { 
     color: '#3b82f6',
-    referenceRange: { min: 40, max: 95 }
+    referenceRange: { min: 95, max: 100 }
   }
 };
 

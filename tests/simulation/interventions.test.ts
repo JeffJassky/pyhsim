@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { INTERVENTIONS } from '@/models/library/interventions';
-import { SIGNAL_UNITS } from '@/models/engine/unified/signal-units';
-import { isReceptor, getReceptorSignals } from '@/models/library/pharmacology';
+import type { Signal } from '@/types';
+import { INTERVENTIONS } from '@/models/registry/interventions';
+import { SIGNAL_UNITS } from '@/models/engine/signal-units';
+import { isReceptor, getReceptorSignals } from '@/models/physiology/pharmacology';
 
 describe('Intervention Unit Integrity', () => {
   it('should have matching units for all pharmacological effects', () => {

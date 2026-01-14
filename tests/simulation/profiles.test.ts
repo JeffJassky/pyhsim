@@ -9,7 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { PROFILE_LIBRARY, buildProfileAdjustments } from '@/models/library/profiles';
+import { PROFILE_LIBRARY, buildProfileAdjustments } from '@/models/registry/profiles';
+import type { ProfileKey, ProfileStateSnapshot } from '@/models/registry/profiles';
 
 // Helper to create profile state
 function createProfileState(

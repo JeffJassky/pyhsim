@@ -66,6 +66,7 @@ export interface UnifiedSignalDefinition {
   key: Signal;
   label: string;
   unit: PhysiologicalUnit;
+  description?: string;
   dynamics: SignalDynamics;
   initialValue: number | ((ctx: { subject: Subject; physiology: Physiology; isAsleep: boolean }) => number);
   min?: number;
@@ -77,10 +78,6 @@ export interface UnifiedSignalDefinition {
   goals?: string[];
   isPremium?: boolean;
   group?: string;
-  description?: {
-    physiology: string;
-    application: string;
-  };
 }
 
 export interface AuxiliaryDefinition {

@@ -17,8 +17,8 @@ import type {
 } from '@/types';
 import { SIGNALS_ALL } from '@/types';
 import { rangeMinutes } from '@/utils/time';
-import { buildInterventionLibrary } from '@/models/library/interventions';
-import { buildProfileAdjustments, type ProfileKey, type ProfileStateSnapshot } from '@/models/library/profiles';
+import { buildInterventionLibrary } from '@/models/registry/interventions';
+import { buildProfileAdjustments, type ProfileKey, type ProfileStateSnapshot } from '@/models/registry/profiles';
 import { derivePhysiology, type Subject as SubjectType } from '@/models/domain/subject';
 import {
   integrateStep,
@@ -26,7 +26,7 @@ import {
   getAllUnifiedDefinitions,
   AUXILIARY_DEFINITIONS,
   SIGNAL_DEFINITIONS,
-} from "@/models/engine/unified";
+} from "@/models/engine";
 import type { SimulationState, DynamicsContext, ActiveIntervention } from '@/types/unified';
 
 // --- Types ---
@@ -53,7 +53,7 @@ export interface TestEngineConfig {
   /** Sleep duration in minutes */
   sleepMinutes?: number;
   /** Signals to include (default: all) */
-  includeSignals?: Signal[];
+  includeSignals?: readonly Signal[];
 }
 
 export interface TestIntervention {
@@ -220,7 +220,7 @@ export async function runEngine(config: TestEngineConfig = {}): Promise<EngineRe
  */
 async function computeEngineSync(
   request: WorkerComputeRequest,
-  includeSignals: Signal[]
+  includeSignals: readonly Signal[]
 ): Promise<Record<Signal, Float32Array>> {
   const { gridMins, items, defs, options } = request;
 

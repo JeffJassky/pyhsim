@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { integrateStep, createInitialState, SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, getAllUnifiedDefinitions } from '@/models/engine/unified';
+import { integrateStep, createInitialState, SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, getAllUnifiedDefinitions } from '@/models/engine';
 import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
 import type { DynamicsContext, SimulationState, ActiveIntervention } from '@/types/unified';
 

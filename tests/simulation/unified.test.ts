@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { integrateStep, createInitialState, SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, getAllUnifiedDefinitions } from '@/models/engine/unified';
+import { integrateStep, createInitialState, SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, getAllUnifiedDefinitions } from '@/models/engine';
 import { DEFAULT_SUBJECT } from '@/models/domain/subject';
 import { derivePhysiology } from '@/models/domain/subject';import type { DynamicsContext, SimulationState, ActiveIntervention } from '@/types/unified';
 
@@ -109,7 +109,7 @@ describe('Unified ODE Architecture', () => {
       isAsleep: false
     });
 
-    const definitions = getAllUnifiedDefinitions((s, ctx) => 100);
+    const definitions = getAllUnifiedDefinitions();
     const ctx: DynamicsContext = {
       minuteOfDay: 600,
       circadianMinuteOfDay: 600,

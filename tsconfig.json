@@ -4,9 +4,18 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
+      "@": ["src"],
       "@/*": ["src/*"]
-    }
+    },
+    "types": ["node", "vite/client", "hammerjs"]
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue", "env.d.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "tests/**/*.ts",
+    "env.d.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

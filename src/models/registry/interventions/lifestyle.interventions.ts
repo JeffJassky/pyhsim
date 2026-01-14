@@ -230,7 +230,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         { target: "growthHormone", mechanism: "agonist", effectGain: 4.0, unit: "ng/mL", tau: 15 },
         { target: "testosterone", mechanism: "agonist", effectGain: 2.0, unit: "ng/dL", tau: 20 },
         { target: "bdnf", mechanism: "agonist", effectGain: 30.0, unit: "ng/mL", tau: 30 }, // Strong BDNF
-        { target: "ampk", mechanism: "agonist", effectGain: 10.0, unit: "index", tau: 10 },
+        { target: "ampk", mechanism: "agonist", effectGain: 10.0, unit: "fold-change", tau: 10 },
         { target: "glutamate", mechanism: "agonist", effectGain: 0.5, unit: "µM", tau: 5 },
       ],
     },
@@ -269,7 +269,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         { target: "growthHormone", mechanism: "agonist", effectGain: 12.0, unit: "ng/mL", tau: 15 }, // High GH
         { target: "testosterone", mechanism: "agonist", effectGain: 8.0, unit: "ng/dL", tau: 20 }, // High Testosterone
         { target: "bdnf", mechanism: "agonist", effectGain: 15.0, unit: "ng/mL", tau: 30 },
-        { target: "mtor", mechanism: "agonist", effectGain: 2.0, unit: "index", tau: 60 }, // High mTOR
+        { target: "mtor", mechanism: "agonist", effectGain: 2.0, unit: "fold-change", tau: 60 }, // High mTOR
         { target: "glutamate", mechanism: "agonist", effectGain: 0.6, unit: "µM", tau: 5 },
       ],
     },
@@ -308,7 +308,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         { target: "growthHormone", mechanism: "agonist", effectGain: 10.0, unit: "ng/mL", tau: 15 },
         { target: "testosterone", mechanism: "agonist", effectGain: 5.0, unit: "ng/dL", tau: 20 },
         { target: "bdnf", mechanism: "agonist", effectGain: 35.0, unit: "ng/mL", tau: 30 }, // Very high BDNF
-        { target: "ampk", mechanism: "agonist", effectGain: 25.0, unit: "index", tau: 10 }, // Strong metabolic stress
+        { target: "ampk", mechanism: "agonist", effectGain: 25.0, unit: "fold-change", tau: 10 }, // Strong metabolic stress
         { target: "glutamate", mechanism: "agonist", effectGain: 1.2, unit: "µM", tau: 5 }, // Lactate/Glutamate spike
       ],
     },

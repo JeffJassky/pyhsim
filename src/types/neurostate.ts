@@ -1,7 +1,7 @@
 // types/neurostate.ts
 
 import type { Physiology, Subject } from '@/models/domain/subject';
-import type { PharmacologicalTarget, PDMechanism } from '@/models/library/pharmacology/types';
+import type { PharmacologicalTarget, PDMechanism } from '@/models/physiology/pharmacology/types';
 import type { PhysiologicalUnit } from './units';
 export type { Physiology, Subject };
 
@@ -381,7 +381,7 @@ export interface WorkerComputeRequest {
   options?: {
     clampMin?: number; // e.g., -1
     clampMax?: number; // e.g., 1.5
-    includeSignals?: Signal[]; // limit to speed up
+    includeSignals?: readonly Signal[]; // limit to speed up
     wakeOffsetMin?: Minute;
     sleepMinutes?: number;
     profileBaselines?: ProfileBaselineAdjustments;

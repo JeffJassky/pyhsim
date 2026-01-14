@@ -9,6 +9,7 @@ export const glucose: UnifiedSignalDefinition = {
   key: 'glucose',
   label: 'Glucose',
   unit: 'mg/dL',
+  description: 'Blood glucose concentration.',
   dynamics: {
     setpoint: (ctx) => 90, // Gb: basal glucose
     tau: 35.7,             // p1: 1/0.028
@@ -44,6 +45,7 @@ export const insulin: UnifiedSignalDefinition = {
   key: 'insulin',
   label: 'Insulin',
   unit: 'µIU/mL',
+  description: 'Serum insulin concentration.',
   dynamics: {
     setpoint: (ctx) => 8.0, // Ib: basal insulin
     tau: 4.35,              // n: 1/0.23
@@ -63,7 +65,7 @@ export const insulin: UnifiedSignalDefinition = {
   max: 200,
   display: {
     color: '#10b981',
-    referenceRange: { min: 2, max: 20 }
+    referenceRange: { min: 2, max: 25 }
   }
 };
 
@@ -75,6 +77,7 @@ export const glucagon: UnifiedSignalDefinition = {
   key: 'glucagon',
   label: 'Glucagon',
   unit: 'pg/mL',
+  description: 'Plasma glucagon concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);

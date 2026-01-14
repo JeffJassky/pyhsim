@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { useEngineStore } from '@/stores/engine';
 import { usePlayhead } from '@/composables/usePlayhead';
 import Panel from '@/components/core/Panel.vue';
-import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/unified/signal-units';
+import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/signal-units';
 import type { Signal } from '@/types';
 
 const engineStore = useEngineStore();

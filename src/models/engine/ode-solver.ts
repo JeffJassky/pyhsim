@@ -11,7 +11,7 @@ import type {
 import { type Signal } from '@/types/neurostate';
 import { addStates, scaleState, initializeZeroState } from './state';
 import { clamp, hill } from './utils';
-import { isReceptor, getReceptorSignals } from '../../library/pharmacology';
+import { isReceptor, getReceptorSignals } from '../physiology/pharmacology';
 
 /**
  * Calculate volume of distribution in Liters based on PK spec and subject
@@ -396,7 +396,7 @@ function EmaxModel(occupancy: number, tau: number): number {
 
 /**
  * Get signals affected by a pharmacological target.
- * Uses centralized registry from @/models/library/pharmacology.
+ * Uses centralized registry from @/models/physiology/pharmacology.
  * Transporters/enzymes return empty (they work via clearance, not direct coupling).
  */
 function getSignalTargets(target: string): Array<{ signal: Signal, sign: number }> {

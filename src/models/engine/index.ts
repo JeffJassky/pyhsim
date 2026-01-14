@@ -9,7 +9,7 @@ import {
 import * as circadian from './signal-definitions/circadian';
 import * as derived from './signal-definitions/derived';
 import * as biomarkers from './signal-definitions/biomarkers';
-import { getAllTransporterKeys, getAllEnzymeKeys, ENZYMES } from '../../library/pharmacology';
+import { getAllTransporterKeys, getAllEnzymeKeys, ENZYMES } from '../physiology/pharmacology';
 
 export const SIGNAL_DEFINITIONS: Partial<Record<Signal, UnifiedSignalDefinition>> = {
   // Metabolic

@@ -137,7 +137,7 @@
 import { computed } from 'vue';
 import { PROFILE_LIBRARY } from '@/models';
 import { useProfilesStore } from '@/stores/profiles';
-import type { ProfileKey } from '@/models/library/profiles';
+import type { ProfileKey } from '@/models/registry/profiles';
 import type { Subject } from '@/models/domain/subject';
 
 const profilesStore = useProfilesStore();

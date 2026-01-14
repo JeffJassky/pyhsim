@@ -8,6 +8,7 @@ export const dopamine: UnifiedSignalDefinition = {
   key: 'dopamine',
   label: 'Dopamine',
   unit: 'nM',
+  description: 'Extracellular dopamine concentration in the striatum.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -53,6 +54,7 @@ export const serotonin: UnifiedSignalDefinition = {
   key: 'serotonin',
   label: 'Serotonin',
   unit: 'nM',
+  description: 'Extracellular serotonin concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -126,6 +128,7 @@ export const norepi: UnifiedSignalDefinition = {
   key: 'norepi',
   label: 'Norepinephrine',
   unit: 'pg/mL',
+  description: 'Plasma norepinephrine (proxy for sympathetic tone).',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -160,7 +163,7 @@ export const norepi: UnifiedSignalDefinition = {
   max: 2000,
   display: {
     color: '#ef4444',
-    referenceRange: { min: 100, max: 400 }
+    referenceRange: { min: 100, max: 450 }
   }
 };
 
@@ -186,6 +189,7 @@ export const gaba: UnifiedSignalDefinition = {
   key: 'gaba',
   label: 'GABA',
   unit: 'nM',
+  description: 'Extracellular GABA concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -241,6 +245,7 @@ export const glutamate: UnifiedSignalDefinition = {
   key: 'glutamate',
   label: 'Glutamate',
   unit: 'µM',
+  description: 'Extracellular glutamate concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -296,6 +301,7 @@ export const acetylcholine: UnifiedSignalDefinition = {
   key: 'acetylcholine',
   label: 'Acetylcholine',
   unit: 'nM',
+  description: 'Extracellular acetylcholine concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -329,6 +335,7 @@ export const endocannabinoid: UnifiedSignalDefinition = {
   key: 'endocannabinoid',
   label: 'Endocannabinoid',
   unit: 'nM',
+  description: 'Anandamide/2-AG tone.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);

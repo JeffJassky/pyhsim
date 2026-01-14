@@ -7,8 +7,8 @@ describe('time utils', () => {
   });
 
   it('formats labels as 12h', () => {
-    expect(minuteToLabel(0)).toBe('12:00 AM');
-    expect(minuteToLabel(9 * 60 + 5)).toBe('9:05 AM');
+    expect(minuteToLabel(0 as any)).toBe('12:00 AM');
+    expect(minuteToLabel((9 * 60 + 5) as any)).toBe('9:05 AM');
   });
 
   it('snaps to grid', () => {

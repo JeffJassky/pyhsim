@@ -11,8 +11,8 @@ import type {
 } from "@/types";
 import { SIGNALS_ALL } from "@/types";
 import { rangeMinutes, toMinuteOfDay } from "@/utils/time";
-import { buildInterventionLibrary } from "@/models/library/interventions";
-import { buildProfileAdjustments } from "@/models/library/profiles";
+import { buildInterventionLibrary } from "@/models/registry/interventions";
+import { buildProfileAdjustments } from "@/models/registry/profiles";
 import { derivePhysiology } from "@/models/domain/subject";
 import { useTimelineStore } from "./timeline";
 import { useProfilesStore } from "./profiles";

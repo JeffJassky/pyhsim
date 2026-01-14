@@ -1,5 +1,5 @@
 export * from "./ui/weights";
-export * from "./library/interventions";
-export * from "./library/profiles";
+export * from "./registry/interventions";
+export * from "./registry/profiles";
 export * from "./domain/subject";
 export * from "./engine/pharmacokinetics";

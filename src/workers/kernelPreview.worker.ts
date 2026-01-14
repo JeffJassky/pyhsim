@@ -6,7 +6,7 @@ import {
   SIGNAL_DEFINITIONS, 
   AUXILIARY_DEFINITIONS, 
   getAllUnifiedDefinitions 
-} from '@/models/engine/unified';
+} from '@/models/engine';
 import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
 
 self.onmessage = (event: MessageEvent<{ 

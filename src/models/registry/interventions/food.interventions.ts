@@ -101,7 +101,7 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
           target: "mtor",
           mechanism: "agonist",
           effectGain: 30.0,
-          unit: "index",
+          unit: "fold-change",
           tau: 60, // Protein sensing
         }
       ],

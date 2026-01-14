@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
-import type { ProfileKey, ProfileStateSnapshot } from '@/models/library/profiles';
+import type { ProfileKey, ProfileStateSnapshot } from '@/models/registry/profiles';
 import { PROFILE_LIBRARY } from '@/models';
-import { getAllUnifiedDefinitions } from '@/models/engine/unified';
+import { getAllUnifiedDefinitions } from '@/models/engine';
 import { DEFAULT_SUBJECT, DEFAULT_NUTRITION_TARGETS, type Subject, type NutritionTargets } from '@/models/domain/subject';
 import { SIGNALS_ALL, type Signal, type Goal } from '@/types';
 

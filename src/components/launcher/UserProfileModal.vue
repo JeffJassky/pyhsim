@@ -379,9 +379,9 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { useProfilesStore } from '@/stores/profiles';
 import { PROFILE_LIBRARY } from '@/models';
-import { getAllUnifiedDefinitions } from '@/models/engine/unified';
+import { getAllUnifiedDefinitions } from '@/models/engine';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
-import type { ProfileKey } from '@/models/library/profiles';
+import type { ProfileKey } from '@/models/registry/profiles';
 import type { Subject } from '@/models/domain/subject';
 import type { Signal, Goal } from '@/types';
 import Sortable from 'sortablejs';

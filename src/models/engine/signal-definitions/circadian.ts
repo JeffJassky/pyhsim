@@ -8,6 +8,7 @@ export const melatonin: UnifiedSignalDefinition = {
   key: 'melatonin',
   label: 'Melatonin',
   unit: 'pg/mL',
+  description: 'Plasma melatonin concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -39,6 +40,7 @@ export const orexin: UnifiedSignalDefinition = {
   key: 'orexin',
   label: 'Orexin',
   unit: 'pg/mL',
+  description: 'CSF orexin-A concentration proxy.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -64,7 +66,7 @@ export const orexin: UnifiedSignalDefinition = {
   max: 600,
   display: {
     color: '#ef4444',
-    referenceRange: { min: 200, max: 500 }
+    referenceRange: { min: 200, max: 600 }
   }
 };
 
@@ -75,6 +77,7 @@ export const histamine: UnifiedSignalDefinition = {
   key: 'histamine',
   label: 'Histamine',
   unit: 'nM',
+  description: 'Extracellular histamine concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);

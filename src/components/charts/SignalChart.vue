@@ -174,8 +174,8 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import type { ChartSeriesSpec, ResponseSpec, Signal } from '@/types';
 import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/ui/colors';
-import { getAllUnifiedDefinitions } from '@/models/engine/unified';
-import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/unified/signal-units';
+import { getAllUnifiedDefinitions } from '@/models/engine';
+import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/signal-units';
 import Sortable from 'sortablejs';
 import { useProfilesStore } from '@/stores/profiles';
 

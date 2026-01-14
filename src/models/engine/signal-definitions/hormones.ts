@@ -1,6 +1,6 @@
 import type { UnifiedSignalDefinition, AuxiliaryDefinition } from '@/types/unified';
 import { minuteToPhase, hourToPhase, windowPhase, gaussianPhase, sigmoidPhase, widthToConcentration, minutesToPhaseWidth } from '../utils';
-import { getMenstrualHormones } from '../../../domain/subject';
+import { getMenstrualHormones } from '../../domain/subject';
 
 /**
  * CORTISOL
@@ -10,6 +10,7 @@ export const cortisol: UnifiedSignalDefinition = {
   key: 'cortisol',
   label: 'Cortisol',
   unit: 'µg/dL',
+  description: 'Serum cortisol concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -49,6 +50,7 @@ export const adrenaline: UnifiedSignalDefinition = {
   key: 'adrenaline',
   label: 'Adrenaline',
   unit: 'pg/mL',
+  description: 'Plasma epinephrine concentration.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -73,7 +75,7 @@ export const adrenaline: UnifiedSignalDefinition = {
   max: 1000,
   display: {
     color: '#f97316',
-    referenceRange: { min: 20, max: 500 }
+    referenceRange: { min: 10, max: 100 }
   }
 };
 
@@ -84,6 +86,7 @@ export const leptin: UnifiedSignalDefinition = {
   key: 'leptin',
   label: 'Leptin',
   unit: 'ng/mL',
+  description: 'Serum leptin.',
   dynamics: {
     setpoint: (ctx) => 15.0 + 5.0 * Math.cos((ctx.circadianMinuteOfDay / 60 - 24) * Math.PI / 12),
     tau: 1440,
@@ -94,7 +97,10 @@ export const leptin: UnifiedSignalDefinition = {
     ]
   },
   initialValue: 15,
-  display: { color: '#10b981' }
+  display: { 
+    color: '#10b981',
+    referenceRange: { min: 2, max: 15 } 
+  }
 };
 
 /**
@@ -104,6 +110,7 @@ export const ghrelin: UnifiedSignalDefinition = {
   key: 'ghrelin',
   label: 'Ghrelin',
   unit: 'pg/mL',
+  description: 'Active ghrelin.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -122,7 +129,10 @@ export const ghrelin: UnifiedSignalDefinition = {
     ]
   },
   initialValue: 500,
-  display: { color: '#f59e0b' }
+  display: { 
+    color: '#f59e0b',
+    referenceRange: { min: 500, max: 1500 }
+  }
 };
 
 /**
@@ -131,7 +141,8 @@ export const ghrelin: UnifiedSignalDefinition = {
 export const thyroid: UnifiedSignalDefinition = {
   key: 'thyroid',
   label: 'Thyroid',
-  unit: 'relative',
+  unit: 'pmol/L',
+  description: 'Free T4 proxy.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -149,7 +160,10 @@ export const thyroid: UnifiedSignalDefinition = {
     ]
   },
   initialValue: 1.0,
-  display: { color: '#fbbf24' }
+  display: { 
+    color: '#fbbf24',
+    referenceRange: { min: 10, max: 25 }
+  }
 };
 
 /**
@@ -159,6 +173,7 @@ export const growthHormone: UnifiedSignalDefinition = {
   key: 'growthHormone',
   label: 'Growth Hormone',
   unit: 'ng/mL',
+  description: 'Serum growth hormone.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -180,7 +195,10 @@ export const growthHormone: UnifiedSignalDefinition = {
     ]
   },
   initialValue: 0.5,
-  display: { color: '#6366f1' }
+  display: { 
+    color: '#6366f1',
+    referenceRange: { min: 0.1, max: 10 }
+  }
 };
 
 export const ghReserve: AuxiliaryDefinition = {
@@ -203,6 +221,7 @@ export const oxytocin: UnifiedSignalDefinition = {
   key: 'oxytocin',
   label: 'Oxytocin',
   unit: 'pg/mL',
+  description: 'Plasma oxytocin.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -235,6 +254,7 @@ export const prolactin: UnifiedSignalDefinition = {
   key: 'prolactin',
   label: 'Prolactin',
   unit: 'ng/mL',
+  description: 'Serum prolactin.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -256,7 +276,7 @@ export const prolactin: UnifiedSignalDefinition = {
   initialValue: 10,
   display: { 
     color: '#f472b6',
-    referenceRange: { min: 2, max: 20 }
+    referenceRange: { min: 5, max: 20 }
   }
 };
 
@@ -267,6 +287,7 @@ export const vasopressin: UnifiedSignalDefinition = {
   key: 'vasopressin',
   label: 'Vasopressin',
   unit: 'pg/mL',
+  description: 'Plasma vasopressin.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -284,7 +305,7 @@ export const vasopressin: UnifiedSignalDefinition = {
   initialValue: 5,
   display: { 
     color: '#3b82f6',
-    referenceRange: { min: 0, max: 10 }
+    referenceRange: { min: 1, max: 5 }
   }
 };
 
@@ -295,6 +316,7 @@ export const vip: UnifiedSignalDefinition = {
   key: 'vip',
   label: 'VIP',
   unit: 'pg/mL',
+  description: 'Vasoactive intestinal peptide.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -323,6 +345,7 @@ export const testosterone: UnifiedSignalDefinition = {
   key: 'testosterone',
   label: 'Testosterone',
   unit: 'ng/dL',
+  description: 'Total serum testosterone.',
   dynamics: {
     setpoint: (ctx) => {
       // Age decline: ~1% per year after 30
@@ -346,7 +369,7 @@ export const testosterone: UnifiedSignalDefinition = {
   initialValue: 500,
   display: { 
     color: '#1e3a8a',
-    referenceRange: { min: 250, max: 950 }
+    referenceRange: { min: 300, max: 1000 }
   }
 };
 
@@ -357,6 +380,7 @@ export const estrogen: UnifiedSignalDefinition = {
   key: 'estrogen',
   label: 'Estrogen',
   unit: 'pg/mL',
+  description: 'Serum estradiol.',
   dynamics: {
     setpoint: (ctx) => {
       if (ctx.subject.sex === 'male') return 30.0;
@@ -378,7 +402,7 @@ export const estrogen: UnifiedSignalDefinition = {
   initialValue: 40,
   display: { 
     color: '#db2777',
-    referenceRange: { min: 20, max: 300 }
+    referenceRange: { min: 50, max: 400 }
   }
 };
 
@@ -389,6 +413,7 @@ export const progesterone: UnifiedSignalDefinition = {
   key: 'progesterone',
   label: 'Progesterone',
   unit: 'ng/mL',
+  description: 'Serum progesterone.',
   dynamics: {
     setpoint: (ctx) => {
       if (ctx.subject.sex === 'male') return 0.2;
@@ -420,6 +445,7 @@ export const lh: UnifiedSignalDefinition = {
   key: 'lh',
   label: 'LH',
   unit: 'IU/L',
+  description: 'Luteinizing hormone.',
   dynamics: {
     setpoint: (ctx) => {
       if (ctx.subject.sex === 'male') return 5.0;
@@ -440,7 +466,7 @@ export const lh: UnifiedSignalDefinition = {
   initialValue: 5,
   display: { 
     color: '#8b5cf6',
-    referenceRange: { min: 1, max: 20 }
+    referenceRange: { min: 2, max: 15 }
   }
 };
 
@@ -451,6 +477,7 @@ export const fsh: UnifiedSignalDefinition = {
   key: 'fsh',
   label: 'FSH',
   unit: 'IU/L',
+  description: 'Follicle-stimulating hormone.',
   dynamics: {
     setpoint: (ctx) => {
       if (ctx.subject.sex === 'male') return 5.0;
@@ -471,7 +498,7 @@ export const fsh: UnifiedSignalDefinition = {
   initialValue: 5,
   display: { 
     color: '#a78bfa',
-    referenceRange: { min: 1, max: 15 }
+    referenceRange: { min: 1, max: 10 }
   }
 };
 
@@ -482,6 +509,7 @@ export const glp1: UnifiedSignalDefinition = {
   key: 'glp1',
   label: 'GLP-1',
   unit: 'pmol/L',
+  description: 'Active GLP-1.',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -502,7 +530,7 @@ export const glp1: UnifiedSignalDefinition = {
   initialValue: 5,
   display: { 
     color: '#059669',
-    referenceRange: { min: 2, max: 20 }
+    referenceRange: { min: 5, max: 50 }
   }
 };
 
