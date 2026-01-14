@@ -3,6 +3,7 @@ export type {
   ReceptorTarget,
   TransporterTarget,
   EnzymeTarget,
+  AuxiliaryTarget,
   PharmacologicalTarget,
   PDMechanism,
   ReceptorDefinition,

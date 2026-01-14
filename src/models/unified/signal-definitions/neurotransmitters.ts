@@ -7,25 +7,24 @@ import { minuteToPhase, hourToPhase, windowPhase, gaussianPhase, sigmoidPhase } 
 export const dopamine: UnifiedSignalDefinition = {
   key: 'dopamine',
   label: 'Dopamine',
-  unit: '% baseline',
+  unit: 'nM',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const morningDrive = gaussianPhase(p, hourToPhase(10.5), 1.0);
       const afternoonPlateau = gaussianPhase(p, hourToPhase(13.5), 0.8);
       const eveningDrop = gaussianPhase(p, hourToPhase(22), 0.5);
-      return 20.0 + 45.0 * morningDrive + 20.0 * afternoonPlateau - 15.0 * eveningDrop;
+      return 4.0 + 9.0 * morningDrive + 4.0 * afternoonPlateau - 3.0 * eveningDrop;
     },
     tau: 120, // 2 hour baseline dynamics
     production: [
-      // Release from vesicles: proportional to activity * vesicles
       { 
         source: 'constant', 
         coefficient: 0.002, 
         transform: (_, state) => {
           const vesicles = state.auxiliary.dopamineVesicles ?? 0.8;
-          const activity = 1.0; // TODO: link to firing rate
-          return activity * vesicles * 50; 
+          const activity = 1.0; 
+          return activity * vesicles * 10; // Scaled by 0.2 (50 -> 10)
         } 
       }
     ],
@@ -34,16 +33,16 @@ export const dopamine: UnifiedSignalDefinition = {
       { type: 'enzyme-dependent', rate: 0.001, enzyme: 'MAO_B' },
     ],
     couplings: [
-      // Analytical was 0.5. 0.5 / 120 = 0.0042
-      { source: 'cortisol', effect: 'stimulate', strength: 0.0042 },
+      // Analytical was 0.5. 0.5 * (0.2 / 0.3) / 120 = 0.0028
+      { source: 'cortisol', effect: 'stimulate', strength: 0.0028 },
     ]
   },
-  initialValue: 50,
+  initialValue: 10,
   min: 0,
-  max: 200,
+  max: 100,
   display: {
     color: '#f97316',
-    referenceRange: { min: 30, max: 80 }
+    referenceRange: { min: 5, max: 20 }
   }
 };
 
@@ -53,13 +52,13 @@ export const dopamine: UnifiedSignalDefinition = {
 export const serotonin: UnifiedSignalDefinition = {
   key: 'serotonin',
   label: 'Serotonin',
-  unit: '% baseline',
+  unit: 'nM',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const lateMorning = gaussianPhase(p, hourToPhase(11), 1.0);
       const afternoon = gaussianPhase(p, hourToPhase(15), 0.8);
-      return 20.0 + 25.0 * (lateMorning + afternoon);
+      return 2.0 + 2.5 * (lateMorning + afternoon);
     },
     tau: 180,
     production: [
@@ -68,7 +67,7 @@ export const serotonin: UnifiedSignalDefinition = {
         coefficient: 0.002, 
         transform: (_, state) => {
           const precursor = state.auxiliary.serotoninPrecursor ?? 0.7;
-          return precursor * 40;
+          return precursor * 4; // Scaled by 0.1 (40 -> 4)
         } 
       }
     ],
@@ -77,17 +76,18 @@ export const serotonin: UnifiedSignalDefinition = {
       { type: 'enzyme-dependent', rate: 0.001, enzyme: 'MAO_A' },
     ],
     couplings: [
-      { source: 'vip', effect: 'stimulate', strength: 0.0016 },
-      // Analytical was -0.5. 0.5 / 180 = 0.0028
-      { source: 'cortisol', effect: 'inhibit', strength: 0.0028 },
+      // 0.0016 * 0.1 / 1.0 = 0.00016
+      { source: 'vip', effect: 'stimulate', strength: 0.00016 },
+      // Analytical was -0.5. 0.5 * (0.1 / 0.3) / 180 = 0.0009
+      { source: 'cortisol', effect: 'inhibit', strength: 0.0009 },
     ]
   },
-  initialValue: 50,
+  initialValue: 5,
   min: 0,
-  max: 200,
+  max: 50,
   display: {
     color: '#8b5cf6',
-    referenceRange: { min: 30, max: 80 }
+    referenceRange: { min: 1, max: 10 }
   }
 };
 
@@ -125,13 +125,13 @@ export const dopamineVesicles: AuxiliaryDefinition = {
 export const norepi: UnifiedSignalDefinition = {
   key: 'norepi',
   label: 'Norepinephrine',
-  unit: '% baseline',
+  unit: 'pg/mL',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const wakeDrive = sigmoidPhase(p, hourToPhase(8.5), 1.0);
       const stressResponse = gaussianPhase(p, hourToPhase(9), 0.5);
-      return 25.0 + 40.0 * wakeDrive + 15.0 * stressResponse;
+      return 156.0 + 250.0 * wakeDrive + 94.0 * stressResponse; // Baseline ~250 pg/mL
     },
     tau: 90,
     production: [
@@ -140,7 +140,7 @@ export const norepi: UnifiedSignalDefinition = {
         coefficient: 0.002, 
         transform: (_, state) => {
           const vesicles = state.auxiliary.norepinephrineVesicles ?? 0.8;
-          return vesicles * 45;
+          return vesicles * 281; // 45 * 6.25
         } 
       }
     ],
@@ -149,16 +149,18 @@ export const norepi: UnifiedSignalDefinition = {
       { type: 'enzyme-dependent', rate: 0.001, enzyme: 'MAO_A' },
     ],
     couplings: [
-      { source: 'cortisol', effect: 'stimulate', strength: 0.005 },
-      { source: 'orexin', effect: 'stimulate', strength: 0.008 },
+      // 0.005 * 6.25 / 0.3 = 0.104
+      { source: 'cortisol', effect: 'stimulate', strength: 0.104 },
+      // 0.008 * 6.25 / 1.0 = 0.05
+      { source: 'orexin', effect: 'stimulate', strength: 0.05 },
     ]
   },
-  initialValue: 40,
+  initialValue: 250,
   min: 0,
-  max: 200,
+  max: 2000,
   display: {
     color: '#ef4444',
-    referenceRange: { min: 20, max: 70 }
+    referenceRange: { min: 100, max: 400 }
   }
 };
 
@@ -183,35 +185,37 @@ export const norepinephrineVesicles: AuxiliaryDefinition = {
 export const gaba: UnifiedSignalDefinition = {
   key: 'gaba',
   label: 'GABA',
-  unit: '% baseline',
+  unit: 'nM',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const eveningRise = sigmoidPhase(p, hourToPhase(21), 1.0);
-      return 40.0 + 30.0 * eveningRise;
+      return 240.0 + 180.0 * eveningRise; // Baseline ~300 nM
     },
     tau: 120,
     production: [
       { 
         source: 'constant', 
         coefficient: 0.0015, 
-        transform: (_, state) => (state.auxiliary.gabaPool ?? 0.7) * 50
+        transform: (_, state) => (state.auxiliary.gabaPool ?? 0.7) * 300 // 50 * 6
       }
     ],
     clearance: [
       { type: 'enzyme-dependent', rate: 0.002, enzyme: 'GAT1' }
     ],
     couplings: [
-      { source: 'melatonin', effect: 'stimulate', strength: 0.1 },
-      { source: 'glutamate', effect: 'inhibit', strength: 0.05 },
+      // 0.1 * 6 / 1 = 0.6
+      { source: 'melatonin', effect: 'stimulate', strength: 0.6 },
+      // 0.05 * 6 / 0.0833 = 3.6
+      { source: 'glutamate', effect: 'inhibit', strength: 3.6 },
     ]
   },
-  initialValue: 50,
+  initialValue: 300,
   min: 0,
-  max: 150,
+  max: 2000,
   display: {
     color: '#3b82f6',
-    referenceRange: { min: 40, max: 90 }
+    referenceRange: { min: 100, max: 500 }
   }
 };
 
@@ -236,35 +240,37 @@ export const gabaPool: AuxiliaryDefinition = {
 export const glutamate: UnifiedSignalDefinition = {
   key: 'glutamate',
   label: 'Glutamate',
-  unit: '% baseline',
+  unit: 'µM',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const wakeDrive = sigmoidPhase(p, hourToPhase(9), 1.0);
-      return 30.0 + 50.0 * wakeDrive;
+      return 2.5 + 4.16 * wakeDrive; // Baseline ~5 µM
     },
     tau: 60,
     production: [
       { 
         source: 'constant', 
         coefficient: 0.003, 
-        transform: (_, state) => (state.auxiliary.glutamatePool ?? 0.7) * 60
+        transform: (_, state) => (state.auxiliary.glutamatePool ?? 0.7) * 5 // 60 * 0.0833
       }
     ],
     clearance: [
       { type: 'enzyme-dependent', rate: 0.004, enzyme: 'GLT1' }
     ],
     couplings: [
-      { source: 'norepi', effect: 'stimulate', strength: 0.05 },
-      { source: 'gaba', effect: 'inhibit', strength: 0.1 },
+      // 0.05 * 0.0833 / 6.25 = 0.00067
+      { source: 'norepi', effect: 'stimulate', strength: 0.00067 },
+      // 0.1 * 0.0833 / 6 = 0.0014
+      { source: 'gaba', effect: 'inhibit', strength: 0.0014 },
     ]
   },
-  initialValue: 60,
+  initialValue: 5,
   min: 0,
-  max: 200,
+  max: 100,
   display: {
     color: '#facc15',
-    referenceRange: { min: 40, max: 100 }
+    referenceRange: { min: 1, max: 10 }
   }
 };
 
@@ -289,13 +295,13 @@ export const glutamatePool: AuxiliaryDefinition = {
 export const acetylcholine: UnifiedSignalDefinition = {
   key: 'acetylcholine',
   label: 'Acetylcholine',
-  unit: '% baseline',
+  unit: 'nM',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
-      const remDrive = ctx.isAsleep ? 0.8 : 0.4; // Simplified
+      const remDrive = ctx.isAsleep ? 0.8 : 0.4; 
       const wakeFocus = windowPhase(p, hourToPhase(10), hourToPhase(12), 0.5);
-      return 30.0 + 40.0 * wakeFocus + 30.0 * remDrive;
+      return 7.5 + 10.0 * wakeFocus + 7.5 * remDrive; // Baseline ~10 nM
     },
     tau: 45,
     production: [],
@@ -303,15 +309,16 @@ export const acetylcholine: UnifiedSignalDefinition = {
       { type: 'enzyme-dependent', rate: 0.02, enzyme: 'AChE' }
     ],
     couplings: [
-      { source: 'orexin', effect: 'stimulate', strength: 0.15 }
+      // 0.15 * 0.25 / 1.0 = 0.0375
+      { source: 'orexin', effect: 'stimulate', strength: 0.0375 }
     ]
   },
-  initialValue: 40,
+  initialValue: 10,
   min: 0,
-  max: 150,
+  max: 100,
   display: {
     color: '#22c55e',
-    referenceRange: { min: 30, max: 90 }
+    referenceRange: { min: 1, max: 20 }
   }
 };
 
@@ -321,12 +328,12 @@ export const acetylcholine: UnifiedSignalDefinition = {
 export const endocannabinoid: UnifiedSignalDefinition = {
   key: 'endocannabinoid',
   label: 'Endocannabinoid',
-  unit: '% baseline',
+  unit: 'nM',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const morningRise = gaussianPhase(p, hourToPhase(9), 2.0);
-      return 20.0 + 30.0 * morningRise;
+      return 4.0 + 6.0 * morningRise; // Baseline ~5 nM
     },
     tau: 60,
     production: [],
@@ -334,65 +341,43 @@ export const endocannabinoid: UnifiedSignalDefinition = {
       { type: 'linear', rate: 0.02 }
     ],
     couplings: [
+      // 0.05 * 0.2 / 0.2 = 0.05 (both scale by 0.2)
       { source: 'dopamine', effect: 'stimulate', strength: 0.05 },
-      { source: 'cortisol', effect: 'inhibit', strength: 0.05 },
+      // 0.05 * 0.2 / 0.3 = 0.033
+      { source: 'cortisol', effect: 'inhibit', strength: 0.033 },
     ]
   },
-  initialValue: 25,
+  initialValue: 5,
   min: 0,
-  max: 150,
+  max: 100,
   display: {
     color: '#065f46',
-    referenceRange: { min: 10, max: 60 }
+    referenceRange: { min: 1, max: 10 }
   }
 };
 
 export const serotoninPrecursor: AuxiliaryDefinition = {
-
   key: 'serotoninPrecursor',
-
   dynamics: {
-
     setpoint: (ctx) => 0.7,
-
     tau: 480, // Slow replenishment
-
     production: [
-
       // Tryptophan from diet: simplified meal effect
-
       {
-
         source: 'constant',
-
         coefficient: 1.0,
-
         transform: (_, state, ctx) => {
-
           // In the unified model, we can check for recent food interventions
-
           // But for now, let's use a simplified constant drive if insulin is high
-
           // (representing the insulin-mediated transport of tryptophan)
-
           const insulin = state.signals.insulin;
-
           return insulin > 15 ? 0.0005 * (insulin - 15) : 0;
-
         }
-
       }
-
     ],
-
     clearance: [
-
       { type: 'linear', rate: 0.001 }
-
     ]
-
   },
-
   initialValue: 0.7
-
 };

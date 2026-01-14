@@ -1,6 +1,8 @@
 // types/neurostate.ts
 
 import type { Physiology, Subject } from '@/models/subject';
+import type { PharmacologicalTarget, PDMechanism } from '@/models/pharmacology/types';
+import type { PhysiologicalUnit } from './units';
 export type { Physiology, Subject };
 
 /* ===========================
@@ -299,11 +301,12 @@ export interface PharmacologyDef {
     volume?: VolumeSpec;
   };
   pd?: Array<{
-    target: string; // e.g. "Adenosine_A2a"
-    mechanism: "agonist" | "antagonist" | "PAM" | "NAM";
+    target: PharmacologicalTarget; // e.g. "Adenosine_A2a", "DAT", or direct signal like "dopamine"
+    mechanism: PDMechanism;
     Ki?: number; // nM
     EC50?: number; // nM
     effectGain?: number; // Mapping to engine units (e.g. 50.0)
+    unit?: PhysiologicalUnit; // Explicit unit for validation and clarity
     /** Efficacy parameter (Black & Leff operational model)
      * - Full agonist: tau = 10 (default)
      * - Partial agonist: tau = 1-3

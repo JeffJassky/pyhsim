@@ -72,8 +72,8 @@
           >
             <div class="series__overlay series__overlay--value">
               <template v-if="!isLocked(spec.key)">
-                {{ latestValue(spec.key).toFixed(2) }}
-                <span class="unit">{{ spec.unit }}</span>
+                {{ latestValue(spec.key).toFixed(latestValue(spec.key) < 1 ? 2 : 1) }}
+                <span class="unit">{{ getUnit(spec.key) }}</span>
               </template>
               <span v-else class="premium-tag">
                 <span class="premium-tag__icon">🔒</span>
@@ -175,6 +175,7 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import type { ChartSeriesSpec, ResponseSpec, Signal } from '@/types';
 import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/colors';
 import { getAllUnifiedDefinitions } from '@/models/unified';
+import { getDisplayValue, SIGNAL_UNITS } from '@/models/unified/signal-units';
 import Sortable from 'sortablejs';
 import { useProfilesStore } from '@/stores/profiles';
 
@@ -238,7 +239,13 @@ const latestValue = (key: string) => {
   if (!data.length) return 0;
   const step = getStep();
   const idx = Math.max(0, Math.floor(props.playheadMin / step));
-  return data[Math.min(idx, data.length - 1)] ?? 0;
+  const val = data[Math.min(idx, data.length - 1)] ?? 0;
+  
+  return getDisplayValue(key as Signal, val).value;
+};
+
+const getUnit = (key: string) => {
+  return SIGNAL_UNITS[key as Signal]?.unit ?? 'index';
 };
 
 const normalize = (val: number, spec: ChartSeriesSpec) => {

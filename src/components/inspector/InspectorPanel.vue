@@ -48,10 +48,15 @@
         :key="index"
         class="effect"
       >
-        <span class="effect-signal">{{ effect.target }}</span>
+        <span class="effect-signal">{{ SIGNAL_UNITS[effect.target as Signal]?.description || effect.target }}</span>
         <p class="effect-desc">
           {{ effect.mechanism }}
-          {{ effect.effectGain ? `(Gain: ${effect.effectGain})` : '' }}
+          <template v-if="effect.effectGain">
+            <span class="gain-value">
+              ({{ effect.effectGain > 0 ? '+' : '' }}{{ (effect.effectGain * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1) }} 
+              {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }})
+            </span>
+          </template>
         </p>
       </div>
     </div>
@@ -61,9 +66,10 @@
 
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
-import type { InterventionDef, ParamValues, TimelineItem } from '@/types';
+import type { InterventionDef, ParamValues, TimelineItem, Signal } from '@/types';
 import ParamEditor from './ParamEditor.vue';
 import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/models/constants/nutrients';
+import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@/models/unified/signal-units';
 
 const props = defineProps<{ item?: TimelineItem; def?: InterventionDef; readonly?: boolean }>();
 const emit = defineEmits<{ change: [TimelineItem] }>();

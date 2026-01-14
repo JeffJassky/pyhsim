@@ -51,27 +51,31 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
           target: "Adenosine_A2a",
           mechanism: "antagonist",
           Ki: 0.5,
-          effectGain: 20.0,
+          effectGain: 4.0, // 20 * 0.2
+          unit: "nM",
         },
         {
           target: "Adenosine_A1",
           mechanism: "antagonist",
           Ki: 1.0,
-          effectGain: 12.0,
+          effectGain: 2.4, // 12 * 0.2
+          unit: "nM",
         },
         {
           target: "cortisol",
           mechanism: "agonist",
           EC50: 1.0,
           effectGain: 8.0,
+          unit: "µg/dL",
         },
         {
           target: "adrenaline",
           mechanism: "agonist",
           EC50: 1.5,
           effectGain: 12.0,
+          unit: "pg/mL",
         },
-        { target: "norepi", mechanism: "agonist", EC50: 1.5, effectGain: 15.0 },
+        { target: "norepi", mechanism: "agonist", EC50: 1.5, effectGain: 93.75, unit: "pg/mL" }, // 15 * 6.25
       ],
     },
     group: "Stimulants",
@@ -106,21 +110,23 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
       },
       pd: [
         // MT1/MT2 targets drive the 'melatonin' signal in neurostate
-        { target: "MT1", mechanism: "agonist", Ki: 0.08, effectGain: 25.0 },
-        { target: "MT2", mechanism: "agonist", Ki: 0.23, effectGain: 20.0 },
+        { target: "MT1", mechanism: "agonist", Ki: 0.08, effectGain: 25.0, unit: "pg/mL" },
+        { target: "MT2", mechanism: "agonist", Ki: 0.23, effectGain: 20.0, unit: "pg/mL" },
         {
           target: "orexin",
           mechanism: "antagonist",
           EC50: 50,
           effectGain: 10.0,
+          unit: "pg/mL",
         },
         {
           target: "cortisol",
           mechanism: "antagonist",
           EC50: 100,
           effectGain: 5.0,
+          unit: "µg/dL",
         },
-        { target: "GABA_A", mechanism: "PAM", EC50: 200, effectGain: 8.0 },
+        { target: "GABA_A", mechanism: "PAM", EC50: 200, effectGain: 48.0, unit: "nM" }, // 8 * 6
       ],
     },
     group: "Supplements",
@@ -157,30 +163,34 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         volume: { kind: "tbw", fraction: 0.5 },
       },
       pd: [
-        { target: "GABA_A", mechanism: "PAM", EC50: 20.0, effectGain: 12.0 },
+        { target: "GABA_A", mechanism: "PAM", EC50: 20.0, effectGain: 72.0, unit: "nM" }, // 12 * 6
         {
           target: "NMDA",
           mechanism: "antagonist",
           Ki: 50.0,
-          effectGain: 5.0,
+          effectGain: 0.42, // 5 * 0.0833
+          unit: "µM",
         },
         {
           target: "serotonin",
           mechanism: "agonist",
           EC50: 30.0,
-          effectGain: 8.0,
+          effectGain: 0.8, // 8 * 0.1
+          unit: "nM",
         },
         {
           target: "dopamine",
           mechanism: "agonist",
           EC50: 35.0,
-          effectGain: 5.0,
+          effectGain: 1.0, // 5 * 0.2
+          unit: "nM",
         },
         {
           target: "cortisol",
           mechanism: "antagonist",
           EC50: 25.0,
           effectGain: 6.0,
+          unit: "µg/dL",
         },
       ],
     },
@@ -215,8 +225,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
       },
       pd: [
         // Precursor support for dopamine synthesis
-        { target: "dopamine", mechanism: "agonist", effectGain: 8.0, EC50: 25.0 },
-        { target: "norepi", mechanism: "agonist", effectGain: 6.0, EC50: 25.0 }
+        { target: "dopamine", mechanism: "agonist", effectGain: 1.6, EC50: 25.0, unit: "nM" }, // 8 * 0.2
+        { target: "norepi", mechanism: "agonist", effectGain: 37.5, EC50: 25.0, unit: "pg/mL" } // 6 * 6.25
       ],
     },
     group: "Supplements",
@@ -250,7 +260,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
       },
       pd: [
         // Direct L-Dopa bypasses rate-limiting step
-        { target: "dopamine", mechanism: "agonist", effectGain: 18.0, EC50: 10.0 }
+        { target: "dopamine", mechanism: "agonist", effectGain: 3.6, EC50: 10.0, unit: "nM" } // 18 * 0.2
       ],
     },
     group: "Supplements",
@@ -284,8 +294,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
       },
       pd: [
         // Cofactor support for various neurotransmitters
-        { target: "dopamine", mechanism: "agonist", effectGain: 6.0 },
-        { target: "serotonin", mechanism: "agonist", effectGain: 6.0 }
+        { target: "dopamine", mechanism: "agonist", effectGain: 1.2, unit: "nM" }, // 6 * 0.2
+        { target: "serotonin", mechanism: "agonist", effectGain: 0.6, unit: "nM" } // 6 * 0.1
       ],
     },
     group: "Supplements",

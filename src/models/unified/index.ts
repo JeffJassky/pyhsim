@@ -2,10 +2,14 @@ import { SIGNALS_ALL, type Signal } from '@/types/neurostate';
 import type { UnifiedSignalDefinition, AuxiliaryDefinition, DynamicsContext } from '@/types/unified';
 import * as metabolic from './signal-definitions/metabolic';
 import * as hormones from './signal-definitions/hormones';
-import * as neuro from './signal-definitions/neurotransmitters';
+import { 
+  dopamine, serotonin, norepi, gaba, glutamate, acetylcholine, endocannabinoid,
+  dopamineVesicles, norepinephrineVesicles, serotoninPrecursor, gabaPool, glutamatePool 
+} from './signal-definitions/neurotransmitters';
 import * as circadian from './signal-definitions/circadian';
 import * as derived from './signal-definitions/derived';
 import * as biomarkers from './signal-definitions/biomarkers';
+import { getAllTransporterKeys, getAllEnzymeKeys, ENZYMES } from '@/models/pharmacology';
 
 export const SIGNAL_DEFINITIONS: Partial<Record<Signal, UnifiedSignalDefinition>> = {
   // Metabolic
@@ -32,13 +36,13 @@ export const SIGNAL_DEFINITIONS: Partial<Record<Signal, UnifiedSignalDefinition>
   glp1: hormones.glp1,
 
   // Neuro
-  dopamine: neuro.dopamine,
-  serotonin: neuro.serotonin,
-  norepi: neuro.norepi,
-  gaba: neuro.gaba,
-  glutamate: neuro.glutamate,
-  acetylcholine: neuro.acetylcholine,
-  endocannabinoid: neuro.endocannabinoid,
+  dopamine,
+  serotonin,
+  norepi,
+  gaba,
+  glutamate,
+  acetylcholine,
+  endocannabinoid,
 
   // Circadian
   melatonin: circadian.melatonin,
@@ -94,11 +98,11 @@ export const AUXILIARY_DEFINITIONS: Record<string, AuxiliaryDefinition> = {
   ghReserve: hormones.ghReserve,
 
   // Neuro
-  dopamineVesicles: neuro.dopamineVesicles,
-  norepinephrineVesicles: neuro.norepinephrineVesicles,
-  serotoninPrecursor: neuro.serotoninPrecursor,
-  gabaPool: neuro.gabaPool,
-  glutamatePool: neuro.glutamatePool,
+  dopamineVesicles: dopamineVesicles,
+  norepinephrineVesicles: norepinephrineVesicles,
+  serotoninPrecursor: serotoninPrecursor,
+  gabaPool: gabaPool,
+  glutamatePool: glutamatePool,
 
   // Circadian
   adenosinePressure: circadian.adenosinePressure,
@@ -106,17 +110,13 @@ export const AUXILIARY_DEFINITIONS: Record<string, AuxiliaryDefinition> = {
   // Derived
   bdnfExpression: derived.bdnfExpression,
 
-  // Enzymes & Transporters
-  DAT: createStaticAux('DAT'),
-  NET: createStaticAux('NET'),
-  SERT: createStaticAux('SERT'),
-  GAT1: createStaticAux('GAT1'),
-  GLT1: createStaticAux('GLT1'),
-  MAO_A: createStaticAux('MAO_A'),
-  MAO_B: createStaticAux('MAO_B'),
-  COMT: createStaticAux('COMT'),
-  AChE: createStaticAux('AChE'),
-  DAO: createStaticAux('DAO'),
+  // Enzymes & Transporters (generated from pharmacology registry)
+  ...Object.fromEntries(
+    getAllTransporterKeys().map(key => [key, createStaticAux(key)])
+  ),
+  ...Object.fromEntries(
+    getAllEnzymeKeys().map(key => [key, createStaticAux(key, ENZYMES[key].baselineActivity ?? 1.0)])
+  ),
 };
 
 /**

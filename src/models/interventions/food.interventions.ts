@@ -69,34 +69,39 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
           mechanism: "agonist",
           effectGain: 100.0,
           EC50: 1000,
+          unit: "mg/dL",
         },
-        { target: "insulin", mechanism: "agonist", effectGain: 15.0, tau: 45 },
+        { target: "insulin", mechanism: "agonist", effectGain: 2.4, unit: "µIU/mL", tau: 45 }, // 15 * 0.16
         {
           target: "ghrelin",
           mechanism: "antagonist",
           effectGain: 200.0,
+          unit: "pg/mL",
           tau: 30,
         },
-        { target: "leptin", mechanism: "agonist", effectGain: 5.0, tau: 120 },
-        { target: "glp1", mechanism: "agonist", effectGain: 10.0, tau: 45 },
-        { target: "dopamine", mechanism: "agonist", effectGain: 15.0, tau: 20 },
+        { target: "leptin", mechanism: "agonist", effectGain: 5.0, unit: "ng/mL", tau: 120 },
+        { target: "glp1", mechanism: "agonist", effectGain: 10.0, unit: "pmol/L", tau: 45 },
+        { target: "dopamine", mechanism: "agonist", effectGain: 3.0, unit: "nM", tau: 20 }, // 15 * 0.2
         {
           target: "serotonin",
           mechanism: "agonist",
-          effectGain: 10.0,
+          effectGain: 1.0, // 10 * 0.1
+          unit: "nM",
           tau: 30,
         },
         // Added from old kernels
         {
           target: "gaba",
           mechanism: "agonist",
-          effectGain: 15.0,
+          effectGain: 90.0, // 15 * 6
+          unit: "nM",
           tau: 30, // Gut fermentation / satiety calm
         },
         {
           target: "mtor",
           mechanism: "agonist",
           effectGain: 30.0,
+          unit: "index",
           tau: 60, // Protein sensing
         }
       ],

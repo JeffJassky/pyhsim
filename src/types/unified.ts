@@ -1,4 +1,5 @@
 import type { Signal, Subject, Physiology } from './neurostate';
+import type { PhysiologicalUnit } from './units';
 
 export interface SolverDebugOptions {
   enableBaselines?: boolean;
@@ -64,7 +65,7 @@ export interface SignalDynamics {
 export interface UnifiedSignalDefinition {
   key: Signal;
   label: string;
-  unit: string;
+  unit: PhysiologicalUnit;
   dynamics: SignalDynamics;
   initialValue: number | ((ctx: { subject: Subject; physiology: Physiology; isAsleep: boolean }) => number);
   min?: number;

@@ -62,8 +62,8 @@ export const adrenaline: UnifiedSignalDefinition = {
     couplings: [
       // Analytical was 2.0. 2.0 / 5 = 0.4
       { source: 'orexin', effect: 'stimulate', strength: 0.4 },
-      // Analytical was 1.0. 1.0 / 5 = 0.2
-      { source: 'dopamine', effect: 'stimulate', strength: 0.2 },
+      // 0.2 / 0.2 = 1.0
+      { source: 'dopamine', effect: 'stimulate', strength: 1.0 },
       // Analytical was -1.5. 1.5 / 5 = 0.3
       { source: 'gaba', effect: 'inhibit', strength: 0.3 },
     ]
@@ -217,7 +217,8 @@ export const oxytocin: UnifiedSignalDefinition = {
     ],
     couplings: [
       { source: 'endocannabinoid', effect: 'stimulate', strength: 0.002 }, // 0.04 / 20 = 0.002
-      { source: 'serotonin', effect: 'stimulate', strength: 0.003 }, // 0.06 / 20 = 0.003
+      // 0.003 / 0.1 = 0.03
+      { source: 'serotonin', effect: 'stimulate', strength: 0.03 },
     ]
   },
   initialValue: 5,
@@ -248,7 +249,8 @@ export const prolactin: UnifiedSignalDefinition = {
     ],
     couplings: [
       { source: 'gaba', effect: 'stimulate', strength: 0.0011 }, // 0.05 / 45 = 0.0011
-      { source: 'dopamine', effect: 'inhibit', strength: 0.0022 }, // -0.1 / 45 = 0.0022
+      // 0.0022 / 0.2 = 0.011
+      { source: 'dopamine', effect: 'inhibit', strength: 0.011 },
     ]
   },
   initialValue: 10,
@@ -292,7 +294,7 @@ export const vasopressin: UnifiedSignalDefinition = {
 export const vip: UnifiedSignalDefinition = {
   key: 'vip',
   label: 'VIP',
-  unit: 'a.u.',
+  unit: 'pg/mL',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);

@@ -52,7 +52,8 @@ export const orexin: UnifiedSignalDefinition = {
     couplings: [
       { source: 'melatonin', effect: 'inhibit', strength: 0.4 },
       { source: 'ghrelin', effect: 'stimulate', strength: 0.05 },
-      { source: 'dopamine', effect: 'stimulate', strength: 0.3 },
+      // 0.3 / 0.2 = 1.5
+      { source: 'dopamine', effect: 'stimulate', strength: 1.5 },
     ]
   },
   initialValue: 250,
@@ -70,14 +71,14 @@ export const orexin: UnifiedSignalDefinition = {
 export const histamine: UnifiedSignalDefinition = {
   key: 'histamine',
   label: 'Histamine',
-  unit: '% baseline',
+  unit: 'nM',
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const wake = sigmoidPhase(p, hourToPhase(7.5), 1.0);
       const day = gaussianPhase(p, hourToPhase(13), 0.8);
       const nightFall = sigmoidPhase(p, hourToPhase(22), 1.0);
-      return 15.0 + 45.0 * wake + 35.0 * day - 30.0 * nightFall;
+      return 7.5 + 22.5 * wake + 17.5 * day - 15.0 * nightFall; // Baseline ~20 nM
     },
     tau: 60,
     production: [],
@@ -85,16 +86,18 @@ export const histamine: UnifiedSignalDefinition = {
       { type: 'enzyme-dependent', rate: 0.02, enzyme: 'DAO' }
     ],
     couplings: [
-      { source: 'melatonin', effect: 'inhibit', strength: 0.3 },
-      { source: 'vip', effect: 'stimulate', strength: 0.2 },
+      // 0.3 * 0.5 = 0.15
+      { source: 'melatonin', effect: 'inhibit', strength: 0.15 },
+      // 0.2 * 0.5 = 0.1
+      { source: 'vip', effect: 'stimulate', strength: 0.1 },
     ]
   },
-  initialValue: 20,
+  initialValue: 10,
   min: 0,
-  max: 150,
+  max: 500,
   display: {
     color: '#ec4899',
-    referenceRange: { min: 30, max: 100 }
+    referenceRange: { min: 5, max: 50 }
   }
 };
 

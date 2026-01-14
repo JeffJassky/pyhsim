@@ -65,13 +65,30 @@ export type EnzymeTarget =
   | 'AChE'   // Acetylcholinesterase
   | 'DAO';   // Diamine oxidase (histamine)
 
+// === Auxiliary Target Types ===
+
+/** Auxiliary variables that can be targeted by interventions */
+export type AuxiliaryTarget =
+  | 'adenosinePressure'
+  | 'dopamineVesicles'
+  | 'norepinephrineVesicles'
+  | 'serotoninPrecursor'
+  | 'gabaPool'
+  | 'glutamatePool'
+  | 'hepaticGlycogen'
+  | 'insulinAction'
+  | 'cortisolIntegral'
+  | 'crhPool'
+  | 'ghReserve'
+  | 'bdnfExpression';
+
 // === Combined Target Type ===
 
 /**
  * All valid pharmacological targets.
- * Can be a receptor, transporter, enzyme, or direct signal.
+ * Can be a receptor, transporter, enzyme, auxiliary, or direct signal.
  */
-export type PharmacologicalTarget = ReceptorTarget | TransporterTarget | EnzymeTarget | Signal;
+export type PharmacologicalTarget = ReceptorTarget | TransporterTarget | EnzymeTarget | AuxiliaryTarget | Signal;
 
 /** Mechanism of action */
 export type PDMechanism = 'agonist' | 'antagonist' | 'PAM' | 'NAM';

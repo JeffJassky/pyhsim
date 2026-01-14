@@ -3,6 +3,8 @@ import { computed } from 'vue';
 import { useEngineStore } from '@/stores/engine';
 import { usePlayhead } from '@/composables/usePlayhead';
 import Panel from '@/components/core/Panel.vue';
+import { getDisplayValue, SIGNAL_UNITS } from '@/models/unified/signal-units';
+import type { Signal } from '@/types';
 
 const engineStore = useEngineStore();
 const { minute } = usePlayhead();
@@ -159,20 +161,26 @@ const hasData = computed(() => !!series.value && !!auxSeries.value);
 
 // Helper to get metric value and path
 const getMetricData = (metric: MetricDef) => {
-  if (!series.value || !auxSeries.value) return { value: 0, normalizedValue: 0, path: '', color: 'var(--color-warning)' };
+  if (!series.value || !auxSeries.value) return { value: 0, normalizedValue: 0, path: '', color: 'var(--color-warning)', unit: '' };
   
   const data = metric.source === 'signal' 
     ? (series.value as any)[metric.key] 
     : (auxSeries.value as any)[metric.key];
     
-  const value = getValueAtPlayhead(data);
-  const yMin = metric.yMin ?? 0;
-  const yMax = metric.yMax ?? 1;
-  const normalizedValue = (value - yMin) / (yMax - yMin);
+  const rawValue = getValueAtPlayhead(data);
+  const display = metric.source === 'signal' 
+    ? getDisplayValue(metric.key as Signal, rawValue)
+    : { value: rawValue, unit: '%' };
+
+  const yMin = metric.yMin ?? (metric.source === 'signal' ? SIGNAL_UNITS[metric.key as Signal]?.min : 0) ?? 0;
+  const yMax = metric.yMax ?? (metric.source === 'signal' ? SIGNAL_UNITS[metric.key as Signal]?.max : 1) ?? 1;
+  
+  const normalizedValue = (display.value - yMin) / (yMax - yMin);
   return {
-    value,
+    value: display.value,
+    unit: display.unit,
     normalizedValue: Math.max(0, Math.min(1, normalizedValue)),
-    path: buildSparklinePath(data, yMin, yMax),
+    path: buildSparklinePath(data, yMin / (display.value / rawValue || 1), yMax / (display.value / rawValue || 1)), // Path still uses raw data scale
     color: getColor(normalizedValue, metric.higherIsBetter),
   };
 };
@@ -193,7 +201,8 @@ const getMetricData = (metric: MetricDef) => {
             <div class="metric-header">
               <span class="metric-label">{{ metric.label }}</span>
               <span class="metric-value">
-                {{ metric.yMax ? Math.round(getMetricData(metric).value) : pct(getMetricData(metric).value) }}{{ metric.yMax ? '' : '%' }}
+                {{ getMetricData(metric).unit === '%' ? Math.round(getMetricData(metric).value * 100) : getMetricData(metric).value.toFixed(1) }}
+                <span class="unit-label">{{ getMetricData(metric).unit }}</span>
               </span>
             </div>
             <div class="sparkline-container">
@@ -235,7 +244,10 @@ const getMetricData = (metric: MetricDef) => {
           <div v-for="metric in sleepMetrics" :key="metric.key" class="metric">
             <div class="metric-header">
               <span class="metric-label">{{ metric.label }}</span>
-              <span class="metric-value">{{ pct(getMetricData(metric).value) }}%</span>
+              <span class="metric-value">
+                {{ getMetricData(metric).unit === '%' ? Math.round(getMetricData(metric).value * 100) : getMetricData(metric).value.toFixed(1) }}
+                <span class="unit-label">{{ getMetricData(metric).unit }}</span>
+              </span>
             </div>
             <div class="sparkline-container">
               <svg class="sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
@@ -277,7 +289,8 @@ const getMetricData = (metric: MetricDef) => {
             <div class="metric-header">
               <span class="metric-label">{{ metric.label }}</span>
               <span class="metric-value">
-                {{ metric.yMax && metric.yMax > 1 ? Math.round(getMetricData(metric).value) : pct(getMetricData(metric).value) }}{{ metric.yMax && metric.yMax > 1 ? '' : '%' }}
+                {{ getMetricData(metric).unit === '%' ? Math.round(getMetricData(metric).value * 100) : getMetricData(metric).value.toFixed(1) }}
+                <span class="unit-label">{{ getMetricData(metric).unit }}</span>
               </span>
             </div>
             <div class="sparkline-container">
@@ -319,7 +332,10 @@ const getMetricData = (metric: MetricDef) => {
           <div v-for="metric in neurotransmitterMetrics" :key="metric.key" class="metric metric--compact">
             <div class="metric-header">
               <span class="metric-label">{{ metric.label }}</span>
-              <span class="metric-value">{{ pct(getMetricData(metric).value) }}%</span>
+              <span class="metric-value">
+                {{ getMetricData(metric).unit === '%' ? Math.round(getMetricData(metric).value * 100) : getMetricData(metric).value.toFixed(1) }}
+                <span class="unit-label">{{ getMetricData(metric).unit }}</span>
+              </span>
             </div>
             <div class="sparkline-container sparkline-container--small">
               <svg class="sparkline" viewBox="0 0 100 20" preserveAspectRatio="none">
@@ -358,7 +374,10 @@ const getMetricData = (metric: MetricDef) => {
           <div v-for="metric in growthMetrics" :key="metric.key" class="metric">
             <div class="metric-header">
               <span class="metric-label">{{ metric.label }}</span>
-              <span class="metric-value">{{ pct(getMetricData(metric).value) }}%</span>
+              <span class="metric-value">
+                {{ getMetricData(metric).unit === '%' ? Math.round(getMetricData(metric).value * 100) : getMetricData(metric).value.toFixed(1) }}
+                <span class="unit-label">{{ getMetricData(metric).unit }}</span>
+              </span>
             </div>
             <div class="sparkline-container">
               <svg class="sparkline" viewBox="0 0 100 24" preserveAspectRatio="none">
@@ -469,6 +488,15 @@ const getMetricData = (metric: MetricDef) => {
   font-size: 0.85rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.unit-label {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  font-weight: 400;
 }
 
 .sparkline-container {

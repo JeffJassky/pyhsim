@@ -43,6 +43,10 @@ export function createInitialState(
 
     for (const key of Object.keys(auxDefs)) {
       const def = auxDefs[key];
+      if (!def) {
+        console.warn(`[createInitialState] Auxiliary definition for '${key}' is undefined.`);
+        continue;
+      }
       state.auxiliary[key] = typeof def.initialValue === 'function'
         ? def.initialValue({ subject: ctx.subject, physiology: ctx.physiology })
         : def.initialValue;
