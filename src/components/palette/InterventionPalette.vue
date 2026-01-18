@@ -6,7 +6,6 @@
         v-for="def in group.defs"
         :key="def.key"
         class="pill"
-        :style="{ '--pill-color': def.color }"
         draggable="true"
         @dragstart="() => emit('dragstart', def)"
         @click="() => emit('select', def)"
@@ -68,8 +67,8 @@ const groupedDefs = computed(() => {
   gap: 0.5rem;
   border-radius: 12px;
   padding: 0.75rem;
-  background: color-mix(in srgb, var(--pill-color, #ffffff) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--pill-color, #ffffff) 40%, transparent);
+  background: color-mix(in srgb, #ffffff 10%, transparent);
+  border: 1px solid color-mix(in srgb, #ffffff 40%, transparent);
   cursor: pointer;
 }
 

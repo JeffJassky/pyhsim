@@ -1,14 +1,24 @@
-import type { UnifiedSignalDefinition, AuxiliaryDefinition } from '@/types/unified';
-import { minuteToPhase, hourToPhase, windowPhase, gaussianPhase, sigmoidPhase } from '../utils';
+import type {
+  UnifiedSignalDefinition,
+  AuxiliaryDefinition,
+} from "@/types/unified";
+import {
+  minuteToPhase,
+  hourToPhase,
+  windowPhase,
+  gaussianPhase,
+  sigmoidPhase,
+} from "../utils";
 
 /**
  * MELATONIN
  */
 export const melatonin: UnifiedSignalDefinition = {
-  key: 'melatonin',
-  label: 'Melatonin',
-  unit: 'pg/mL',
-  description: 'Plasma melatonin concentration.',
+  key: "melatonin",
+  label: "Melatonin",
+  unit: "pg/mL",
+  description: "Plasma melatonin concentration.",
+  idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -16,68 +26,68 @@ export const melatonin: UnifiedSignalDefinition = {
     },
     tau: 30, // Fast rise and fall
     production: [],
-    clearance: [
-      { type: 'linear', rate: 0.03 }
-    ],
+    clearance: [{ type: "linear", rate: 0.03 }],
     couplings: [
       // 2.0 * 10 = 20.0 (strong inhibition from high dopamine/caffeine)
-      { source: 'dopamine', effect: 'inhibit', strength: 2.0 }
-    ]
+      { source: "dopamine", effect: "inhibit", strength: 2.0 },
+    ],
   },
   initialValue: 5,
   min: 0,
   max: 150,
   display: {
-    color: '#1e3a8a',
-    referenceRange: { min: 0, max: 100 }
-  }
+    referenceRange: { min: 0, max: 100 },
+  },
 };
 
 /**
  * OREXIN
  */
 export const orexin: UnifiedSignalDefinition = {
-  key: 'orexin',
-  label: 'Orexin',
-  unit: 'pg/mL',
-  description: 'CSF orexin-A concentration proxy.',
+  key: "orexin",
+  label: "Orexin",
+  unit: "pg/mL",
+  description: "CSF orexin-A concentration proxy.",
+  idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
       const wakeDrive = sigmoidPhase(p, hourToPhase(7.8), 1.0);
-      const feedingCue = gaussianPhase(p, hourToPhase(12.5), 0.5) + 0.6 * gaussianPhase(p, hourToPhase(18.5), 0.8);
+      const feedingCue =
+        gaussianPhase(p, hourToPhase(12.5), 0.5) +
+        0.6 * gaussianPhase(p, hourToPhase(18.5), 0.8);
       const sleepPressure = sigmoidPhase(p, hourToPhase(22.5), 1.0);
-      return 250.0 + 150.0 * wakeDrive + 80.0 * feedingCue - 100.0 * sleepPressure;
+      return (
+        250.0 + 150.0 * wakeDrive + 80.0 * feedingCue - 100.0 * sleepPressure
+      );
     },
     tau: 90,
     production: [],
-    clearance: [
-      { type: 'linear', rate: 0.01 }
-    ],
+    clearance: [{ type: "linear", rate: 0.01 }],
     couplings: [
-      { source: 'melatonin', effect: 'inhibit', strength: 0.4 },
-      { source: 'ghrelin', effect: 'stimulate', strength: 0.05 },
+      { source: "melatonin", effect: "inhibit", strength: 0.4 },
+      { source: "ghrelin", effect: "stimulate", strength: 0.05 },
       // 0.3 / 0.2 = 1.5
-      { source: 'dopamine', effect: 'stimulate', strength: 1.5 },
-    ]
+      { source: "dopamine", effect: "stimulate", strength: 1.5 },
+    ],
   },
   initialValue: 250,
   min: 100,
   max: 600,
   display: {
-    color: '#ef4444',
-    referenceRange: { min: 200, max: 600 }
-  }
+    referenceRange: { min: 200, max: 600 },
+  },
 };
 
 /**
  * HISTAMINE
  */
 export const histamine: UnifiedSignalDefinition = {
-  key: 'histamine',
-  label: 'Histamine',
-  unit: 'nM',
-  description: 'Extracellular histamine concentration.',
+  key: "histamine",
+  label: "Histamine",
+  unit: "nM",
+  description: "Extracellular histamine concentration.",
+  idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
       const p = minuteToPhase(ctx.circadianMinuteOfDay);
@@ -88,54 +98,51 @@ export const histamine: UnifiedSignalDefinition = {
     },
     tau: 60,
     production: [],
-    clearance: [
-      { type: 'enzyme-dependent', rate: 0.02, enzyme: 'DAO' }
-    ],
+    clearance: [{ type: "enzyme-dependent", rate: 0.02, enzyme: "DAO" }],
     couplings: [
       // 0.3 * 0.5 = 0.15
-      { source: 'melatonin', effect: 'inhibit', strength: 0.15 },
+      { source: "melatonin", effect: "inhibit", strength: 0.15 },
       // 0.2 * 0.5 = 0.1
-      { source: 'vip', effect: 'stimulate', strength: 0.1 },
-    ]
+      { source: "vip", effect: "stimulate", strength: 0.1 },
+    ],
   },
   initialValue: 10,
   min: 0,
   max: 500,
   display: {
-    color: '#ec4899',
-    referenceRange: { min: 5, max: 50 }
-  }
+    referenceRange: { min: 5, max: 50 },
+  },
 };
 
 /**
  * ADENOSINE PRESSURE (Process S)
  */
 export const adenosinePressure: AuxiliaryDefinition = {
-  key: 'adenosinePressure',
+  key: "adenosinePressure",
   dynamics: {
-    setpoint: (ctx) => ctx.isAsleep ? 0 : 1.0,
+    setpoint: (ctx) => (ctx.isAsleep ? 0 : 1.0),
     tau: 1440, // Not used directly in Process S model
     production: [
-      { 
-        source: 'constant', 
+      {
+        source: "constant",
         coefficient: 0.003, // sleepPressureBuild
         transform: (_, state, ctx) => {
           if (ctx.isAsleep) return 0;
           const S = state.auxiliary.adenosinePressure ?? 0.2;
           // Caffeine block could be added here
-          return (1 - S);
-        }
-      }
+          return 1 - S;
+        },
+      },
     ],
     clearance: [
-      { 
-        type: 'linear', 
+      {
+        type: "linear",
         rate: 0.008, // sleepPressureDecay
         transform: (_, state, ctx) => {
           return ctx.isAsleep ? 1.0 : 0;
-        }
-      }
-    ]
+        },
+      },
+    ],
   },
-  initialValue: 0.2
+  initialValue: 0.2,
 };

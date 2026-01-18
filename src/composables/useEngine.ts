@@ -3,13 +3,13 @@ import { watch } from 'vue';
 import { useEngineStore } from '@/stores/engine';
 import { useTimelineStore } from '@/stores/timeline';
 import { useLibraryStore } from '@/stores/library';
-import { useProfilesStore } from '@/stores/profiles';
+import { useUserStore } from '@/stores/user';
 
 export const useEngine = () => {
   const engine = useEngineStore();
   const timeline = useTimelineStore();
   const library = useLibraryStore();
-  const profiles = useProfilesStore();
+  const user = useUserStore();
 
   const compute = () => engine.recompute({ items: timeline.items, defs: library.defs });
 
@@ -19,14 +19,14 @@ export const useEngine = () => {
     { deep: true, immediate: true }
   );
   watch(
-    () => [profiles.profiles, profiles.subject],
+    () => [user.conditions, user.subject],
     () => compute(),
     { deep: true }
   );
 
   return {
     ...storeToRefs(engine),
-    profiles: storeToRefs(profiles),
+    user: storeToRefs(user),
     compute,
   };
 };

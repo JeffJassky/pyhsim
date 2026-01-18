@@ -1,8 +1,11 @@
 // types/neurostate.ts
 
-import type { Physiology, Subject } from '@/models/domain/subject';
-import type { PharmacologicalTarget, PDMechanism } from '@/models/physiology/pharmacology/types';
-import type { PhysiologicalUnit } from './units';
+import type { Physiology, Subject } from "@/models/domain/subject";
+import type {
+  PharmacologicalTarget,
+  PDMechanism,
+} from "@/models/physiology/pharmacology/types";
+import type { PhysiologicalUnit } from "./units";
 export type { Physiology, Subject };
 
 /* ===========================
@@ -147,7 +150,10 @@ export interface SignalSeries {
    Baselines
 =========================== */
 
-export type BaselineFn = (minuteOfDay: Minute, ctx: BaselineContext) => SignalValue;
+export type BaselineFn = (
+  minuteOfDay: Minute,
+  ctx: BaselineContext,
+) => SignalValue;
 
 export type BaselineMap = Partial<Record<Signal, BaselineFn>>;
 
@@ -166,8 +172,9 @@ export interface ParamDefBase<K extends string = string> {
   hint?: string;
 }
 
-export interface SliderParamDef<K extends string = string>
-  extends ParamDefBase<K> {
+export interface SliderParamDef<
+  K extends string = string,
+> extends ParamDefBase<K> {
   type: "slider";
   min: number;
   max: number;
@@ -175,27 +182,31 @@ export interface SliderParamDef<K extends string = string>
   default: number;
 }
 
-export interface SelectParamDef<K extends string = string>
-  extends ParamDefBase<K> {
+export interface SelectParamDef<
+  K extends string = string,
+> extends ParamDefBase<K> {
   type: "select";
   options: Array<{ value: string | number; label: string }>;
   default: string | number;
 }
 
-export interface SwitchParamDef<K extends string = string>
-  extends ParamDefBase<K> {
+export interface SwitchParamDef<
+  K extends string = string,
+> extends ParamDefBase<K> {
   type: "switch";
   default: boolean | number; // 0/1 is fine too
 }
 
-export interface NumberParamDef<K extends string = string>
-  extends ParamDefBase<K> {
+export interface NumberParamDef<
+  K extends string = string,
+> extends ParamDefBase<K> {
   type: "number";
   default: number;
 }
 
-export interface TextParamDef<K extends string = string>
-  extends ParamDefBase<K> {
+export interface TextParamDef<
+  K extends string = string,
+> extends ParamDefBase<K> {
   type: "text";
   default: string;
 }
@@ -253,22 +264,22 @@ export type KernelSet = Partial<Record<Signal, KernelSpec>>;
 export interface ClearanceSpec {
   /** Hepatic (liver) metabolism component */
   hepatic?: {
-    baseCL_mL_min: number;  // Base clearance in mL/min for reference 70kg male
-    CYP?: string;           // Primary CYP enzyme (e.g., "CYP1A2", "CYP3A4")
+    baseCL_mL_min: number; // Base clearance in mL/min for reference 70kg male
+    CYP?: string; // Primary CYP enzyme (e.g., "CYP1A2", "CYP3A4")
   };
   /** Renal (kidney) excretion component */
   renal?: {
-    baseCL_mL_min: number;  // Base renal clearance in mL/min
+    baseCL_mL_min: number; // Base renal clearance in mL/min
   };
 }
 
 /** Volume of distribution specification for physiology-dependent PK */
 export interface VolumeSpec {
   kind: "weight" | "tbw" | "lbm" | "sex-adjusted";
-  base_L_kg?: number;       // For weight-based: Vd = base * weight
-  fraction?: number;        // For tbw-based: Vd = TBW * fraction
-  male_L_kg?: number;       // For sex-adjusted (male)
-  female_L_kg?: number;     // For sex-adjusted (female)
+  base_L_kg?: number; // For weight-based: Vd = base * weight
+  fraction?: number; // For tbw-based: Vd = TBW * fraction
+  male_L_kg?: number; // For sex-adjusted (male)
+  female_L_kg?: number; // For sex-adjusted (female)
 }
 
 /** Library item definition */
@@ -280,7 +291,11 @@ export interface PharmacologyDef {
     logP?: number;
   };
   pk?: {
-    model: "1-compartment" | "2-compartment" | "michaelis-menten" | "activity-dependent";
+    model:
+      | "1-compartment"
+      | "2-compartment"
+      | "michaelis-menten"
+      | "activity-dependent";
     bioavailability?: number; // 0..1
     absorptionRate?: number; // 1/min
     // Static parameters (fallback when physiology not available)
@@ -288,7 +303,7 @@ export interface PharmacologyDef {
     timeToPeakMin?: number;
     // Michaelis-Menten specific
     Vmax?: number; // mg/dL per minute
-    Km?: number;   // mg/dL
+    Km?: number; // mg/dL
     // Two-compartment model parameters
     /** Inter-compartmental transfer rate central→peripheral (1/min) */
     k_12?: number;
@@ -305,7 +320,7 @@ export interface PharmacologyDef {
     mechanism: PDMechanism;
     Ki?: number; // nM
     EC50?: number; // nM
-    effectGain?: number; // Mapping to engine units (e.g. 50.0)
+    intrinsicEfficacy?: number; // Mapping to engine units (e.g. 50.0)
     unit?: PhysiologicalUnit; // Explicit unit for validation and clarity
     /** Efficacy parameter (Black & Leff operational model)
      * - Full agonist: tau = 10 (default)
@@ -319,12 +334,13 @@ export interface PharmacologyDef {
   }>;
 }
 
-export type DynamicPharmacologyFn = (params: ParamValues) => PharmacologyDef | PharmacologyDef[];
+export type DynamicPharmacologyFn = (
+  params: ParamValues,
+) => PharmacologyDef | PharmacologyDef[];
 
 export interface InterventionDef {
   key: InterventionKey;
   label: string;
-  color: string; // UI chip/bg color
   icon?: string; // emoji or icon key
   defaultDurationMin: number;
   params: ParamDef[];
@@ -388,10 +404,12 @@ export interface WorkerComputeRequest {
     includeSignals?: readonly Signal[]; // limit to speed up
     wakeOffsetMin?: Minute;
     sleepMinutes?: number;
-    profileBaselines?: ProfileBaselineAdjustments;
-    profileCouplings?: ProfileCouplingAdjustments;
+    conditionBaselines?: ProfileBaselineAdjustments;
+    conditionCouplings?: ProfileCouplingAdjustments;
     /** Receptor density adjustments from profiles (e.g., D2: -0.2 means 20% reduction) */
     receptorDensities?: Record<string, number>;
+    /** Receptor sensitivity adjustments (e.g., D2: 0.1 means 10% increase in coupling gain) */
+    receptorSensitivities?: Record<string, number>;
     /** Transporter activity adjustments from profiles (e.g., DAT: 0.4 means 40% increase) */
     transporterActivities?: Record<string, number>;
     /** Enzyme activity adjustments from profiles */
@@ -411,6 +429,7 @@ export interface WorkerComputeRequest {
       enableReceptors?: boolean;
       enableTransporters?: boolean;
       enableEnzymes?: boolean;
+      enableConditions?: boolean;
     };
   };
 }
@@ -685,7 +704,7 @@ export interface DivergingScale {
 
 export type ChartSeriesKey = Signal | MeterKey | OrganKey | ArousalComponentKey;
 
-export type SeriesTendency = "higher" | "lower" | "mid" | "neutral";
+export type IdealTendency = "higher" | "lower" | "mid" | "none";
 
 export interface ChartSeriesSpec {
   key: ChartSeriesKey;
@@ -693,7 +712,7 @@ export interface ChartSeriesSpec {
   isPremium?: boolean;
   unit?: string;
   color?: string;
-  tendency?: SeriesTendency;
+  idealTendency: IdealTendency;
   yMin?: number;
   yMax?: number;
   visible?: boolean;
@@ -785,8 +804,7 @@ export interface SignalDef {
     references?: Array<{ doi?: string; pmid?: string; note?: string }>;
   };
   display: {
-    tendency: SeriesTendency;
-    color?: string;
+    idealTendency: IdealTendency;
     chartOrder?: number;
     unitsOverride?: string;
   };
@@ -796,7 +814,12 @@ export interface SignalDef {
     elimination?:
       | { kind: "firstOrder"; kElim: number }
       | { kind: "michaelisMenten"; Vmax: number; Km: number }
-      | { kind: "biexponential"; kFast: number; kSlow: number; fracFast: number };
+      | {
+          kind: "biexponential";
+          kFast: number;
+          kSlow: number;
+          fracFast: number;
+        };
     delay?: DelaySpec;
     sensitivity?: number;
     decayShape?: "exp" | "gamma" | "logistic" | "powerLaw";
@@ -819,7 +842,11 @@ export interface SignalDef {
   metadata?: {
     version: string;
     assumptions?: string[];
-    population?: { sex?: "M" | "F" | "Other"; ageRange?: [number, number]; notes?: string };
+    population?: {
+      sex?: "M" | "F" | "Other";
+      ageRange?: [number, number];
+      notes?: string;
+    };
   };
 }
 
@@ -849,7 +876,11 @@ export type BaselineSpec =
       fallHour: number;
       fallSlope: number;
     }
-  | { kind: "custom"; params: Record<string, number>; generator: (minute: Minute, params: any) => number };
+  | {
+      kind: "custom";
+      params: Record<string, number>;
+      generator: (minute: Minute, params: any) => number;
+    };
 
 export interface BaselineContext {
   chronotypeShiftMin?: number;
@@ -886,7 +917,9 @@ export type CouplingMap = Partial<Record<Signal, CouplingSpec[]>>;
 export type ProfileBaselineAdjustments = Partial<
   Record<Signal, { amplitude?: number; phaseShiftMin?: number }>
 >;
-export type ProfileCouplingAdjustments = Partial<Record<Signal, CouplingSpec[]>>;
+export type ProfileCouplingAdjustments = Partial<
+  Record<Signal, CouplingSpec[]>
+>;
 
 /* ===========================
    Guards / predicates
@@ -897,7 +930,7 @@ export function isMinute(n: number): n is Minute {
 }
 
 export function ensureSignalVector(
-  vals: Partial<Record<string, number>>
+  vals: Partial<Record<string, number>>,
 ): SignalVector {
   const out: SignalVector = {};
   for (const s of SIGNALS_ALL) {

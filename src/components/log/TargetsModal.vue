@@ -59,24 +59,24 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useProfilesStore } from '@/stores/profiles';
+import { useUserStore } from '@/stores/user';
 
 defineProps<{ modelValue: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [boolean] }>();
 
-const profiles = useProfilesStore();
+const user = useUserStore();
 
 const calories = computed({
-  get: () => profiles.nutritionTargets.calories,
-  set: (val: number) => profiles.updateNutritionTargets({ calories: Math.max(0, val) }),
+  get: () => user.nutritionTargets.calories,
+  set: (val: number) => user.updateNutritionTargets({ calories: Math.max(0, val) }),
 });
 
 const macrosEnabled = computed({
-  get: () => profiles.nutritionTargets.macrosEnabled,
-  set: (val: boolean) => profiles.updateNutritionTargets({ macrosEnabled: val }),
+  get: () => user.nutritionTargets.macrosEnabled,
+  set: (val: boolean) => user.updateNutritionTargets({ macrosEnabled: val }),
 });
 
-const macroValues = computed(() => profiles.nutritionTargets.macros);
+const macroValues = computed(() => user.nutritionTargets.macros);
 
 const macroFields = [
   { key: 'protein', label: 'Protein', color: '#22c55e' },
@@ -85,8 +85,8 @@ const macroFields = [
 ] as const;
 
 const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
-  const next = { ...profiles.nutritionTargets.macros[key], [field]: Math.max(0, value) };
-  profiles.updateNutritionTargets({ macros: { ...profiles.nutritionTargets.macros, [key]: next } });
+  const next = { ...user.nutritionTargets.macros[key], [field]: Math.max(0, value) };
+  user.updateNutritionTargets({ macros: { ...user.nutritionTargets.macros, [key]: next } });
 };
 
 const close = () => emit('update:modelValue', false);

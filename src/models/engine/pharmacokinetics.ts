@@ -72,7 +72,7 @@ export function pk_conc(
   weight: number,
   dose: number,
   tlag = 0,
-  F = 1.0
+  F = 1.0,
 ) {
   if (t <= tlag) return 0;
   const tau = t - tlag;
@@ -113,7 +113,7 @@ export function pk2(
   k_10: number,
   k_12: number,
   k_21: number,
-  tlag: number = 0
+  tlag: number = 0,
 ): number {
   if (t <= tlag) return 0;
   const tau = t - tlag;
@@ -180,7 +180,7 @@ export function pk2_conc(
   V_central: number,
   dose: number,
   F: number = 1.0,
-  tlag: number = 0
+  tlag: number = 0,
 ): number {
   if (t <= tlag) return 0;
   const tau = t - tlag;
@@ -226,7 +226,7 @@ export function pk_dual(
   e: number,
   lag1 = 0,
   lag2 = 0,
-  w = 0.6
+  w = 0.6,
 ) {
   return clamp(w * pk1(t, a1, e, lag1) + (1 - w) * pk1(t, a2, e, lag2), 0, 1);
 }
@@ -278,7 +278,7 @@ export function operationalAgonism(
   concentration: number,
   Kd: number,
   tau: number,
-  Emax: number = 1.0
+  Emax: number = 1.0,
 ): number {
   const L = Math.max(0, concentration);
   const kd = Math.max(1e-9, Kd);
@@ -306,7 +306,7 @@ export function competitiveAntagonism(
   agonistConc: number,
   agonistKd: number,
   antagonistConc: number,
-  antagonistKi: number
+  antagonistKi: number,
 ): number {
   const apparentKd =
     agonistKd * (1 + antagonistConc / Math.max(1e-9, antagonistKi));
@@ -327,7 +327,7 @@ export function competitiveAntagonism(
 export function nonCompetitiveAntagonism(
   antagonistConc: number,
   Ki: number,
-  baseEmax: number = 1.0
+  baseEmax: number = 1.0,
 ): number {
   return baseEmax / (1 + antagonistConc / Math.max(1e-9, Ki));
 }
@@ -349,7 +349,7 @@ export function positiveAllostericModulation(
   agonistKd: number,
   pamConc: number,
   pamEC50: number,
-  alphaFactor: number = 3.0
+  alphaFactor: number = 3.0,
 ): number {
   // PAM occupancy determines the degree of modulation
   const pamOccupancy = receptorOccupancy(pamConc, pamEC50);
@@ -375,7 +375,7 @@ export function doseToConcentration(
   molarMass: number,
   Vd: number,
   bioavailability: number,
-  pkCurve: number
+  pkCurve: number,
 ): number {
   // Convert mg to nmol: (mg * 1e6 ng/mg) / (MW g/mol * 1000 ng/nmol) = mg * 1e3 / MW
   const nmol = (doseMg * 1e6) / molarMass;
@@ -414,7 +414,7 @@ export function michaelisMentenPK(
   Km: number,
   C0: number,
   absorptionHalfLife: number = 15,
-  tlag: number = 10
+  tlag: number = 10,
 ): number {
   if (t <= tlag) return 0;
 
@@ -461,7 +461,7 @@ export function alcoholBAC(
   gramsEthanol: number,
   weightKg: number = 70,
   sex: "male" | "female" = "male",
-  metabolicRate: number = 1.0
+  metabolicRate: number = 1.0,
 ): number {
   // Widmark r factor (volume of distribution coefficient)
   // Males: 0.68 L/kg, Females: 0.55 L/kg
@@ -489,7 +489,7 @@ export function gammaPulse(
   t: number,
   k_rise: number,
   k_fall: number,
-  tlag = 0
+  tlag = 0,
 ) {
   if (t <= tlag) return 0;
   const tau = t - tlag;
@@ -541,7 +541,7 @@ export function carbAppearance(t: number, p: NutrientParams): number {
   const blunt = clamp(
     1 - 0.02 * (p.fiberSol || 0) - 0.004 * (p.fat || 0),
     0.6,
-    1
+    1,
   );
 
   // Absolute Units Logic:
@@ -616,7 +616,7 @@ export function proteinAppearance(t: number, p: NutrientParams): number {
   const slowingFactor = clamp(
     1 - 0.01 * (p.fiberSol || 0) - 0.003 * (p.fat || 0),
     0.6,
-    1
+    1,
   );
 
   // Protein digestion efficiency (~90-95% of dietary protein)
@@ -692,7 +692,7 @@ export function fatAppearance(t: number, p: NutrientParams): number {
   const fiberSlowing = clamp(
     1 - 0.02 * (p.fiberSol || 0) - 0.01 * (p.fiberInsol || 0),
     0.5,
-    1
+    1,
   );
 
   // Fat absorption efficiency (~95% in healthy individuals)
@@ -771,7 +771,7 @@ const REF_GFR = 90; // mL/min normal adult
 export function calculateClearance(
   pharma: PharmacologyDef,
   phys: Physiology,
-  subject: Subject
+  subject: Subject,
 ): number {
   const pk = pharma.pk;
 
@@ -821,7 +821,7 @@ export function calculateClearance(
 export function calculateVd(
   pharma: PharmacologyDef,
   phys: Physiology,
-  subject: Subject
+  subject: Subject,
 ): number {
   const vol = pharma.pk?.volume;
   const moleculeName = pharma.molecule?.name ?? "default";
@@ -847,7 +847,9 @@ export function calculateVd(
     case "sex-adjusted":
       // Sex-specific Vd (e.g., alcohol: males 0.68, females 0.55 L/kg)
       const vd_kg =
-        subject.sex === "male" ? vol.male_L_kg ?? 0.7 : vol.female_L_kg ?? 0.6;
+        subject.sex === "male"
+          ? (vol.male_L_kg ?? 0.7)
+          : (vol.female_L_kg ?? 0.6);
       return vd_kg * subject.weight;
 
     default:
@@ -871,7 +873,7 @@ export function generatePKKernel(
   pharma: PharmacologyDef,
   targetSignal?: string,
   subject?: Subject,
-  physiology?: Physiology
+  physiology?: Physiology,
 ): string {
   const pk = pharma.pk;
   if (!pk) return "function(){ return 0; }";
@@ -908,7 +910,7 @@ export function generatePKKernel(
   const mechanism = pd?.mechanism ?? "agonist";
   const Ki = pd?.Ki ?? null;
   const EC50 = pd?.EC50 ?? null;
-  const effectGain = pd?.effectGain ?? 0.1;
+  const intrinsicEfficacy = pd?.intrinsicEfficacy ?? 0.1;
   const tauValue = pd?.tau ?? 10;
   const alphaValue =
     pd?.alpha ?? (mechanism === "PAM" ? 3.0 : mechanism === "NAM" ? 0.3 : 1.0);
@@ -956,15 +958,15 @@ export function generatePKKernel(
       return `function(t,p){${preamble}
         // Operational agonism model via helper
         return operationalAgonism(conc, ${bindingConstant}, ${tauValue}, ${
-        effectGain * 100
-      });
+          intrinsicEfficacy * 100
+        });
       }`;
     } else if (mechanism === "antagonist") {
       // Use receptorOccupancy helper
       return `function(t,p){${preamble}
         // Receptor occupancy via helper
         const occupancy = receptorOccupancy(conc, ${bindingConstant});
-        return ${effectGain * 100} * occupancy;
+        return ${intrinsicEfficacy * 100} * occupancy;
       }`;
     } else if (mechanism === "PAM") {
       // PAM enhances endogenous signaling
@@ -972,7 +974,7 @@ export function generatePKKernel(
         // PAM occupancy via helper
         const pamOccupancy = receptorOccupancy(conc, ${bindingConstant});
         const enhancement = 1 + (${alphaValue} - 1) * pamOccupancy;
-        return ${effectGain * 100} * (enhancement - 1);
+        return ${intrinsicEfficacy * 100} * (enhancement - 1);
       }`;
     } else if (mechanism === "NAM") {
       // NAM reduces signaling
@@ -980,13 +982,13 @@ export function generatePKKernel(
         // NAM occupancy via helper
         const namOccupancy = receptorOccupancy(conc, ${bindingConstant});
         const reduction = 1 - (1 - ${alphaValue}) * namOccupancy;
-        return -${Math.abs(effectGain) * 100} * (1 - reduction);
+        return -${Math.abs(intrinsicEfficacy) * 100} * (1 - reduction);
       }`;
     }
   }
 
   // Fallback: Simple linear PD (legacy behavior)
   return `function(t,p){${preamble}
-    return ${effectGain} * dose * curve;
+    return ${intrinsicEfficacy} * dose * curve;
   }`;
 }

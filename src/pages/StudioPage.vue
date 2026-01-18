@@ -22,11 +22,11 @@
       <NutritionCarousel
         v-if="timeline.foodItems.length > 0"
         class="studio-nutrition"
-        :calories-goal="profiles.nutritionTargets.calories"
+        :calories-goal="user.nutritionTargets.calories"
         :calories-total="foodTotals.calories"
         :macros="macroTotals"
-        :macro-targets="profiles.nutritionTargets.macros"
-        :macros-enabled="profiles.nutritionTargets.macrosEnabled"
+        :macro-targets="user.nutritionTargets.macros"
+        :macros-enabled="user.nutritionTargets.macrosEnabled"
       />
 
       <Panel title="Charts" :icon="panelIcon">
@@ -94,7 +94,7 @@
           :interventions="interventionBands"
           :day-start-min="dayStartMin"
           :view-minutes="viewMinutes"
-          @playhead="(val) => setMinute(val as Minute)"
+          @playhead="(val: number) => setMinute(val as Minute)"
         />
       </Panel>
 
@@ -110,7 +110,11 @@
         @close="handleInspectorClose"
       />
       <div class="fab-group">
-        <button class="studio-fab" type="button" @click="addItemModalOpen = true">
+        <button
+          class="studio-fab"
+          type="button"
+          @click="addItemModalOpen = true"
+        >
           ➕ Add Item
         </button>
         <button
@@ -155,7 +159,7 @@ import StudioTour from '@/components/onboarding/StudioTour.vue';
 import BodyStatusPanel from '@/components/status/BodyStatusPanel.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
-import { useProfilesStore } from '@/stores/profiles';
+import { useUserStore } from '@/stores/user';
 import { useMetersStore } from '@/stores/meters';
 import { useUIStore } from '@/stores/ui';
 import { useEngineStore } from '@/stores/engine';
@@ -187,7 +191,7 @@ const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
 const library = useLibraryStore();
 const timeline = useTimelineStore();
-const profiles = useProfilesStore();
+const user = useUserStore();
 const metersStore = useMetersStore();
 const heatmapStore = useHeatmapStore();
 const arousalStore = useArousalStore();
@@ -218,9 +222,9 @@ const macroFields = [
 ];
 
 const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
-  const current = profiles.nutritionTargets.macros[key];
+  const current = user.nutritionTargets.macros[key];
   const next = { ...current, [field]: Math.max(0, value) };
-  profiles.updateNutritionTargets({ macros: { ...profiles.nutritionTargets.macros, [key]: next } });
+  user.updateNutritionTargets({ macros: { ...user.nutritionTargets.macros, [key]: next } });
 };
 
 const engine = useEngine();
@@ -376,8 +380,8 @@ const viewSignalSets = {
   liverKidney: ['alt', 'ast', 'egfr', 'ethanol', 'acetaldehyde', 'inflammation'],
 } as const;
 
-const enabledSignals = computed(() => profiles.enabledSignals);
-const subscriptionTier = computed(() => profiles.subscriptionTier);
+const enabledSignals = computed(() => user.enabledSignals);
+const subscriptionTier = computed(() => user.subscriptionTier);
 
 const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSeriesSpec[] =>
   keys
@@ -385,7 +389,7 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
     .map((key) => {
       const def = UNIFIED_DEFS[key as Signal];
       const auxDef = AUXILIARY_DEFINITIONS[key];
-      
+
       if (def) {
         return {
           key: def.key,
@@ -394,8 +398,7 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
           unit: def.unit,
           yMin: def.min ?? 0,
           yMax: def.max ?? 100,
-          color: def.display.color,
-          tendency: 'neutral', // Unified doesn't have tendency yet
+          idealTendency: def.idealTendency,
           info: {
             physiology: (def as any).description?.physiology ?? 'Unified ODE Signal',
             application: (def as any).description?.application ?? 'Dynamic simulation',
@@ -414,7 +417,7 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
           yMin: 0,
           yMax: 2,
           color: '#94a3b8',
-          tendency: 'neutral',
+          idealTendency: 'none',
           info: {
             physiology: 'Auxiliary variable (enzyme, transporter, or pool)',
             application: 'Mechanistic state tracking',
@@ -453,7 +456,7 @@ const signalSeriesData = computed(() => {
   return { ...main, ...aux };
 });
 
-const meterTendency: Record<MeterKey, ChartSeriesSpec['tendency']> = {
+const meterTendency: Record<MeterKey, ChartSeriesSpec['idealTendency']> = {
   energy: 'higher',
   focus: 'higher',
   calm: 'mid',
@@ -467,16 +470,16 @@ const meterSeriesSpecs = computed<ChartSeriesSpec[]>(() =>
   Object.entries(metersStore.meters).map(([key, def]) => ({
     key: key as MeterKey,
     label: def.label,
-    tendency: meterTendency[key as MeterKey] ?? 'neutral',
+    idealTendency: meterTendency[key as MeterKey],
   }))
 );
 
 const meterSeriesData = computed(() => toChartData(metersStore.series));
 
 const arousalSeriesSpecs: ChartSeriesSpec[] = [
-  { key: 'sympathetic', label: 'Sympathetic', tendency: 'mid' },
-  { key: 'parasympathetic', label: 'Parasympathetic', tendency: 'mid' },
-  { key: 'overall', label: 'Overall', tendency: 'mid' },
+  { key: 'sympathetic', label: 'Sympathetic', idealTendency: 'mid' },
+  { key: 'parasympathetic', label: 'Parasympathetic', idealTendency: 'mid' },
+  { key: 'overall', label: 'Overall', idealTendency: 'mid' },
 ];
 
 const arousalSeriesData = computed(() => toChartData(arousalStore.series));
@@ -491,7 +494,7 @@ const organSeriesSpecs = computed<ChartSeriesSpec[]>(() =>
   Object.keys(heatmapStore.organWeights).map((key) => ({
     key: key as OrganKey,
     label: organLabel(key),
-    tendency: 'neutral',
+    idealTendency: 'none'
   }))
 );
 
@@ -922,7 +925,7 @@ const resolveSpecs = (specsSource: ChartGroup['specs']) =>
 
 const activeGroupSpecs = computed(() => {
   const specs = resolveSpecs(activeGroup.value.specs);
-  const orderMap = new Map(profiles.signalOrder.map((key, idx) => [key, idx]));
+  const orderMap = new Map(user.signalOrder.map((key, idx) => [key, idx]));
 
   return [...specs].sort((a, b) => {
     const aPremium = !!a.isPremium;
@@ -965,19 +968,19 @@ const rootInfoText = computed(() => activeRootTabMeta.value.info);
 const interventionBands = computed(() => {
   const bands: any[] = [];
   const days = engineStore.durationDays;
-  
+
   for (let d = 0; d < days; d++) {
     timeline.items.forEach((item) => {
       const def = library.defs.find((it) => it.key === item.meta.key);
       const startMin = toMinuteOfDay(item.start);
       let endMin = toMinuteOfDay(item.end);
       if (endMin < startMin) endMin = (endMin + 1440) as Minute; // Handle wrap
-      
+
       bands.push({
         key: `${item.id}_${d}`,
         start: startMin + (d * 1440),
         end: endMin + (d * 1440),
-        color: def?.color ? `${def.color}33` : 'rgba(255,255,255,0.1)',
+        color: 'rgba(255,255,255,0.1)'
       });
     });
   }

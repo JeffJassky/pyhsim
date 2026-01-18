@@ -1,14 +1,14 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { useTimelineStore } from "@/stores/timeline";
-import { useProfilesStore } from "@/stores/profiles";
+import { useUserStore } from "@/stores/user";
 import { useLibraryStore } from "@/stores/library";
 import { useMetersStore } from "@/stores/meters";
 import { minuteToISO } from "@/utils/time";
 import type { Minute, InterventionKey, Goal, Signal } from "@/types";
-import { PROFILE_LIBRARY } from "@/models";
+import { CONDITION_LIBRARY } from "@/models";
 import { SIGNALS_ALL } from "@/types";
-import type { ProfileKey } from "@/models/registry/profiles";
+import type { ConditionKey } from "@/models/registry/conditions";
 import { META_TAG_ID } from "@/models/physiology/constants/meta";
 import { DEFAULT_CONFIG_TOKEN } from "@/core/sys_config";
 import { LEGACY_HASH_MAP } from "@/utils/data_utils";
@@ -37,14 +37,14 @@ export const useAIStore = defineStore("ai", () => {
 
   // Access other stores
   const timelineStore = useTimelineStore();
-  const profilesStore = useProfilesStore();
+  const userStore = useUserStore();
   const libraryStore = useLibraryStore();
   const metersStore = useMetersStore();
 
   function getContext() {
     return {
-      subject: profilesStore.subject,
-      activeProfiles: Object.entries(profilesStore.profiles)
+      subject: userStore.subject,
+      activeConditions: Object.entries(userStore.conditions)
         .filter(([_, p]) => p.enabled)
         .map(([key, p]) => ({ key, params: p.params })),
       timeline: timelineStore.items.map((item) => {
@@ -208,19 +208,19 @@ export const useAIStore = defineStore("ai", () => {
       function: {
         name: "update_conditions",
         description:
-          "Enable or disable medical/physiological conditions (profiles).",
+          "Enable or disable medical/physiological conditions.",
         parameters: {
           type: "object",
           properties: {
             enable: {
               type: "array",
               items: { type: "string" },
-              description: "List of profile keys to enable.",
+              description: "List of condition keys to enable.",
             },
             disable: {
               type: "array",
               items: { type: "string" },
-              description: "List of profile keys to disable.",
+              description: "List of condition keys to disable.",
             },
           },
         },
@@ -346,23 +346,23 @@ export const useAIStore = defineStore("ai", () => {
         timelineStore.updateItem(id, updates);
         return `Updated item ${id}.`;
       } else if (name === "update_subject_info") {
-        profilesStore.updateSubject(args);
+        userStore.updateSubject(args);
         return `Updated subject info: ${Object.keys(args).join(", ")}.`;
       } else if (name === "update_goals") {
         const { add, remove } = args;
         const changes: string[] = [];
         if (add && Array.isArray(add)) {
           add.forEach((g: Goal) => {
-            if (!profilesStore.selectedGoals.includes(g)) {
-              profilesStore.toggleGoal(g);
+            if (!userStore.selectedGoals.includes(g)) {
+              userStore.toggleGoal(g);
               changes.push(`Added goal ${g}`);
             }
           });
         }
         if (remove && Array.isArray(remove)) {
           remove.forEach((g: Goal) => {
-            if (profilesStore.selectedGoals.includes(g)) {
-              profilesStore.toggleGoal(g);
+            if (userStore.selectedGoals.includes(g)) {
+              userStore.toggleGoal(g);
               changes.push(`Removed goal ${g}`);
             }
           });
@@ -372,17 +372,17 @@ export const useAIStore = defineStore("ai", () => {
         const { enable, disable } = args;
         const changes: string[] = [];
         if (enable && Array.isArray(enable)) {
-          enable.forEach((k: ProfileKey) => {
-            if (profilesStore.profiles[k]) {
-              profilesStore.toggleProfile(k, true);
+          enable.forEach((k: ConditionKey) => {
+            if (userStore.conditions[k]) {
+              userStore.toggleCondition(k, true);
               changes.push(`Enabled ${k}`);
             }
           });
         }
         if (disable && Array.isArray(disable)) {
-          disable.forEach((k: ProfileKey) => {
-            if (profilesStore.profiles[k]) {
-              profilesStore.toggleProfile(k, false);
+          disable.forEach((k: ConditionKey) => {
+            if (userStore.conditions[k]) {
+              userStore.toggleCondition(k, false);
               changes.push(`Disabled ${k}`);
             }
           });
@@ -406,7 +406,7 @@ export const useAIStore = defineStore("ai", () => {
         const macros: any = {};
         if (protein_min !== undefined)
           macros.protein = {
-            ...profilesStore.nutritionTargets.macros.protein,
+            ...userStore.nutritionTargets.macros.protein,
             min: protein_min,
           };
         if (protein_max !== undefined)
@@ -414,7 +414,7 @@ export const useAIStore = defineStore("ai", () => {
 
         if (carbs_min !== undefined)
           macros.carbs = {
-            ...profilesStore.nutritionTargets.macros.carbs,
+            ...userStore.nutritionTargets.macros.carbs,
             min: carbs_min,
           };
         if (carbs_max !== undefined)
@@ -422,14 +422,14 @@ export const useAIStore = defineStore("ai", () => {
 
         if (fat_min !== undefined)
           macros.fat = {
-            ...profilesStore.nutritionTargets.macros.fat,
+            ...userStore.nutritionTargets.macros.fat,
             min: fat_min,
           };
         if (fat_max !== undefined) macros.fat = { ...macros.fat, max: fat_max };
 
         if (Object.keys(macros).length > 0) updates.macros = macros;
 
-        profilesStore.updateNutritionTargets(updates);
+        userStore.updateNutritionTargets(updates);
         return "Updated nutrition targets.";
       } else if (name === "update_chart_settings") {
         const { enable_signals, disable_signals, sort_order } = args;
@@ -437,18 +437,18 @@ export const useAIStore = defineStore("ai", () => {
 
         if (enable_signals && Array.isArray(enable_signals)) {
           enable_signals.forEach((s: Signal) => {
-            profilesStore.toggleSignal(s, true);
+            userStore.toggleSignal(s, true);
             changes.push(`Enabled signal ${s}`);
           });
         }
         if (disable_signals && Array.isArray(disable_signals)) {
           disable_signals.forEach((s: Signal) => {
-            profilesStore.toggleSignal(s, false);
+            userStore.toggleSignal(s, false);
             changes.push(`Disabled signal ${s}`);
           });
         }
         if (sort_order && Array.isArray(sort_order)) {
-          profilesStore.updateSignalOrder(sort_order);
+          userStore.updateSignalOrder(sort_order);
           changes.push("Updated signal sort order");
         }
         return changes.length
@@ -669,9 +669,9 @@ export const useAIStore = defineStore("ai", () => {
       
 Context:
 - Subject: ${JSON.stringify(context.subject)}
-- Goals: ${JSON.stringify(profilesStore.selectedGoals)}
-- Conditions (Active): ${JSON.stringify(context.activeProfiles)}
-- Nutrition Targets: ${JSON.stringify(profilesStore.nutritionTargets)}
+- Goals: ${JSON.stringify(userStore.selectedGoals)}
+- Conditions (Active): ${JSON.stringify(context.activeConditions)}
+- Nutrition Targets: ${JSON.stringify(userStore.nutritionTargets)}
 - Timeline: ${JSON.stringify(context.timeline)}
 - Library: ${JSON.stringify(context.library)}
 
@@ -689,7 +689,7 @@ Available Options:
         "cycle",
         "calm",
       ].join(", ")}
-- Conditions (Profiles): ${PROFILE_LIBRARY.map((p) => p.key).join(", ")}
+- Conditions: ${CONDITION_LIBRARY.map((p) => p.key).join(", ")}
 - Signals: ${SIGNALS_ALL.join(", ")}
 
 Goal: Optimize the user's routine using the available tools.

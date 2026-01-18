@@ -3,7 +3,8 @@
 ## Problem Statement
 
 The current system has:
-- **Magic numbers** (`effectGain: 30`) with no scientific basis
+
+- **Magic numbers** (`intrinsicEfficacy: 30`) with no scientific basis
 - **Inconsistent units** (dopamine in "% baseline", glucose in mg/dL)
 - **No validation** against published literature
 - **Duplicate/conflicting parameters** across files
@@ -18,11 +19,13 @@ This makes the system useless for medical accuracy.
 ### 1. Calibration-First, Not Parameter-First
 
 **Current (wrong):**
+
 ```typescript
-{ target: "DAT", Ki: 0.01, effectGain: 30 }  // What does 30 mean?
+{ target: "DAT", Ki: 0.01, intrinsicEfficacy: 30 }  // What does 30 mean?
 ```
 
 **Correct:**
+
 ```typescript
 {
   target: "DAT",
@@ -49,6 +52,7 @@ type Mass = { value: number; unit: "mg" | "g" | "µg" };
 ### 3. Literature as the Source of Truth
 
 Every parameter either:
+
 - Has a citation (journal, year, DOI)
 - Is explicitly labeled `empirical: true` with reasoning
 
@@ -261,7 +265,7 @@ interface SignalDefinition {
   halfLife: SourcedValue<Time>;    // Elimination/clearance half-life
 
   // No "tau" - computed from half-life
-  // No "effectGain" - doesn't belong here
+  // No "intrinsicEfficacy" - doesn't belong here
 }
 
 // Example
@@ -370,7 +374,7 @@ const CAFFEINE_INTERVENTION: InterventionDefinition = {
 
 ## Calibration System
 
-The key innovation: **we don't guess effectGain, we derive it from expected clinical effects.**
+The key innovation: **we don't guess intrinsicEfficacy, we derive it from expected clinical effects.**
 
 ### CalibrationEngine
 
@@ -613,30 +617,35 @@ const CAFFEINE_VALIDATION: ValidationSuite = {
 ## Migration Path
 
 ### Phase 1: Literature Foundation (Week 1-2)
+
 1. Create `literature/` directory structure
 2. Compile citations for all current parameters
 3. Flag all parameters as `sourced` or `empirical: true`
 4. Document uncertainty ranges
 
 ### Phase 2: Biology Layer (Week 2-3)
+
 1. Define signals with real units and reference ranges
 2. Define receptors with literature-sourced affinities
 3. Define transporters and enzymes
 4. Define coupling pathways
 
 ### Phase 3: Drug Layer (Week 3-4)
+
 1. Redefine drugs with `DrugDefinition` interface
 2. Add calibration targets from literature
 3. Implement `CalibrationEngine`
 4. Validate each drug against its targets
 
 ### Phase 4: Simulation Refactor (Week 4-5)
+
 1. Update ODE solver to use calibrated parameters
-2. Remove all `effectGain` parameters
+2. Remove all `intrinsicEfficacy` parameters
 3. Derive `tau` from clearance mechanisms
 4. Add unit tracking throughout
 
 ### Phase 5: Validation Suite (Week 5-6)
+
 1. Build validation test suite
 2. Run against published PK/PD studies
 3. Document deviations and uncertainties
@@ -803,7 +812,7 @@ export const CAFFEINE_INTERVENTION: InterventionDefinition = {
 
 ## Success Criteria
 
-1. **Every parameter has a source**: No more "effectGain: 30"
+1. **Every parameter has a source**: No more "intrinsicEfficacy: 30"
 2. **Validation suite passes**: Simulation matches published PK/PD within 20%
 3. **Units are consistent**: All signals in physiological units
 4. **New drugs are additive**: Adding a drug = adding literature data only

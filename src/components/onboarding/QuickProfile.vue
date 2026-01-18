@@ -98,13 +98,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useOnboardingStore } from '@/stores/onboarding';
-import { useProfilesStore } from '@/stores/profiles';
+import { useUserStore } from '@/stores/user';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
 import { ARCHETYPES, type ArchetypeId } from '@/models/domain/archetypes';
 
 const emit = defineEmits(['next']);
 const store = useOnboardingStore();
-const profilesStore = useProfilesStore();
+const user = useUserStore();
 
 const currentQuestion = ref(0);
 
@@ -211,26 +211,26 @@ function selectOption(value: string) {
     // Auto-select female for cycle syncers if not set
     if (value === 'cycle_syncer') {
       store.quickProfile.sex = 'female';
-      profilesStore.updateSubject({ sex: 'female' });
+      user.updateSubject({ sex: 'female' });
     }
   }
   if (currentQuestion.value === 1) {
     store.quickProfile.primaryGoal = value;
     // Ensure it's in the profile goals
-    if (!profilesStore.selectedGoals.includes(value as any)) {
-      profilesStore.toggleGoal(value as any);
+    if (!user.selectedGoals.includes(value as any)) {
+      user.toggleGoal(value as any);
     }
   }
   if (currentQuestion.value === 2) {
     store.quickProfile.sex = value as 'male' | 'female';
-    profilesStore.updateSubject({ sex: value as 'male' | 'female' });
+    user.updateSubject({ sex: value as 'male' | 'female' });
   }
   if (currentQuestion.value === 3) {
     store.quickProfile.ageRange = value;
     // Extract lower bound of age range as a simple numeric estimate
     const age = parseInt(value);
     if (!isNaN(age)) {
-      profilesStore.updateSubject({ age });
+      user.updateSubject({ age });
     }
   }
 

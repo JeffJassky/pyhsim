@@ -1,22 +1,22 @@
 /**
- * Profile System Tests
+ * Condition System Tests
  *
- * Tests the neurophysiological profile system including:
+ * Tests the neurophysiological condition system including:
  * - Receptor density and sensitivity effects
  * - Transporter activity effects
  * - Enzyme activity effects
- * - Profile parameter scaling
+ * - Condition parameter scaling
  */
 
 import { describe, expect, it } from 'vitest';
-import { PROFILE_LIBRARY, buildProfileAdjustments } from '@/models/registry/profiles';
-import type { ProfileKey, ProfileStateSnapshot } from '@/models/registry/profiles';
+import { CONDITION_LIBRARY, buildConditionAdjustments } from '@/models/registry/conditions';
+import type { ConditionKey, ConditionStateSnapshot } from '@/models/registry/conditions';
 
-// Helper to create profile state
-function createProfileState(
-  overrides: Partial<Record<ProfileKey, { enabled: boolean; params: Record<string, number> }>> = {}
-): Record<ProfileKey, ProfileStateSnapshot> {
-  const baseState: Record<ProfileKey, ProfileStateSnapshot> = {
+// Helper to create condition state
+function createConditionState(
+  overrides: Partial<Record<ConditionKey, { enabled: boolean; params: Record<string, number> }>> = {}
+): Record<ConditionKey, ConditionStateSnapshot> {
+  const baseState: Record<ConditionKey, ConditionStateSnapshot> = {
     adhd: { enabled: false, params: { severity: 0.6 } },
     autism: { enabled: false, params: { eibalance: 0.5 } },
     depression: { enabled: false, params: { severity: 0.5 } },
@@ -28,10 +28,10 @@ function createProfileState(
   };
 
   for (const [key, value] of Object.entries(overrides)) {
-    if (baseState[key as ProfileKey] && value) {
-      baseState[key as ProfileKey] = {
+    if (baseState[key as ConditionKey] && value) {
+      baseState[key as ConditionKey] = {
         enabled: value.enabled ?? false,
-        params: { ...baseState[key as ProfileKey].params, ...(value.params ?? {}) },
+        params: { ...baseState[key as ConditionKey].params, ...(value.params ?? {}) },
       };
     }
   }
@@ -39,36 +39,36 @@ function createProfileState(
   return baseState;
 }
 
-describe('Profile Library', () => {
-  it('contains all expected profiles', () => {
-    const profileKeys = PROFILE_LIBRARY.map(p => p.key);
-    expect(profileKeys).toContain('adhd');
-    expect(profileKeys).toContain('autism');
-    expect(profileKeys).toContain('depression');
-    expect(profileKeys).toContain('anxiety');
-    expect(profileKeys).toContain('pots');
-    expect(profileKeys).toContain('mcas');
-    expect(profileKeys).toContain('insomnia');
-    expect(profileKeys).toContain('pcos');
+describe('Condition Library', () => {
+  it('contains all expected conditions', () => {
+    const conditionKeys = CONDITION_LIBRARY.map(p => p.key);
+    expect(conditionKeys).toContain('adhd');
+    expect(conditionKeys).toContain('autism');
+    expect(conditionKeys).toContain('depression');
+    expect(conditionKeys).toContain('anxiety');
+    expect(conditionKeys).toContain('pots');
+    expect(conditionKeys).toContain('mcas');
+    expect(conditionKeys).toContain('insomnia');
+    expect(conditionKeys).toContain('pcos');
   });
 
-  it('each profile has at least one modifier type', () => {
-    for (const profile of PROFILE_LIBRARY) {
+  it('each condition has at least one modifier type', () => {
+    for (const condition of CONDITION_LIBRARY) {
       const hasModifiers =
-        (profile.receptorModifiers?.length ?? 0) > 0 ||
-        (profile.transporterModifiers?.length ?? 0) > 0 ||
-        (profile.enzymeModifiers?.length ?? 0) > 0 ||
-        (profile.signalModifiers?.length ?? 0) > 0;
+        (condition.receptorModifiers?.length ?? 0) > 0 ||
+        (condition.transporterModifiers?.length ?? 0) > 0 ||
+        (condition.enzymeModifiers?.length ?? 0) > 0 ||
+        (condition.signalModifiers?.length ?? 0) > 0;
 
       expect(hasModifiers).toBe(true);
     }
   });
 
-  it('each profile has valid parameter definitions', () => {
-    for (const profile of PROFILE_LIBRARY) {
-      expect(profile.params.length).toBeGreaterThan(0);
+  it('each condition has valid parameter definitions', () => {
+    for (const condition of CONDITION_LIBRARY) {
+      expect(condition.params.length).toBeGreaterThan(0);
 
-      for (const param of profile.params) {
+      for (const param of condition.params) {
         expect(param.min).toBeLessThan(param.max);
         expect(param.default).toBeGreaterThanOrEqual(param.min);
         expect(param.default).toBeLessThanOrEqual(param.max);
@@ -77,22 +77,22 @@ describe('Profile Library', () => {
   });
 });
 
-describe('buildProfileAdjustments', () => {
+describe('buildConditionAdjustments', () => {
   describe('Identity (No Effect)', () => {
-    it('returns empty adjustments when no profiles are enabled', () => {
-      const state = createProfileState();
-      const adjustments = buildProfileAdjustments(state);
+    it('returns empty adjustments when no conditions are enabled', () => {
+      const state = createConditionState();
+      const adjustments = buildConditionAdjustments(state);
 
       expect(Object.keys(adjustments.baselines)).toHaveLength(0);
       expect(Object.keys(adjustments.receptorDensities)).toHaveLength(0);
       expect(Object.keys(adjustments.transporterActivities)).toHaveLength(0);
     });
 
-    it('returns empty adjustments when profile is enabled at severity 0', () => {
-      const state = createProfileState({
+    it('returns empty adjustments when condition is enabled at severity 0', () => {
+      const state = createConditionState({
         adhd: { enabled: true, params: { severity: 0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       // At severity 0, all effects should be zero or minimal
       for (const [, adj] of Object.entries(adjustments.baselines)) {
@@ -101,31 +101,31 @@ describe('buildProfileAdjustments', () => {
     });
   });
 
-  describe('ADHD Profile', () => {
+  describe('ADHD Condition', () => {
     it('increases DAT activity (faster dopamine clearance)', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         adhd: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.transporterActivities['DAT']).toBeGreaterThan(0);
     });
 
     it('increases NET activity (faster norepinephrine clearance)', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         adhd: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.transporterActivities['NET']).toBeGreaterThan(0);
     });
 
     it('DAT activity scales with severity', () => {
-      const lowSeverity = buildProfileAdjustments(
-        createProfileState({ adhd: { enabled: true, params: { severity: 0.3 } } })
+      const lowSeverity = buildConditionAdjustments(
+        createConditionState({ adhd: { enabled: true, params: { severity: 0.3 } } })
       );
-      const highSeverity = buildProfileAdjustments(
-        createProfileState({ adhd: { enabled: true, params: { severity: 1.0 } } })
+      const highSeverity = buildConditionAdjustments(
+        createConditionState({ adhd: { enabled: true, params: { severity: 1.0 } } })
       );
 
       expect(highSeverity.transporterActivities['DAT']).toBeGreaterThan(
@@ -134,52 +134,52 @@ describe('buildProfileAdjustments', () => {
     });
 
     it('reduces D2 receptor density', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         adhd: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.receptorDensities['D2']).toBeLessThan(0);
     });
   });
 
-  describe('Depression Profile', () => {
+  describe('Depression Condition', () => {
     it('increases SERT activity (faster serotonin clearance)', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         depression: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.transporterActivities['SERT']).toBeGreaterThan(0);
     });
 
     it('adjusts 5-HT1A receptor sensitivity', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         depression: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       // Depression has 5HT1A sensitivity increase (autoreceptor supersensitivity)
       expect(adjustments.receptorSensitivities['5HT1A']).toBeGreaterThan(0);
     });
   });
 
-  describe('MCAS Profile', () => {
+  describe('MCAS Condition', () => {
     it('reduces DAO enzyme activity', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         mcas: { enabled: true, params: { activation: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.enzymeActivities['DAO']).toBeLessThan(0);
     });
 
     it('DAO reduction scales with activation level', () => {
-      const lowActivation = buildProfileAdjustments(
-        createProfileState({ mcas: { enabled: true, params: { activation: 0.3 } } })
+      const lowActivation = buildConditionAdjustments(
+        createConditionState({ mcas: { enabled: true, params: { activation: 0.3 } } })
       );
-      const highActivation = buildProfileAdjustments(
-        createProfileState({ mcas: { enabled: true, params: { activation: 1.0 } } })
+      const highActivation = buildConditionAdjustments(
+        createConditionState({ mcas: { enabled: true, params: { activation: 1.0 } } })
       );
 
       // Higher activation = more DAO reduction (more negative)
@@ -189,91 +189,91 @@ describe('buildProfileAdjustments', () => {
     });
   });
 
-  describe('Anxiety Profile', () => {
+  describe('Anxiety Condition', () => {
     it('reduces GABA-A receptor density', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         anxiety: { enabled: true, params: { reactivity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.receptorDensities['GABA_A']).toBeLessThan(0);
     });
 
     it('reduces MAO-A activity', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         anxiety: { enabled: true, params: { reactivity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.enzymeActivities['MAO_A']).toBeLessThan(0);
     });
   });
 
-  describe('POTS Profile', () => {
+  describe('POTS Condition', () => {
     it('reduces NET activity (NE accumulation)', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         pots: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       // POTS has NET dysfunction leading to NE accumulation
       expect(adjustments.transporterActivities['NET']).toBeLessThan(0);
     });
 
     it('increases Alpha1 receptor sensitivity', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         pots: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.receptorSensitivities['Alpha1']).toBeGreaterThan(0);
     });
   });
 
-  describe('Insomnia Profile', () => {
+  describe('Insomnia Condition', () => {
     it('increases orexin receptor sensitivity', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         insomnia: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.receptorSensitivities['OX2R']).toBeGreaterThan(0);
     });
 
     it('reduces melatonin receptor density', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         insomnia: { enabled: true, params: { severity: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.receptorDensities['MT1']).toBeLessThan(0);
     });
   });
 
-  describe('Autism Profile', () => {
+  describe('Autism Condition', () => {
     it('reduces GABA-A receptor density (E/I imbalance)', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         autism: { enabled: true, params: { eibalance: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.receptorDensities['GABA_A']).toBeLessThan(0);
     });
 
     it('reduces oxytocin receptor density', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         autism: { enabled: true, params: { eibalance: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       expect(adjustments.receptorDensities['OXTR']).toBeLessThan(0);
     });
 
     it('reduces SERT activity (hyperserotonemia)', () => {
-      const state = createProfileState({
+      const state = createConditionState({
         autism: { enabled: true, params: { eibalance: 1.0 } },
       });
-      const adjustments = buildProfileAdjustments(state);
+      const adjustments = buildConditionAdjustments(state);
 
       // Reduced SERT = slower serotonin clearance = higher serotonin
       expect(adjustments.transporterActivities['SERT']).toBeLessThan(0);
@@ -281,11 +281,11 @@ describe('buildProfileAdjustments', () => {
   });
 });
 
-describe('Profile Effect Directions', () => {
+describe('Condition Effect Directions', () => {
   describe('Transporter Activity Directions', () => {
     it('ADHD: DAT↑ should mean faster dopamine clearance', () => {
       // This is a documentation/validation test
-      const adhd = PROFILE_LIBRARY.find(p => p.key === 'adhd');
+      const adhd = CONDITION_LIBRARY.find(p => p.key === 'adhd');
       const datMod = adhd?.transporterModifiers?.find(m => m.transporter === 'DAT');
 
       expect(datMod).toBeDefined();
@@ -293,7 +293,7 @@ describe('Profile Effect Directions', () => {
     });
 
     it('POTS: NET↓ should mean slower NE clearance (accumulation)', () => {
-      const pots = PROFILE_LIBRARY.find(p => p.key === 'pots');
+      const pots = CONDITION_LIBRARY.find(p => p.key === 'pots');
       const netMod = pots?.transporterModifiers?.find(m => m.transporter === 'NET');
 
       expect(netMod).toBeDefined();
@@ -303,7 +303,7 @@ describe('Profile Effect Directions', () => {
 
   describe('Receptor Density Directions', () => {
     it('Autism: GABA_A↓ represents reduced inhibition', () => {
-      const autism = PROFILE_LIBRARY.find(p => p.key === 'autism');
+      const autism = CONDITION_LIBRARY.find(p => p.key === 'autism');
       const gabaMod = autism?.receptorModifiers?.find(m => m.receptor === 'GABA_A');
 
       expect(gabaMod).toBeDefined();
@@ -313,7 +313,7 @@ describe('Profile Effect Directions', () => {
 
   describe('Enzyme Activity Directions', () => {
     it('MCAS: DAO↓ means slower histamine clearance', () => {
-      const mcas = PROFILE_LIBRARY.find(p => p.key === 'mcas');
+      const mcas = CONDITION_LIBRARY.find(p => p.key === 'mcas');
       const daoMod = mcas?.enzymeModifiers?.find(m => m.enzyme === 'DAO');
 
       expect(daoMod).toBeDefined();
@@ -321,7 +321,7 @@ describe('Profile Effect Directions', () => {
     });
 
     it('Anxiety: MAO_A↓ means slower monoamine degradation', () => {
-      const anxiety = PROFILE_LIBRARY.find(p => p.key === 'anxiety');
+      const anxiety = CONDITION_LIBRARY.find(p => p.key === 'anxiety');
       const maoMod = anxiety?.enzymeModifiers?.find(m => m.enzyme === 'MAO_A');
 
       expect(maoMod).toBeDefined();
@@ -330,18 +330,18 @@ describe('Profile Effect Directions', () => {
   });
 });
 
-describe('Profile Magnitude Sanity', () => {
+describe('Condition Magnitude Sanity', () => {
   it('Transporter activity deltas are physiologically reasonable (< 100%)', () => {
-    for (const profile of PROFILE_LIBRARY) {
-      for (const mod of profile.transporterModifiers ?? []) {
+    for (const condition of CONDITION_LIBRARY) {
+      for (const mod of condition.transporterModifiers ?? []) {
         expect(Math.abs(mod.activity)).toBeLessThanOrEqual(1.0);
       }
     }
   });
 
   it('Receptor density deltas are physiologically reasonable (< 50%)', () => {
-    for (const profile of PROFILE_LIBRARY) {
-      for (const mod of profile.receptorModifiers ?? []) {
+    for (const condition of CONDITION_LIBRARY) {
+      for (const mod of condition.receptorModifiers ?? []) {
         if (mod.density !== undefined) {
           expect(Math.abs(mod.density)).toBeLessThanOrEqual(0.5);
         }
@@ -350,24 +350,24 @@ describe('Profile Magnitude Sanity', () => {
   });
 
   it('Enzyme activity deltas are physiologically reasonable (< 50%)', () => {
-    for (const profile of PROFILE_LIBRARY) {
-      for (const mod of profile.enzymeModifiers ?? []) {
+    for (const condition of CONDITION_LIBRARY) {
+      for (const mod of condition.enzymeModifiers ?? []) {
         expect(Math.abs(mod.activity)).toBeLessThanOrEqual(0.5);
       }
     }
   });
 });
 
-describe('Profile Combination', () => {
-  it('Multiple profiles combine additively', () => {
-    const adhdOnly = buildProfileAdjustments(
-      createProfileState({ adhd: { enabled: true, params: { severity: 0.5 } } })
+describe('Condition Combination', () => {
+  it('Multiple conditions combine additively', () => {
+    const adhdOnly = buildConditionAdjustments(
+      createConditionState({ adhd: { enabled: true, params: { severity: 0.5 } } })
     );
-    const anxietyOnly = buildProfileAdjustments(
-      createProfileState({ anxiety: { enabled: true, params: { reactivity: 0.5 } } })
+    const anxietyOnly = buildConditionAdjustments(
+      createConditionState({ anxiety: { enabled: true, params: { reactivity: 0.5 } } })
     );
-    const combined = buildProfileAdjustments(
-      createProfileState({
+    const combined = buildConditionAdjustments(
+      createConditionState({
         adhd: { enabled: true, params: { severity: 0.5 } },
         anxiety: { enabled: true, params: { reactivity: 0.5 } },
       })
@@ -396,13 +396,13 @@ describe('Profile Combination', () => {
 });
 
 describe('No Double-Counting', () => {
-  it('Mechanistic profiles do not apply legacy amplitude adjustments', () => {
+  it('Mechanistic conditions do not apply legacy amplitude adjustments', () => {
     // ADHD has both mechanistic (transporterModifiers) and legacy (signalModifiers)
     // The amplitude from signalModifiers should NOT be applied when mechanistic modifiers exist
-    const state = createProfileState({
+    const state = createConditionState({
       adhd: { enabled: true, params: { severity: 1.0 } },
     });
-    const adjustments = buildProfileAdjustments(state);
+    const adjustments = buildConditionAdjustments(state);
 
     // The dopamine amplitude adjustment should come ONLY from mechanistic modifiers
     // (receptor density effects), not from legacy signalModifiers
@@ -416,10 +416,10 @@ describe('No Double-Counting', () => {
 
   it('Phase shifts from legacy modifiers are still applied', () => {
     // Phase shifts are not modeled mechanistically, so they should still be applied
-    const state = createProfileState({
+    const state = createConditionState({
       adhd: { enabled: true, params: { severity: 1.0 } },
     });
-    const adjustments = buildProfileAdjustments(state);
+    const adjustments = buildConditionAdjustments(state);
 
     // ADHD has melatonin phase shift in legacy modifiers
     const melatoninPhase = adjustments.baselines['melatonin']?.phaseShiftMin ?? 0;
@@ -427,10 +427,10 @@ describe('No Double-Counting', () => {
   });
 
   it('Coupling gains from legacy modifiers are still applied', () => {
-    const state = createProfileState({
+    const state = createConditionState({
       adhd: { enabled: true, params: { severity: 1.0 } },
     });
-    const adjustments = buildProfileAdjustments(state);
+    const adjustments = buildConditionAdjustments(state);
 
     // ADHD has coupling gains for cortisol in legacy modifiers
     expect(adjustments.couplings['cortisol']?.length).toBeGreaterThan(0);

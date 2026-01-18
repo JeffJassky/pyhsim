@@ -6,8 +6,8 @@
   >
     <div class="timeline-controls">
       <div class="segment-picker">
-        <button 
-          v-for="days in [1, 7, 30]" 
+        <button
+          v-for="days in [1, 7, 30]"
           :key="days"
           class="segment-btn"
           :class="{ active: durationDays === days }"
@@ -107,20 +107,20 @@ const getMinutePercent = (minute: number) => {
   // Actually, `playheadMin` in app is currently day-based.
   // If we view 7 days, we might want to see where the playhead is relative to TODAY (day 1).
   // Let's assume the playhead is on the first day for now.
-  
+
   // Actually, to support full multi-day playhead, the upstream store needs to track absolute time.
   // But for this view, let's just project the 0-1440 minute onto the first day of the view.
-  const currentMs = (minute * 60 * 1000); 
-  
+  const currentMs = (minute * 60 * 1000);
+
   // Percent within the *total duration* window
   // If duration is 7 days, 1 day is 14.2% width.
   // We need to map `minute` (0-1440) to the correct day if we tracked day.
   // Since we don't track day index in playhead yet, we show it on day 1.
-  
+
   const offsetMs = currentMs - (props.dayStartMin * 60 * 1000);
   // Handle wrap around start time
   const adjustedOffset = offsetMs < 0 ? offsetMs + (24 * 60 * 60 * 1000) : offsetMs;
-  
+
   const percent = (adjustedOffset / totalMs) * 100;
 
   // Since we have a left panel (group labels), we need to factor that in
@@ -160,17 +160,17 @@ const getItemGroup = (item: TimelineItem) => {
 
 const toVisItems = (items: TimelineItem[]) => {
   const visItems: any[] = [];
-  
+
   // If multi-day, we might want to repeat items across days?
   // Currently, the timeline store stores items for ONE generic day.
   // To visualize 7 days, we should replicate these items for each day in the view.
-  
+
   const days = durationDays.value;
   const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
-  
+
   for (let d = 0; d < days; d++) {
     const dayOffset = d * 24 * 60 * 60 * 1000;
-    
+
     items.forEach(item => {
       const def = library.defs.find((d) => d.key === item.meta.key);
       const icon = def?.icon ? `${def.icon} ` : '';
@@ -198,11 +198,11 @@ const toVisItems = (items: TimelineItem[]) => {
       // Shift item time by 'd' days
       const itemStart = new Date(item.start).getTime();
       const itemEnd = new Date(item.end).getTime();
-      
+
       // We need to preserve the time-of-day but shift the date
       // The store items usually have a dummy date (e.g. 2022-01-01)
       // We should map them to the view's base date + d
-      
+
       const mapTime = (iso: string) => {
         const t = new Date(iso);
         const mapped = new Date(baseDate);
@@ -210,10 +210,10 @@ const toVisItems = (items: TimelineItem[]) => {
         mapped.setHours(t.getHours(), t.getMinutes(), t.getSeconds(), 0);
         return mapped;
       };
-      
+
       const startMapped = mapTime(item.start);
       let endMapped = mapTime(item.end);
-      
+
       // Handle wrap around end time if it was originally overnight
       if (endMapped < startMapped) {
         endMapped = new Date(endMapped.getTime() + 24 * 60 * 60 * 1000);
@@ -233,7 +233,7 @@ const toVisItems = (items: TimelineItem[]) => {
       });
     });
   }
-  
+
   return visItems;
 };
 
@@ -330,11 +330,11 @@ const options = (): TimelineOptions => {
       // We only support moving items on day 0 for now (enforced by editable: d===0)
       // But we need to make sure we don't accidentally shift date
       const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
-      
+
       const newStart = new Date(item.start);
       // Normalize to base date
       newStart.setFullYear(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
-      
+
       const newEnd = item.end ? new Date(item.end) : newStart;
       newEnd.setFullYear(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
       // Handle wrap
@@ -360,17 +360,8 @@ const options = (): TimelineOptions => {
         style: { width: '100%', height: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
       });
 
-      const tooltip = item._tooltip;
-      if (tooltip) {
-        const vnWithTooltip = withDirectives(vnode, [[VTooltip, {
-          content: tooltip,
-          placement: 'top',
-          theme: 'tooltip'
-        }]]);
-        render(vnWithTooltip, container);
-      } else {
+
         render(vnode, container);
-      }
 
       return container;
     },

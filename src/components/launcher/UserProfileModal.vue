@@ -134,7 +134,7 @@
                       <input
                         type="checkbox"
                         :checked="enabledSignals[sig.key]"
-                        @change="profilesStore.toggleSignal(sig.key, ($event.target as HTMLInputElement).checked)"
+                        @change="userStore.toggleSignal(sig.key, ($event.target as HTMLInputElement).checked)"
                       />
                       <span class="slider" />
                     </label>
@@ -154,7 +154,7 @@
                   :key="cat.id"
                   class="launcher-card card--goal"
                   :class="{ 'is-selected': selectedGoals.includes(cat.id) }"
-                  @click="profilesStore.toggleGoal(cat.id)"
+                  @click="userStore.toggleGoal(cat.id)"
                 >
                   <span class="card-icon">{{ cat.icon }}</span>
                   <span class="card-label">{{ cat.label }}</span>
@@ -249,33 +249,33 @@
           <div v-else-if="view === 'conditions'" class="view-items">
             <div class="items-grid">
               <div
-                v-for="profile in profileDefs"
-                :key="profile.key"
+                v-for="condition in conditionDefs"
+                :key="condition.key"
                 class="profile-item"
               >
                 <div class="profile-item__main">
                   <div class="profile-item__info">
-                    <div class="profile-item__title">{{ profile.label }}</div>
+                    <div class="profile-item__title">{{ condition.label }}</div>
                     <div class="profile-item__desc">
-                      {{ profile.description.physiology }}
+                      {{ condition.description.physiology }}
                     </div>
                   </div>
                   <label class="switch">
                     <input
                       type="checkbox"
-                      :checked="profileState[profile.key].enabled"
-                      @change="toggleProfile(profile.key, $event)"
+                      :checked="conditionState[condition.key].enabled"
+                      @change="toggleCondition(condition.key, $event)"
                     />
                     <span class="slider" />
                   </label>
                 </div>
 
                 <div
-                  v-if="profileState[profile.key].enabled && profile.params.length"
+                  v-if="conditionState[condition.key].enabled && condition.params.length"
                   class="profile-item__params"
                 >
                   <div
-                    v-for="param in profile.params"
+                    v-for="param in condition.params"
                     :key="param.key"
                     class="setting-group"
                   >
@@ -283,7 +283,7 @@
                       <label>{{ param.label }}</label>
                       <span
                         class="setting-value"
-                        >{{ profileState[profile.key].params[param.key].toFixed(2) }}</span
+                        >{{ conditionState[condition.key].params[param.key].toFixed(2) }}</span
                       >
                     </div>
                     <input
@@ -291,8 +291,8 @@
                       :min="param.min"
                       :max="param.max"
                       :step="param.step"
-                      :value="profileState[profile.key].params[param.key]"
-                      @input="updateProfileParam(profile.key, param.key, $event)"
+                      :value="conditionState[condition.key].params[param.key]"
+                      @input="updateConditionParam(condition.key, param.key, $event)"
                     />
                   </div>
                 </div>
@@ -377,11 +377,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
-import { useProfilesStore } from '@/stores/profiles';
-import { PROFILE_LIBRARY } from '@/models';
+import { useUserStore } from '@/stores/user';
+import { CONDITION_LIBRARY } from '@/models';
 import { getAllUnifiedDefinitions } from '@/models/engine';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
-import type { ProfileKey } from '@/models/registry/profiles';
+import type { ConditionKey } from '@/models/registry/conditions';
 import type { Subject } from '@/models/domain/subject';
 import type { Signal, Goal } from '@/types';
 import Sortable from 'sortablejs';
@@ -394,18 +394,18 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
 }>();
 
-const profilesStore = useProfilesStore();
+const userStore = useUserStore();
 const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'charts' | 'subscription'>('categories');
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
-const subject = computed(() => profilesStore.subject);
-const profileDefs = PROFILE_LIBRARY;
-const profileState = computed(() => profilesStore.profiles);
-const nutritionTargets = computed(() => profilesStore.nutritionTargets);
-const selectedGoals = computed(() => profilesStore.selectedGoals);
-const enabledSignals = computed(() => profilesStore.enabledSignals);
-const signalOrder = computed(() => profilesStore.signalOrder);
-const subscriptionTier = computed(() => profilesStore.subscriptionTier);
+const subject = computed(() => userStore.subject);
+const conditionDefs = CONDITION_LIBRARY;
+const conditionState = computed(() => userStore.conditions);
+const nutritionTargets = computed(() => userStore.nutritionTargets);
+const selectedGoals = computed(() => userStore.selectedGoals);
+const enabledSignals = computed(() => userStore.enabledSignals);
+const signalOrder = computed(() => userStore.signalOrder);
+const subscriptionTier = computed(() => userStore.subscriptionTier);
 
 const selectedViewLabel = computed(() => {
   if (view.value === 'physiology') return 'Physiology';
@@ -418,7 +418,7 @@ const selectedViewLabel = computed(() => {
 });
 
 const handleSetTier = (tier: 'free' | 'premium') => {
-  profilesStore.setSubscriptionTier(tier);
+  userStore.setSubscriptionTier(tier);
 };
 
 const getSignalsByGoal = (goalId: Goal) => {
@@ -458,7 +458,7 @@ const initSortables = () => {
         const newLocalOrder = Array.from(listEl.querySelectorAll('.signal-toggle-item'))
           .map(el => (el as HTMLElement).dataset.id as Signal);
 
-        const currentOrder = [...profilesStore.signalOrder];
+        const currentOrder = [...userStore.signalOrder];
 
         // Simple heuristic: Move the signal in global order to its new relative position
         // This handles shared signals across groups by letting the last sort win.
@@ -483,7 +483,7 @@ const initSortables = () => {
         const insertIdx = newRelIdx === 0 ? neighborGlobalIdx : neighborGlobalIdx + 1;
         currentOrder.splice(Math.max(0, insertIdx), 0, movedId);
 
-        profilesStore.updateSignalOrder(currentOrder);
+        userStore.updateSignalOrder(currentOrder);
       }
     });
     sortableInstances.value.push(s);
@@ -510,21 +510,21 @@ const updateSubject = (key: keyof Subject, event: Event) => {
   if (!target) return;
   let value: string | number = target.value;
   if (key !== 'sex') value = Number(value);
-  profilesStore.updateSubject({ [key]: value });
+  userStore.updateSubject({ [key]: value });
 };
 
-const toggleProfile = (key: ProfileKey, event: Event) => {
+const toggleCondition = (key: ConditionKey, event: Event) => {
   const target = event.target as HTMLInputElement | null;
-  profilesStore.toggleProfile(key, Boolean(target?.checked));
+  userStore.toggleCondition(key, Boolean(target?.checked));
 };
 
-const updateProfileParam = (profileKey: ProfileKey, paramKey: string, event: Event) => {
+const updateConditionParam = (conditionKey: ConditionKey, paramKey: string, event: Event) => {
   const target = event.target as HTMLInputElement | null;
-  if (target) profilesStore.updateParam(profileKey, paramKey, Number(target.value));
+  if (target) userStore.updateParam(conditionKey, paramKey, Number(target.value));
 };
 
 const updateNutritionTargets = (patch: any) => {
-  profilesStore.updateNutritionTargets(patch);
+  userStore.updateNutritionTargets(patch);
 };
 
 const macroFields = [
@@ -538,7 +538,7 @@ const goalCategories = GOAL_CATEGORIES;
 const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
   const current = nutritionTargets.value.macros[key];
   const next = { ...current, [field]: Math.max(0, value) };
-  profilesStore.updateNutritionTargets({ macros: { ...nutritionTargets.value.macros, [key]: next } });
+  userStore.updateNutritionTargets({ macros: { ...nutritionTargets.value.macros, [key]: next } });
 };
 </script>
 

@@ -17,6 +17,7 @@ import {
   getAllUnifiedDefinitions,
   AUXILIARY_DEFINITIONS,
   SIGNAL_DEFINITIONS,
+  type ConditionAdjustments,
 } from "@/models/engine";
 
 self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
@@ -76,25 +77,32 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   }, options?.debug);
 
   // Apply profile adjustments to initial state auxiliary variables (enzymes, transporters)
-  if (options?.enzymeActivities) {
-    for (const [key, val] of Object.entries(options.enzymeActivities)) {
-      if (initialState.auxiliary[key] !== undefined) {
-        initialState.auxiliary[key] += val;
+  if (options?.debug?.enableConditions !== false) {
+    if (options?.enzymeActivities) {
+      for (const [key, val] of Object.entries(options.enzymeActivities)) {
+        if (initialState.auxiliary[key] !== undefined) {
+          initialState.auxiliary[key] += val;
+        }
       }
     }
-  }
-  if (options?.transporterActivities) {
-    for (const [key, val] of Object.entries(options.transporterActivities)) {
-      if (initialState.auxiliary[key] !== undefined) {
-        initialState.auxiliary[key] += val;
+    if (options?.transporterActivities) {
+      for (const [key, val] of Object.entries(options.transporterActivities)) {
+        if (initialState.auxiliary[key] !== undefined) {
+          initialState.auxiliary[key] += val;
+        }
       }
     }
-  }
 
-  // Apply receptor profile adjustments
-  if (options?.receptorDensities) {
-    for (const [key, val] of Object.entries(options.receptorDensities)) {
-      initialState.receptors[`${key}_density`] = 1.0 + val;
+    // Apply receptor profile adjustments
+    if (options?.receptorDensities) {
+      for (const [key, val] of Object.entries(options.receptorDensities)) {
+        initialState.receptors[`${key}_density`] = 1.0 + val;
+      }
+    }
+    if (options?.receptorSensitivities) {
+      for (const [key, val] of Object.entries(options.receptorSensitivities)) {
+        initialState.receptors[`${key}_sensitivity`] = 1.0 + val;
+      }
     }
   }
 
@@ -170,6 +178,11 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const standardWakeTime = 480;
   const circadianShift = standardWakeTime - wakeTimeMin;
 
+  const conditionAdjustments: ConditionAdjustments = (options?.debug?.enableConditions !== false) ? {
+    baselines: options?.conditionBaselines,
+    couplings: options?.conditionCouplings,
+  } : {};
+
   // Simulation Loop
   gridMins.forEach((minute, idx) => {
     const adjustedMinute = minute % minutesPerDay;
@@ -178,9 +191,20 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
     const isAsleep = enableInterventions && items.some(item => {
       const def = defsMap.get(item.meta.key);
       if (def?.key !== 'sleep') return false;
-      const inRange = (minute >= item.startMin && minute <= item.startMin + item.durationMin);
-      const inWrappedRange = ((minute + 1440) >= item.startMin && (minute + 1440) <= item.startMin + item.durationMin);
-      return inRange || inWrappedRange;
+      
+      const start = item.startMin;
+      const end = item.startMin + item.durationMin;
+      
+      // Normal range check
+      if (minute >= start && minute <= end) return true;
+      
+      // Wrapped range check (for sessions crossing midnight)
+      // If we are at minute 10 of day 2, and sleep started at 1400 (11:20 PM) of day 1 and lasted 200 mins (until 160 of day 2)
+      // Then minute (1450) is >= 1400 and <= 1600.
+      if ((minute + 1440) >= start && (minute + 1440) <= end) return true;
+      if ((minute - 1440) >= start && (minute - 1440) <= end) return true;
+      
+      return false;
     });
 
     const dynamicsCtx: DynamicsContext = {
@@ -198,10 +222,10 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
       const subSteps = Math.max(1, Math.ceil(dt / 1.0)); // 1 minute sub-steps for stability
       const subDt = dt / subSteps;
       for (let s = 0; s < subSteps; s++) {
-        currentState = integrateStep(currentState, minute - dt + s * subDt, subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug);
+        currentState = integrateStep(currentState, minute - dt + s * subDt, subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
       }
     } else {
-      currentState = integrateStep(currentState, minute, 0, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug);
+      currentState = integrateStep(currentState, minute, 0, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
     }
 
     // Write results to series

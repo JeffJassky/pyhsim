@@ -8,14 +8,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildProfileAdjustments, PROFILE_LIBRARY } from '@/models/registry/profiles';
-import type { ProfileKey, ProfileStateSnapshot } from '@/models/registry/profiles';
+import { buildConditionAdjustments, CONDITION_LIBRARY } from '@/models/registry/conditions';
+import type { ConditionKey, ConditionStateSnapshot } from '@/models/registry/conditions';
 
-// Helper to create profile state
-function createProfileState(
-  overrides: Partial<Record<ProfileKey, { enabled: boolean; params: Record<string, number> }>> = {}
-): Record<ProfileKey, ProfileStateSnapshot> {
-  const baseState: Record<ProfileKey, ProfileStateSnapshot> = {
+// Helper to create condition state
+function createConditionState(
+  overrides: Partial<Record<ConditionKey, { enabled: boolean; params: Record<string, number> }>> = {}
+): Record<ConditionKey, ConditionStateSnapshot> {
+  const baseState: Record<ConditionKey, ConditionStateSnapshot> = {
     adhd: { enabled: false, params: { severity: 0.6 } },
     autism: { enabled: false, params: { eibalance: 0.5 } },
     depression: { enabled: false, params: { severity: 0.5 } },
@@ -27,10 +27,10 @@ function createProfileState(
   };
 
   for (const [key, value] of Object.entries(overrides)) {
-    if (baseState[key as ProfileKey] && value) {
-      baseState[key as ProfileKey] = {
+    if (baseState[key as ConditionKey] && value) {
+      baseState[key as ConditionKey] = {
         enabled: value.enabled ?? false,
-        params: { ...baseState[key as ProfileKey].params, ...(value.params ?? {}) },
+        params: { ...baseState[key as ConditionKey].params, ...(value.params ?? {}) },
       };
     }
   }
@@ -38,13 +38,13 @@ function createProfileState(
   return baseState;
 }
 
-describe('Profile Severity Monotonicity', () => {
+describe('Condition Severity Monotonicity', () => {
   describe('ADHD', () => {
     it('DAT activity increases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const datActivities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ adhd: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ adhd: { enabled: true, params: { severity } } })
         );
         return adj.transporterActivities['DAT'] ?? 0;
       });
@@ -58,8 +58,8 @@ describe('Profile Severity Monotonicity', () => {
     it('NET activity increases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const netActivities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ adhd: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ adhd: { enabled: true, params: { severity } } })
         );
         return adj.transporterActivities['NET'] ?? 0;
       });
@@ -72,8 +72,8 @@ describe('Profile Severity Monotonicity', () => {
     it('D2 receptor density decreases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const d2Densities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ adhd: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ adhd: { enabled: true, params: { severity } } })
         );
         return adj.receptorDensities['D2'] ?? 0;
       });
@@ -89,8 +89,8 @@ describe('Profile Severity Monotonicity', () => {
     it('SERT activity increases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const sertActivities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ depression: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ depression: { enabled: true, params: { severity } } })
         );
         return adj.transporterActivities['SERT'] ?? 0;
       });
@@ -103,8 +103,8 @@ describe('Profile Severity Monotonicity', () => {
     it('5HT1A sensitivity increases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const sensitivities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ depression: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ depression: { enabled: true, params: { severity } } })
         );
         return adj.receptorSensitivities['5HT1A'] ?? 0;
       });
@@ -119,8 +119,8 @@ describe('Profile Severity Monotonicity', () => {
     it('DAO activity decreases (more negative) monotonically with activation', () => {
       const activations = [0.2, 0.4, 0.6, 0.8, 1.0];
       const daoActivities = activations.map(activation => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ mcas: { enabled: true, params: { activation } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ mcas: { enabled: true, params: { activation } } })
         );
         return adj.enzymeActivities['DAO'] ?? 0;
       });
@@ -134,8 +134,8 @@ describe('Profile Severity Monotonicity', () => {
     it('H1 sensitivity increases monotonically with activation', () => {
       const activations = [0.2, 0.4, 0.6, 0.8, 1.0];
       const sensitivities = activations.map(activation => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ mcas: { enabled: true, params: { activation } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ mcas: { enabled: true, params: { activation } } })
         );
         return adj.receptorSensitivities['H1'] ?? 0;
       });
@@ -150,8 +150,8 @@ describe('Profile Severity Monotonicity', () => {
     it('GABA-A density decreases monotonically with reactivity', () => {
       const reactivities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const gabaDensities = reactivities.map(reactivity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ anxiety: { enabled: true, params: { reactivity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ anxiety: { enabled: true, params: { reactivity } } })
         );
         return adj.receptorDensities['GABA_A'] ?? 0;
       });
@@ -164,8 +164,8 @@ describe('Profile Severity Monotonicity', () => {
     it('Alpha1 sensitivity increases monotonically with reactivity', () => {
       const reactivities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const sensitivities = reactivities.map(reactivity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ anxiety: { enabled: true, params: { reactivity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ anxiety: { enabled: true, params: { reactivity } } })
         );
         return adj.receptorSensitivities['Alpha1'] ?? 0;
       });
@@ -180,8 +180,8 @@ describe('Profile Severity Monotonicity', () => {
     it('NET activity decreases (more negative) monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const netActivities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ pots: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ pots: { enabled: true, params: { severity } } })
         );
         return adj.transporterActivities['NET'] ?? 0;
       });
@@ -195,8 +195,8 @@ describe('Profile Severity Monotonicity', () => {
     it('Alpha1 sensitivity increases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const sensitivities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ pots: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ pots: { enabled: true, params: { severity } } })
         );
         return adj.receptorSensitivities['Alpha1'] ?? 0;
       });
@@ -211,8 +211,8 @@ describe('Profile Severity Monotonicity', () => {
     it('OX2R sensitivity increases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const sensitivities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ insomnia: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ insomnia: { enabled: true, params: { severity } } })
         );
         return adj.receptorSensitivities['OX2R'] ?? 0;
       });
@@ -225,8 +225,8 @@ describe('Profile Severity Monotonicity', () => {
     it('MT1 density decreases monotonically with severity', () => {
       const severities = [0.2, 0.4, 0.6, 0.8, 1.0];
       const densities = severities.map(severity => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ insomnia: { enabled: true, params: { severity } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ insomnia: { enabled: true, params: { severity } } })
         );
         return adj.receptorDensities['MT1'] ?? 0;
       });
@@ -241,8 +241,8 @@ describe('Profile Severity Monotonicity', () => {
     it('GABA-A density decreases monotonically with E/I imbalance', () => {
       const balances = [0.2, 0.4, 0.6, 0.8, 1.0];
       const densities = balances.map(eibalance => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ autism: { enabled: true, params: { eibalance } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ autism: { enabled: true, params: { eibalance } } })
         );
         return adj.receptorDensities['GABA_A'] ?? 0;
       });
@@ -255,8 +255,8 @@ describe('Profile Severity Monotonicity', () => {
     it('OXTR density decreases monotonically with E/I imbalance', () => {
       const balances = [0.2, 0.4, 0.6, 0.8, 1.0];
       const densities = balances.map(eibalance => {
-        const adj = buildProfileAdjustments(
-          createProfileState({ autism: { enabled: true, params: { eibalance } } })
+        const adj = buildConditionAdjustments(
+          createConditionState({ autism: { enabled: true, params: { eibalance } } })
         );
         return adj.receptorDensities['OXTR'] ?? 0;
       });
@@ -271,9 +271,9 @@ describe('Profile Severity Monotonicity', () => {
 describe('Effect Direction Validation', () => {
   describe('Transporter Activity → Signal Direction', () => {
     it('Higher DAT activity (ADHD) should reduce dopamine', () => {
-      // Verify the profile defines positive DAT activity (increased clearance)
-      const adj = buildProfileAdjustments(
-        createProfileState({ adhd: { enabled: true, params: { severity: 1.0 } } })
+      // Verify the condition defines positive DAT activity (increased clearance)
+      const adj = buildConditionAdjustments(
+        createConditionState({ adhd: { enabled: true, params: { severity: 1.0 } } })
       );
 
       // DAT activity should be positive (increased)
@@ -284,8 +284,8 @@ describe('Effect Direction Validation', () => {
     });
 
     it('Lower NET activity (POTS) should increase norepinephrine', () => {
-      const adj = buildProfileAdjustments(
-        createProfileState({ pots: { enabled: true, params: { severity: 1.0 } } })
+      const adj = buildConditionAdjustments(
+        createConditionState({ pots: { enabled: true, params: { severity: 1.0 } } })
       );
 
       // NET activity should be negative (decreased clearance)
@@ -296,8 +296,8 @@ describe('Effect Direction Validation', () => {
     });
 
     it('Higher SERT activity (Depression) should reduce serotonin', () => {
-      const adj = buildProfileAdjustments(
-        createProfileState({ depression: { enabled: true, params: { severity: 1.0 } } })
+      const adj = buildConditionAdjustments(
+        createConditionState({ depression: { enabled: true, params: { severity: 1.0 } } })
       );
 
       // SERT activity should be positive (increased clearance)
@@ -307,8 +307,8 @@ describe('Effect Direction Validation', () => {
 
   describe('Enzyme Activity → Signal Direction', () => {
     it('Lower DAO activity (MCAS) should increase histamine', () => {
-      const adj = buildProfileAdjustments(
-        createProfileState({ mcas: { enabled: true, params: { activation: 1.0 } } })
+      const adj = buildConditionAdjustments(
+        createConditionState({ mcas: { enabled: true, params: { activation: 1.0 } } })
       );
 
       // DAO activity should be negative (reduced degradation)
@@ -319,8 +319,8 @@ describe('Effect Direction Validation', () => {
     });
 
     it('Lower MAO-A activity (Anxiety) should affect monoamines', () => {
-      const adj = buildProfileAdjustments(
-        createProfileState({ anxiety: { enabled: true, params: { reactivity: 1.0 } } })
+      const adj = buildConditionAdjustments(
+        createConditionState({ anxiety: { enabled: true, params: { reactivity: 1.0 } } })
       );
 
       // MAO_A activity should be negative (reduced degradation)
@@ -331,11 +331,11 @@ describe('Effect Direction Validation', () => {
 
 describe('Linearity of Scaling', () => {
   it('Doubling severity roughly doubles the effect', () => {
-    const halfSeverity = buildProfileAdjustments(
-      createProfileState({ adhd: { enabled: true, params: { severity: 0.5 } } })
+    const halfSeverity = buildConditionAdjustments(
+      createConditionState({ adhd: { enabled: true, params: { severity: 0.5 } } })
     );
-    const fullSeverity = buildProfileAdjustments(
-      createProfileState({ adhd: { enabled: true, params: { severity: 1.0 } } })
+    const fullSeverity = buildConditionAdjustments(
+      createConditionState({ adhd: { enabled: true, params: { severity: 1.0 } } })
     );
 
     const halfDAT = halfSeverity.transporterActivities['DAT'] ?? 0;
@@ -348,8 +348,8 @@ describe('Linearity of Scaling', () => {
   });
 
   it('Zero severity produces zero effect', () => {
-    const zeroSeverity = buildProfileAdjustments(
-      createProfileState({ adhd: { enabled: true, params: { severity: 0 } } })
+    const zeroSeverity = buildConditionAdjustments(
+      createConditionState({ adhd: { enabled: true, params: { severity: 0 } } })
     );
 
     expect(zeroSeverity.transporterActivities['DAT'] ?? 0).toBeCloseTo(0, 10);

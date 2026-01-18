@@ -12,10 +12,10 @@ import type {
 import { SIGNALS_ALL } from "@/types";
 import { rangeMinutes, toMinuteOfDay } from "@/utils/time";
 import { buildInterventionLibrary } from "@/models/registry/interventions";
-import { buildProfileAdjustments } from "@/models/registry/profiles";
+import { buildConditionAdjustments } from "@/models/registry/conditions";
 import { derivePhysiology } from "@/models/domain/subject";
 import { useTimelineStore } from "./timeline";
-import { useProfilesStore } from "./profiles";
+import { useUserStore } from "./user";
 import { buildWorkerRequest } from "@/core/serialization";
 
 interface EngineStoreState extends EngineState {
@@ -30,6 +30,7 @@ interface EngineStoreState extends EngineState {
     enableReceptors: boolean;
     enableTransporters: boolean;
     enableEnzymes: boolean;
+    enableConditions: boolean;
   };
   finalHomeostasisState?: HomeostasisStateSnapshot;
   homeostasisSeries?: HomeostasisSeries;
@@ -65,6 +66,7 @@ export const useEngineStore = defineStore("engine", {
       enableReceptors: true,
       enableTransporters: true,
       enableEnzymes: true,
+      enableConditions: true,
     },
     finalHomeostasisState: undefined,
     homeostasisSeries: undefined,
@@ -160,12 +162,12 @@ export const useEngineStore = defineStore("engine", {
               return diff > 0 ? diff : diff + 24 * 60;
             })()
           : undefined;
-      const profilesStore = useProfilesStore();
-      const profileAdjustments = buildProfileAdjustments(
-        profilesStore.profiles
+      const userStore = useUserStore();
+      const conditionAdjustments = buildConditionAdjustments(
+        userStore.conditions
       );
       // Ensure subject is a plain object by explicit construction
-      const s = profilesStore.subject;
+      const s = userStore.subject;
       const subject = {
         age: s.age,
         weight: s.weight,
@@ -181,9 +183,30 @@ export const useEngineStore = defineStore("engine", {
       const defs =
         payload?.defs ?? buildInterventionLibrary(subject, physiology);
       
-      // Resolve dynamic pharmacology on the Main Thread (since functions can't be passed to worker)
-      // We iterate the original items (not cloned yet) to get their params
-      const resolvedItems = items.map(item => {
+      // We still send clonedDefs for other metadata (labels, colors), but Worker will rely on resolvedPharmacology
+      const clonedDefs = JSON.parse(JSON.stringify(defs));
+
+      console.debug("[EngineStore] Posting request to worker...");
+
+      // Build the base worker request which handles time conversion (startMin, durationMin)
+      const baseRequest = buildWorkerRequest(gridCopy, items, clonedDefs, {
+        options: {
+          wakeOffsetMin,
+          sleepMinutes,
+          conditionCouplings: conditionAdjustments.couplings,
+          conditionBaselines: conditionAdjustments.baselines,
+          receptorDensities: conditionAdjustments.receptorDensities,
+          receptorSensitivities: conditionAdjustments.receptorSensitivities,
+          transporterActivities: conditionAdjustments.transporterActivities,
+          enzymeActivities: conditionAdjustments.enzymeActivities,
+          subject,
+          physiology,
+          debug: { ...this.debug },
+        },
+      });
+
+      // Resolve dynamic pharmacology for each item
+      baseRequest.items.forEach(item => {
         const def = defs.find(d => d.key === item.meta.key);
         let resolvedPharm: any[] = [];
         
@@ -194,40 +217,20 @@ export const useEngineStore = defineStore("engine", {
               resolvedPharm = Array.isArray(result) ? result : [result];
             } catch (e) {
               console.error(`[EngineStore] Failed to resolve pharmacology for ${item.meta.key}:`, e);
-              resolvedPharm = [];
             }
-          } else {
+          } else if (def.pharmacology) {
              resolvedPharm = [def.pharmacology];
           }
         }
         
-        // Return a clean object with resolved pharmacology
-        return {
-          ...item,
-          resolvedPharmacology: resolvedPharm
-        };
+        item.resolvedPharmacology = resolvedPharm;
       });
 
-      // We clone the resolved items to ensure everything is serializable (though PharmacolyDef should be)
-      const clonedItems = JSON.parse(JSON.stringify(resolvedItems));
-      // We still send clonedDefs for other metadata (labels, colors), but Worker will rely on resolvedPharmacology
-      const clonedDefs = JSON.parse(JSON.stringify(defs));
+      // Crucial: Ensure the entire request is serializable (removes any accidental functions)
+      const request = JSON.parse(JSON.stringify(baseRequest));
 
-      console.debug("[EngineStore] Posting request to worker...");
-
-      const request = buildWorkerRequest(gridCopy, clonedItems, clonedDefs, {
-        options: {
-          wakeOffsetMin,
-          sleepMinutes,
-          profileCouplings: profileAdjustments.couplings,
-          receptorDensities: profileAdjustments.receptorDensities,
-          transporterActivities: profileAdjustments.transporterActivities,
-          enzymeActivities: profileAdjustments.enzymeActivities,
-          subject,
-          physiology,
-          debug: { ...this.debug },
-        },
-      });
+      this.busy = true;
+      worker.postMessage(request);
       this.busy = true;
       worker.postMessage(request);
     },

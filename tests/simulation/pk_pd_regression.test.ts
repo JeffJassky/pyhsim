@@ -29,7 +29,7 @@ describe("PK/PD Regression Tests", () => {
 
   const createCtx = (
     minuteOfDay: number,
-    isAsleep = false
+    isAsleep = false,
   ): DynamicsContext => ({
     minuteOfDay,
     circadianMinuteOfDay: minuteOfDay,
@@ -44,7 +44,7 @@ describe("PK/PD Regression Tests", () => {
     startMin: number,
     durationMin: number,
     interventions: ActiveIntervention[] = [],
-    dt: number = 1.0
+    dt: number = 1.0,
   ): SimulationState {
     let state = initialState;
     for (let i = 0; i < durationMin; i++) {
@@ -57,7 +57,7 @@ describe("PK/PD Regression Tests", () => {
         ctx,
         SIGNAL_DEFINITIONS,
         AUXILIARY_DEFINITIONS,
-        interventions
+        interventions,
       );
     }
     return state;
@@ -72,7 +72,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const interventions: ActiveIntervention[] = [
@@ -119,7 +119,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const interventions: ActiveIntervention[] = [
@@ -165,7 +165,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       // Simulate multi-day scenario: same drug ID, different start times
@@ -190,7 +190,7 @@ describe("PK/PD Regression Tests", () => {
                 target: "DAT",
                 mechanism: "antagonist",
                 Ki: 0.01,
-                effectGain: 30.0,
+                intrinsicEfficacy: 30.0,
               },
             ],
           },
@@ -214,7 +214,7 @@ describe("PK/PD Regression Tests", () => {
                 target: "DAT",
                 mechanism: "antagonist",
                 Ki: 0.01,
-                effectGain: 30.0,
+                intrinsicEfficacy: 30.0,
               },
             ],
           },
@@ -240,7 +240,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       // Two doses with same ID at different times
@@ -303,7 +303,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const initialDAT = state.auxiliary.DAT ?? 1.0;
@@ -328,7 +328,7 @@ describe("PK/PD Regression Tests", () => {
                 target: "DAT",
                 mechanism: "antagonist",
                 Ki: 0.01,
-                effectGain: 30.0,
+                intrinsicEfficacy: 30.0,
               },
             ],
           },
@@ -355,7 +355,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       // Manually reduce DAT to simulate inhibition
@@ -385,7 +385,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const caffeineIntervention: ActiveIntervention[] = [
@@ -408,13 +408,13 @@ describe("PK/PD Regression Tests", () => {
                 target: "Adenosine_A2a",
                 mechanism: "antagonist",
                 Ki: 0.5,
-                effectGain: 20.0,
+                intrinsicEfficacy: 20.0,
               },
               {
                 target: "Adenosine_A1",
                 mechanism: "antagonist",
                 Ki: 1.0,
-                effectGain: 12.0,
+                intrinsicEfficacy: 12.0,
               },
             ],
           },
@@ -436,7 +436,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const baselineDopamine = state.signals.dopamine;
@@ -461,13 +461,13 @@ describe("PK/PD Regression Tests", () => {
                 target: "Adenosine_A2a",
                 mechanism: "antagonist",
                 Ki: 0.5,
-                effectGain: 20.0,
+                intrinsicEfficacy: 20.0,
               },
               {
                 target: "Adenosine_A1",
                 mechanism: "antagonist",
                 Ki: 1.0,
-                effectGain: 12.0,
+                intrinsicEfficacy: 12.0,
               },
             ],
           },
@@ -480,7 +480,7 @@ describe("PK/PD Regression Tests", () => {
       // Caffeine should have affected dopamine via adenosine antagonism
       // (disinhibition of dopamine through A2a blockade)
       expect(afterState.pk["caffeine-dopamine-test_central"]).toBeGreaterThan(
-        0.1
+        0.1,
       );
     });
   });
@@ -494,7 +494,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const sleepIntervention: ActiveIntervention[] = [
@@ -511,13 +511,13 @@ describe("PK/PD Regression Tests", () => {
               {
                 target: "melatonin",
                 mechanism: "agonist",
-                effectGain: 50.0,
+                intrinsicEfficacy: 50.0,
                 tau: 10,
               },
               {
                 target: "gaba",
                 mechanism: "agonist",
-                effectGain: 30.0,
+                intrinsicEfficacy: 30.0,
                 tau: 10,
               },
             ],
@@ -536,7 +536,7 @@ describe("PK/PD Regression Tests", () => {
           ctx,
           SIGNAL_DEFINITIONS,
           AUXILIARY_DEFINITIONS,
-          sleepIntervention
+          sleepIntervention,
         );
       }
 
@@ -546,7 +546,7 @@ describe("PK/PD Regression Tests", () => {
 
       // Melatonin should be elevated
       expect(sleepState.signals.melatonin).toBeGreaterThan(
-        state.signals.melatonin
+        state.signals.melatonin,
       );
     });
 
@@ -558,7 +558,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       // Two sleep blocks with same ID (like engine generates for multi-day)
@@ -576,7 +576,7 @@ describe("PK/PD Regression Tests", () => {
               {
                 target: "melatonin",
                 mechanism: "agonist",
-                effectGain: 50.0,
+                intrinsicEfficacy: 50.0,
                 tau: 10,
               },
             ],
@@ -595,7 +595,7 @@ describe("PK/PD Regression Tests", () => {
               {
                 target: "melatonin",
                 mechanism: "agonist",
-                effectGain: 50.0,
+                intrinsicEfficacy: 50.0,
                 tau: 10,
               },
             ],
@@ -614,7 +614,7 @@ describe("PK/PD Regression Tests", () => {
           ctx,
           SIGNAL_DEFINITIONS,
           AUXILIARY_DEFINITIONS,
-          sleepInterventions
+          sleepInterventions,
         );
       }
 
@@ -633,7 +633,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       // This shouldn't crash
@@ -649,7 +649,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const futureIntervention: ActiveIntervention[] = [
@@ -688,7 +688,7 @@ describe("PK/PD Regression Tests", () => {
           subject,
           physiology,
           isAsleep: false,
-        }
+        },
       );
 
       const noPharmIntervention: ActiveIntervention[] = [

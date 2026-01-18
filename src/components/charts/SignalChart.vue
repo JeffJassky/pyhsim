@@ -65,6 +65,7 @@
         >
           <div
             class="series__canvas"
+            :class="{ 'is-flashing': flashStates[spec.key] }"
             :style="{
               '--line-color': lineColor(spec),
               '--fill-color': fillColor(spec),
@@ -116,6 +117,23 @@
                 fill-opacity="0.12"
               />
             </svg>
+
+            <!-- Change Indicators -->
+            <Transition name="fade">
+              <div
+                v-if="indicators[spec.key]"
+                :key="indicators[spec.key].id"
+                class="series__indicator"
+                :class="[`series__indicator--${indicators[spec.key].type}`]"
+                :style="{
+                  left: indicators[spec.key].x + '%',
+                  top: indicators[spec.key].y + '%',
+                }"
+              >
+                {{ indicators[spec.key].type === 'up' ? '▲' : '▼' }}
+              </div>
+            </Transition>
+
             <div class="series__playhead" :style="{ left: playheadPercent }" />
           </div>
         </div>
@@ -172,33 +190,40 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import type { ChartSeriesSpec, ResponseSpec, Signal } from '@/types';
+import type { ChartSeriesSpec, ResponseSpec, Signal, Minute } from '@/types';
 import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/ui/colors';
 import { getAllUnifiedDefinitions } from '@/models/engine';
 import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/signal-units';
 import Sortable from 'sortablejs';
-import { useProfilesStore } from '@/stores/profiles';
+import { useUserStore } from '@/stores/user';
+import { useTimelineStore } from '@/stores/timeline';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
-const props = withDefaults(
-  defineProps<{
-    grid: number[];
-    seriesSpecs: ChartSeriesSpec[];
-    seriesData: Record<string, number[]>;
-    playheadMin: number;
-    interventions?: Array<{ key: string; start: number; end: number; color?: string }>;
-    dayStartMin?: number; // Minute of day where the view starts (e.g., 420 for 7 AM)
-    viewMinutes?: number;
-  }>(),
-  { dayStartMin: 0, viewMinutes: 1440 }
-);
+interface Props {
+  grid: Minute[];
+  seriesSpecs: ChartSeriesSpec[];
+  seriesData: Record<string, number[]>;
+  playheadMin: number;
+  interventions?: Array<{
+    key: string;
+    start: number;
+    end: number;
+    color?: string;
+  }>;
+  dayStartMin: number;
+  viewMinutes: number;
+}
 
-const emit = defineEmits<{ playhead: [number] }>();
+const props = defineProps<Props>();
+const emit = defineEmits<{ (e: 'playhead', min: number): void }>();
+
+const userStore = useUserStore();
+const timelineStore = useTimelineStore();
+
 const infoOpenKey = ref<string | null>(null);
 const chartContainer = ref<HTMLElement | null>(null);
 const sortable = ref<Sortable | null>(null);
-const profilesStore = useProfilesStore();
 
 const MINUTES_IN_DAY = 24 * 60;
 
@@ -219,12 +244,12 @@ const percentToMin = (percent: number) => {
 };
 
 const lineColor = (spec: ChartSeriesSpec) =>
-  spec.color ?? TENDENCY_COLORS[spec.tendency ?? 'neutral'].line;
+  TENDENCY_COLORS[spec.idealTendency ?? 'none'].line;
 
-const fillColor = (spec: ChartSeriesSpec) => TENDENCY_COLORS[spec.tendency ?? 'neutral'].fill;
+const fillColor = (spec: ChartSeriesSpec) => TENDENCY_COLORS[spec.idealTendency ?? 'neutral'].fill;
 
 const gradientStops = (spec: ChartSeriesSpec) =>
-  TENDENCY_LINE_GRADIENTS[spec.tendency ?? 'neutral'];
+  TENDENCY_LINE_GRADIENTS[spec.idealTendency ?? 'none'];
 
 const gradientId = (spec: ChartSeriesSpec) => `grad-${spec.key}`;
 const strokeUrl = (spec: ChartSeriesSpec) => `url(#${gradientId(spec)})`;
@@ -240,7 +265,7 @@ const latestValue = (key: string) => {
   const step = getStep();
   const idx = Math.max(0, Math.floor(props.playheadMin / step));
   const val = data[Math.min(idx, data.length - 1)] ?? 0;
-  
+
   return getDisplayValue(key as Signal, val).value;
 };
 
@@ -257,6 +282,86 @@ const normalize = (val: number, spec: ChartSeriesSpec) => {
   return Math.max(0, Math.min(1, (val - min) / range));
 };
 
+// --- Change Tracking & Indicators ---
+const indicators = ref<Record<string, { type: 'up' | 'down'; x: number; y: number; id: number }>>({});
+const flashStates = ref<Record<string, boolean>>({});
+const previousData = new Map<string, number[]>();
+
+watch(
+  () => props.seriesData,
+  (newData) => {
+    if (!newData) return;
+
+    const { start, end } = getSliceIndices();
+
+    Object.keys(newData).forEach((key) => {
+      const newArr = newData[key];
+      const oldArr = previousData.get(key);
+      const spec = props.seriesSpecs.find((s) => s.key === key);
+
+      if (oldArr && newArr && oldArr.length === newArr.length && spec) {
+        let maxDelta = 0;
+        let maxIdx = -1;
+
+        // Find position of most significant change in visible window
+        for (let i = start; i < Math.min(end, newArr.length); i++) {
+          const normNew = normalize(newArr[i], spec);
+          const normOld = normalize(oldArr[i], spec);
+          const delta = normNew - normOld;
+
+          if (Math.abs(delta) > Math.abs(maxDelta)) {
+            maxDelta = delta;
+            maxIdx = i;
+          }
+        }
+
+        // Threshold of ~1.5% visual change to trigger indicator
+        if (Math.abs(maxDelta) > 0.015) {
+          const relativeIdx = maxIdx - start;
+          const count = end - start;
+          const x = (relativeIdx / Math.max(1, count - 1)) * 100;
+
+          const norm = normalize(newArr[maxIdx], spec);
+          const yPos = 28 - norm * 22;
+          const y = (yPos / 30) * 100;
+
+          const id = Math.random();
+          indicators.value[key] = {
+            type: maxDelta > 0 ? 'up' : 'down',
+            x,
+            y,
+            id,
+          };
+
+          // Trigger gentle flash
+          flashStates.value[key] = true;
+          setTimeout(() => {
+            flashStates.value[key] = false;
+          }, 1000);
+
+          // Clear indicator after 60 seconds
+          setTimeout(() => {
+            if (indicators.value[key]?.id === id) {
+              delete indicators.value[key];
+            }
+          }, 60000);
+        }
+      }
+
+      // Update cache
+      if (newArr) {
+        previousData.set(key, [...newArr]);
+      }
+    });
+  },
+  { deep: true }
+);
+
+watch(
+  () => props.grid.length,
+  () => previousData.clear()
+);
+
 const getSliceIndices = () => {
   const step = getStep();
   const startIdx = Math.floor(props.dayStartMin / step);
@@ -267,13 +372,13 @@ const getSliceIndices = () => {
 const points = (spec: ChartSeriesSpec) => {
   const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
-  
+
   const { start, end } = getSliceIndices();
   const sliced = Array.from(data.slice(start, end));
-  
+
   return sliced
     .map((value, i) => {
-      const norm = normalize(value, spec);
+      const norm = normalize(value as number, spec);
       return `${(i / Math.max(1, sliced.length - 1)) * 100},${28 - norm * 22}`;
     })
     .join(' ');
@@ -282,13 +387,13 @@ const points = (spec: ChartSeriesSpec) => {
 const fillPoints = (spec: ChartSeriesSpec) => {
   const data = props.seriesData[spec.key] ?? [];
   if (!data.length) return '';
-  
+
   const { start, end } = getSliceIndices();
   const sliced = Array.from(data.slice(start, end));
-  
+
   const pts = sliced
     .map((value, i) => {
-      const norm = normalize(value, spec);
+      const norm = normalize(value as number, spec);
       return `${(i / Math.max(1, sliced.length - 1)) * 100},${28 - norm * 22}`;
     })
     .join(' ');
@@ -302,10 +407,10 @@ const normalizedBands = computed(() => {
   return props.interventions.map((band) => {
     const startRel = band.start - props.dayStartMin;
     const endRel = band.end - props.dayStartMin;
-    
+
     const left = (startRel / props.viewMinutes) * 100;
     const width = ((band.end - band.start) / props.viewMinutes) * 100;
-    
+
     return {
       key: band.key,
       left: `${left}%`,
@@ -331,7 +436,7 @@ const toggleInfo = (key: string) => {
 };
 
 const hideSignal = (key: string) => {
-  profilesStore.toggleSignal(key as Signal, false);
+  userStore.toggleSignal(key as Signal, false);
 };
 
 const describeMapping = (spec: ResponseSpec): string => {
@@ -358,7 +463,7 @@ onMounted(() => {
       onEnd: (evt) => {
         if (evt.oldIndex === evt.newIndex) return;
 
-        const currentOrder = [...profilesStore.signalOrder];
+        const currentOrder = [...userStore.signalOrder];
         const movedId = evt.item.dataset.id as Signal;
 
         // Remove from old pos
@@ -371,7 +476,7 @@ onMounted(() => {
         const neighborGlobalIdx = currentOrder.indexOf(neighborId);
 
         currentOrder.splice(neighborGlobalIdx, 0, movedId);
-        profilesStore.updateSignalOrder(currentOrder);
+        userStore.updateSignalOrder(currentOrder);
       }
     });
   }
@@ -509,6 +614,64 @@ watch(
 
 .series__canvas {
   position: relative;
+}
+
+.series__canvas.is-flashing::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  animation: flash-animation 0.8s ease-out forwards;
+  z-index: 5;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+@keyframes flash-animation {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.series__indicator {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  animation: indicator-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.series__indicator--up {
+  color: white;
+}
+
+.series__indicator--down {
+  color: white;
+}
+
+@keyframes indicator-bounce {
+  0% { transform: translate(-50%, -50%) scale(0); }
+  50% { transform: translate(-50%, -50%) scale(1.5); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* Expanded Info Section */

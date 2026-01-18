@@ -3,28 +3,28 @@ import { Agents } from "../../physiology/agents";
 
 /**
  * PHARMACOLOGY CALIBRATION NOTES:
- * 
- * effectGain: 
+ *
+ * intrinsicEfficacy:
  *   - Represents the maximum "rate of change" injected into the ODE system per minute.
  *   - Units are absolute simulation units (not relative %).
- *   - Scale: 
+ *   - Scale:
  *      - 5.0: Subtle/background effect (e.g. cofactor support).
  *      - 15.0: Noticeable physiological shift (e.g. moderate caffeine).
  *      - 30.0+: Strong pharmacological forcing (e.g. Ritalin, vigorous exercise).
  *      - 80.0+: Major systemic override (e.g. Deep sleep signals).
- * 
+ *
  * EC50 / Ki:
- *   - Represents the concentration in mg/L required to reach 50% of the effectGain.
+ *   - Represents the concentration in mg/L required to reach 50% of the intrinsicEfficacy.
  *   - Calculated based on a standard volume of distribution (~40-50L for TBW).
- *   - Example: 200mg dose / 40L = 5mg/L peak concentration. 
- *     If EC50 is 10mg/L, you get ~33% of the effectGain at peak.
+ *   - Example: 200mg dose / 40L = 5mg/L peak concentration.
+ *     If EC50 is 10mg/L, you get ~33% of the intrinsicEfficacy at peak.
  */
 
 export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
   {
     key: "caffeine",
     label: "Caffeine",
-    color: "#78350f",
+
     icon: "☕",
     defaultDurationMin: 240,
     params: [
@@ -47,7 +47,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
   {
     key: "melatonin",
     label: "Melatonin",
-    color: "#6366f1",
+
     icon: "🌙",
     defaultDurationMin: 360,
     params: [
@@ -69,7 +69,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
   {
     key: "ltheanine",
     label: "L-Theanine",
-    color: "#10b981",
+
     icon: "🍵",
     defaultDurationMin: 300,
     params: [
@@ -91,7 +91,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
   {
     key: "lTyrosine",
     label: "L-Tyrosine",
-    color: "#60a5fa",
+
     icon: "💊",
     defaultDurationMin: 240,
     params: [
@@ -105,20 +105,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         default: 500,
       },
     ],
-    pharmacology: {
-      molecule: { name: "L-Tyrosine", molarMass: 181.19 },
-      pk: {
-        model: "1-compartment",
-        bioavailability: 0.8,
-        halfLifeMin: 150,
-        volume: { kind: "tbw", fraction: 0.6 },
-      },
-      pd: [
-        // Precursor support for dopamine synthesis
-        { target: "dopamine", mechanism: "agonist", effectGain: 1.6, EC50: 25.0, unit: "nM" }, // 8 * 0.2
-        { target: "norepi", mechanism: "agonist", effectGain: 37.5, EC50: 25.0, unit: "pg/mL" } // 6 * 6.25
-      ],
-    },
+    // DYNAMIC PHARMACOLOGY - comprehensive catecholamine precursor model
+    pharmacology: (params) => Agents.LTyrosine(Number(params.mg) || 500),
     group: "Supplements",
     categories: ["supplements"],
     goals: ["focus", "energy"],
@@ -126,7 +114,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
   {
     key: "dopaMucuna",
     label: "DOPA Mucuna",
-    color: "#818cf8",
+
     icon: "🌱",
     defaultDurationMin: 240,
     params: [
@@ -140,19 +128,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         default: 200,
       },
     ],
-    pharmacology: {
-      molecule: { name: "L-Dopa", molarMass: 197.19 },
-      pk: {
-        model: "1-compartment",
-        bioavailability: 0.4,
-        halfLifeMin: 120,
-        volume: { kind: "tbw", fraction: 0.6 },
-      },
-      pd: [
-        // Direct L-Dopa bypasses rate-limiting step
-        { target: "dopamine", mechanism: "agonist", effectGain: 3.6, EC50: 10.0, unit: "nM" } // 18 * 0.2
-      ],
-    },
+    // DYNAMIC PHARMACOLOGY - direct dopamine precursor model
+    pharmacology: (params) => Agents.LDopa(Number(params.mg) || 200),
     group: "Supplements",
     categories: ["supplements"],
     goals: ["mood", "focus"],
@@ -160,7 +137,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
   {
     key: "p5p",
     label: "P-5-P (Active B6)",
-    color: "#34d399",
+
     icon: "💊",
     defaultDurationMin: 480,
     params: [
@@ -174,22 +151,203 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
         default: 25,
       },
     ],
-    pharmacology: {
-      molecule: { name: "Pyridoxal-5-Phosphate", molarMass: 247.14 },
-      pk: {
-        model: "1-compartment",
-        bioavailability: 0.7,
-        halfLifeMin: 300,
-        volume: { kind: "tbw", fraction: 0.6 },
-      },
-      pd: [
-        // Cofactor support for various neurotransmitters
-        { target: "dopamine", mechanism: "agonist", effectGain: 1.2, unit: "nM" }, // 6 * 0.2
-        { target: "serotonin", mechanism: "agonist", effectGain: 0.6, unit: "nM" } // 6 * 0.1
-      ],
-    },
+    // DYNAMIC PHARMACOLOGY - cofactor for AADC, GAD, HDC enzymes
+    pharmacology: (params) => Agents.P5P(Number(params.mg) || 25),
     group: "Supplements",
     categories: ["supplements"],
     goals: ["mood", "focus"],
+  },
+  // === NEW SUPPLEMENTS ===
+  {
+    key: "magnesium",
+    label: "Magnesium",
+
+    icon: "💎",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 100,
+        max: 600,
+        step: 50,
+        default: 400,
+        hint: "Elemental magnesium (glycinate, threonate, citrate)",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - NMDA modulator, GABA support, cortisol regulation
+    pharmacology: (params) => Agents.Magnesium(Number(params.mg) || 400),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["calm", "sleep", "focus"],
+  },
+  {
+    key: "omega3",
+    label: "Omega-3 (EPA/DHA)",
+
+    icon: "🐟",
+    defaultDurationMin: 720, // Effects build over hours
+    params: [
+      {
+        key: "mg",
+        label: "Total EPA+DHA (mg)",
+        type: "slider",
+        min: 500,
+        max: 4000,
+        step: 250,
+        default: 2000,
+        hint: "Combined EPA and DHA from fish oil",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - anti-inflammatory, membrane fluidity, neuroplasticity
+    pharmacology: (params) => Agents.Omega3(Number(params.mg) || 2000),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["mood", "focus", "longevity"],
+  },
+  {
+    key: "alphaGPC",
+    label: "Alpha-GPC",
+
+    icon: "🧠",
+    defaultDurationMin: 360,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 150,
+        max: 600,
+        step: 50,
+        default: 300,
+        hint: "Highly bioavailable choline source",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - cholinergic support, GH release
+    pharmacology: (params) => Agents.AlphaGPC(Number(params.mg) || 300),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["focus", "energy"],
+  },
+  {
+    key: "fiveHTP",
+    label: "5-HTP",
+
+    icon: "🌙",
+    defaultDurationMin: 360,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 50,
+        max: 300,
+        step: 25,
+        default: 100,
+        hint: "Direct serotonin precursor (bypasses TPH)",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - serotonin synthesis, melatonin conversion
+    pharmacology: (params) => Agents.FiveHTP(Number(params.mg) || 100),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["mood", "sleep", "calm"],
+  },
+  {
+    key: "ashwagandha",
+    label: "Ashwagandha",
+
+    icon: "🌿",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 150,
+        max: 900,
+        step: 75,
+        default: 600,
+        hint: "Standardized root extract (KSM-66, Sensoril)",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - adaptogen, cortisol modulation, GABA-ergic
+    pharmacology: (params) => Agents.Ashwagandha(Number(params.mg) || 600),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["calm", "sleep", "energy"],
+  },
+  {
+    key: "vitaminD",
+    label: "Vitamin D3",
+
+    icon: "☀️",
+    defaultDurationMin: 1440, // 24h - fat-soluble, slow kinetics
+    params: [
+      {
+        key: "iu",
+        label: "Dose (IU)",
+        type: "slider",
+        min: 1000,
+        max: 10000,
+        step: 1000,
+        default: 5000,
+        hint: "Cholecalciferol (D3)",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - neurosteroid, immune modulation, serotonin synthesis
+    pharmacology: (params) => Agents.VitaminD(Number(params.iu) || 5000),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["mood", "energy", "longevity"],
+  },
+  {
+    key: "creatine",
+    label: "Creatine",
+
+    icon: "💪",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "grams",
+        label: "Dose (g)",
+        type: "slider",
+        min: 1,
+        max: 10,
+        step: 1,
+        default: 5,
+        hint: "Creatine monohydrate",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - cellular energy, neuroprotection
+    pharmacology: (params) => Agents.Creatine(Number(params.grams) || 5),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["energy", "focus"],
+  },
+  {
+    key: "lionsMane",
+    label: "Lion's Mane",
+
+    icon: "🍄",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 250,
+        max: 3000,
+        step: 250,
+        default: 1000,
+        hint: "Fruiting body or dual extract",
+      },
+    ],
+    // DYNAMIC PHARMACOLOGY - NGF/BDNF support, neuroprotection
+    pharmacology: (params) => Agents.LionsMane(Number(params.mg) || 1000),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["focus", "mood", "longevity"],
   },
 ];

@@ -84,6 +84,18 @@ const finalStateJson = computed(() => {
 
                 <div class="toggle-item">
                   <label class="toggle-row">
+                    <span class="toggle-label">Conditions</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.enableConditions"
+                      @change="engineStore.updateDebug({ enableConditions: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Receptor, transporter, and enzyme modifications (e.g. ADHD, PCOS).</p>
+                </div>
+
+                <div class="toggle-item">
+                  <label class="toggle-row">
                     <span class="toggle-label">Couplings</span>
                     <input
                       type="checkbox"

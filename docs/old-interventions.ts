@@ -231,7 +231,11 @@ export const INTERVENTIONS: InterventionDef[] = [
       molecule: { name: "Caffeine", molarMass: 194.19 },
       pk: { model: "1-compartment", bioavailability: 0.99, halfLifeMin: 300 },
       pd: [
-        { target: "Adenosine_A2a", mechanism: "antagonist", effectGain: 0.1 },
+        {
+          target: "Adenosine_A2a",
+          mechanism: "antagonist",
+          intrinsicEfficacy: 0.1,
+        },
       ],
     },
     kernels: {
@@ -247,7 +251,7 @@ export const INTERVENTIONS: InterventionDef[] = [
             {
               target: "Adenosine_A2a",
               mechanism: "antagonist",
-              effectGain: 0.1,
+              intrinsicEfficacy: 0.1,
             },
           ],
         }),
@@ -265,7 +269,7 @@ export const INTERVENTIONS: InterventionDef[] = [
             {
               target: "Adenosine_A2a",
               mechanism: "antagonist",
-              effectGain: 0.1,
+              intrinsicEfficacy: 0.1,
             },
           ],
         }),
@@ -294,7 +298,7 @@ export const INTERVENTIONS: InterventionDef[] = [
     pharmacology: {
       molecule: { name: "Methylphenidate", molarMass: 233.31 },
       pk: { model: "1-compartment", bioavailability: 0.3, halfLifeMin: 180 }, // ~3h
-      pd: [{ target: "DAT", mechanism: "antagonist", effectGain: 3.0 }],
+      pd: [{ target: "DAT", mechanism: "antagonist", intrinsicEfficacy: 3.0 }],
     },
     kernels: {
       dopamine: {
@@ -305,7 +309,9 @@ export const INTERVENTIONS: InterventionDef[] = [
             bioavailability: 0.3,
             halfLifeMin: 180,
           },
-          pd: [{ target: "DAT", mechanism: "antagonist", effectGain: 3.0 }],
+          pd: [
+            { target: "DAT", mechanism: "antagonist", intrinsicEfficacy: 3.0 },
+          ],
         }),
         desc: "Rapid increase in synaptic dopamine via reuptake inhibition, generated from PK parameters.",
       },
@@ -460,5 +466,5 @@ export const INTERVENTIONS: InterventionDef[] = [
 ];
 
 export const INTERVENTION_MAP = new Map(
-  INTERVENTIONS.map((def) => [def.key, def])
+  INTERVENTIONS.map((def) => [def.key, def]),
 );

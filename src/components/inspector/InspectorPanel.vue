@@ -48,12 +48,17 @@
         :key="index"
         class="effect"
       >
-        <span class="effect-signal">{{ SIGNAL_UNITS[effect.target as Signal]?.description || effect.target }}</span>
+        <span
+          class="effect-signal"
+          >{{ SIGNAL_UNITS[effect.target as Signal]?.description || effect.target }}</span
+        >
         <p class="effect-desc">
           {{ effect.mechanism }}
-          <template v-if="effect.effectGain">
+          <template v-if="effect.intrinsicEfficacy">
             <span class="gain-value">
-              ({{ effect.effectGain > 0 ? '+' : '' }}{{ (effect.effectGain * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1) }} 
+              ({{ effect.intrinsicEfficacy > 0 ? '+' : ''
+
+              }}{{ (effect.intrinsicEfficacy * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1) }}
               {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }})
             </span>
           </template>
@@ -82,9 +87,9 @@ const isFood = computed(() => props.def?.key === 'food');
 
 const resolvedEffects = computed(() => {
   if (!props.def) return [];
-  
+
   let pharms: PharmacologyDef[] = [];
-  
+
   if (typeof props.def.pharmacology === 'function') {
     const result = (props.def.pharmacology as any)(local.params);
     pharms = Array.isArray(result) ? result : [result];

@@ -31,7 +31,6 @@ export {
 // Validation
 export {
   isValidTarget,
-  validateInterventionTargets,
-  validateInterventionLibrary,
-  type ValidationError,
+  validatePharmacology,
+  validateInterventionLibrary
 } from './validation';

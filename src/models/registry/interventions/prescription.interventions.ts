@@ -5,7 +5,7 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
   {
     key: "ritalinIR10",
     label: "Ritalin IR",
-    color: "#f472b6",
+
     icon: "💊",
     defaultDurationMin: 240,
     params: [

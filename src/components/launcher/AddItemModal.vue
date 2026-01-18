@@ -2,18 +2,27 @@
   <Teleport to="body">
     <Transition name="fade">
       <div v-if="modelValue" class="launcher-overlay" @click.self="close">
-        <div class="launcher-content" :class="{ 'launcher-content--items': view !== 'categories' || search.length > 0 }">
+        <div
+          class="launcher-content"
+          :class="{ 'launcher-content--items': view !== 'categories' || search.length > 0 }"
+        >
           <button class="close-btn" @click="close">✕</button>
 
           <header class="launcher-header">
-            <h2 v-if="view === 'categories' && !search" class="section-title">Add to Timeline</h2>
-            <button v-else-if="view !== 'categories' && !search" class="back-btn" @click="backToCategories">
+            <h2 v-if="view === 'categories' && !search" class="section-title">
+              Add to Timeline
+            </h2>
+            <button
+              v-else-if="view !== 'categories' && !search"
+              class="back-btn"
+              @click="backToCategories"
+            >
               ← {{ selectedCategory?.label || 'All Items' }}
             </button>
             <button v-else-if="search" class="back-btn" @click="clearSearch">
               ← Back
             </button>
-            
+
             <div class="search-wrapper">
               <input
                 ref="searchInput"
@@ -62,20 +71,23 @@
           </div>
 
           <!-- Items View (Interventions) -->
-          <div v-else-if="view === 'items' || (search && view !== 'food')" class="view-items">
+          <div
+            v-else-if="view === 'items' || (search && view !== 'food')"
+            class="view-items"
+          >
             <div class="items-grid">
               <button
                 v-for="item in filteredItems"
                 :key="item.key"
                 class="item-card"
-                :style="{ '--item-color': item.color }"
                 @click="handleItemSelect(item)"
               >
                 <div class="item-card__icon">{{ item.icon }}</div>
                 <div class="item-card__content">
                   <div class="item-card__title">{{ item.label }}</div>
                   <div class="item-card__desc">
-                    {{ item.group || 'General' }} • {{ item.defaultDurationMin }}m
+                    {{ item.group || 'General' }} •
+                    {{ item.defaultDurationMin }}m
                   </div>
                 </div>
                 <div class="item-card__action">＋</div>
@@ -90,8 +102,10 @@
           <!-- Food View -->
           <div v-else-if="view === 'food'" class="view-items view-food">
             <div class="items-grid">
-              <div v-if="!search && recents.length > 0" class="group-label">Recently used</div>
-              
+              <div v-if="!search && recents.length > 0" class="group-label">
+                Recently used
+              </div>
+
               <div
                 v-for="hit in foodList"
                 :key="hit.id"
@@ -103,18 +117,37 @@
                 <div class="item-card__content">
                   <div class="item-card__title">
                     {{ hit.name }}
-                    <span v-if="hit.brand" class="item-card__brand">{{ hit.brand }}</span>
+                    <span
+                      v-if="hit.brand"
+                      class="item-card__brand"
+                      >{{ hit.brand }}</span
+                    >
                   </div>
                   <div class="item-card__desc">
-                    {{ Math.round(hit.nutrients.calories) }} cal • P{{ Math.round(hit.nutrients.protein) }}g • C{{ Math.round(hit.nutrients.carbs) }}g • F{{ Math.round(hit.nutrients.fat) }}g
+                    {{ Math.round(hit.nutrients.calories) }} cal • P{{ Math.round(hit.nutrients.protein)
+
+                    }}g • C{{ Math.round(hit.nutrients.carbs) }}g • F{{ Math.round(hit.nutrients.fat)
+
+                    }}g
                   </div>
-                  
-                  <div v-if="expandedFoodId === hit.id" class="food-controls" @click.stop>
+
+                  <div
+                    v-if="expandedFoodId === hit.id"
+                    class="food-controls"
+                    @click.stop
+                  >
                     <div class="qty-stepper">
                       <span>Quantity:</span>
-                      <input v-model.number="foodQty" type="number" min="0.25" step="0.25" />
+                      <input
+                        v-model.number="foodQty"
+                        type="number"
+                        min="0.25"
+                        step="0.25"
+                      />
                     </div>
-                    <button class="log-btn" @click="handleFoodSelect(hit)">Log Food</button>
+                    <button class="log-btn" @click="handleFoodSelect(hit)">
+                      Log Food
+                    </button>
                   </div>
                 </div>
                 <div class="item-card__action">＋</div>
@@ -267,8 +300,8 @@ const filteredItems = computed(() => {
   if (search.value) {
     const q = search.value.toLowerCase();
     items = items.filter(
-      (item) => 
-        item.label.toLowerCase().includes(q) || 
+      (item) =>
+        item.label.toLowerCase().includes(q) ||
         item.group?.toLowerCase().includes(q) ||
         item.goals?.some(g => g.includes(q)) ||
         item.categories?.some(c => c.includes(q))
@@ -376,7 +409,7 @@ watch(() => props.modelValue, (val) => {
   overflow-y: auto;
   padding: 1rem 3rem 3rem 3rem;
   /* Allow space for hover scaling without clipping */
-  overflow-x: visible; 
+  overflow-x: visible;
 }
 
 .launcher-content--items .view-categories,
@@ -536,7 +569,7 @@ watch(() => props.modelValue, (val) => {
 
 .item-card:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: var(--item-color, rgba(255, 255, 255, 0.2));
+  border-color: rgba(255, 255, 255, 0.2);
   transform: translateX(4px);
 }
 

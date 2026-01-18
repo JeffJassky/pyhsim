@@ -1,15 +1,7 @@
-/**
- * Test Utilities for Physiological Simulation Engine
- *
- * Provides helpers for running the engine in headless mode and analyzing results.
- */
-
 import type {
   Minute,
   Signal,
   WorkerComputeRequest,
-  ProfileBaselineAdjustments,
-  ProfileCouplingAdjustments,
   Subject,
   Physiology,
   ItemForWorker,
@@ -18,7 +10,7 @@ import type {
 import { SIGNALS_ALL } from '@/types';
 import { rangeMinutes } from '@/utils/time';
 import { buildInterventionLibrary } from '@/models/registry/interventions';
-import { buildProfileAdjustments, type ProfileKey, type ProfileStateSnapshot } from '@/models/registry/profiles';
+import { buildConditionAdjustments, type ConditionKey, type ConditionStateSnapshot } from '@/models/registry/conditions';
 import { derivePhysiology, type Subject as SubjectType } from '@/models/domain/subject';
 import {
   integrateStep,
@@ -26,6 +18,7 @@ import {
   getAllUnifiedDefinitions,
   AUXILIARY_DEFINITIONS,
   SIGNAL_DEFINITIONS,
+  type ConditionAdjustments,
 } from "@/models/engine";
 import type { SimulationState, DynamicsContext, ActiveIntervention } from '@/types/unified';
 
@@ -36,8 +29,8 @@ export interface TestEngineConfig {
   duration?: number;
   /** Grid step in minutes (default: 5) */
   gridStep?: number;
-  /** Profile configurations */
-  profiles?: Partial<Record<ProfileKey, { enabled: boolean; params: Record<string, number> }>>;
+  /** Condition configurations */
+  conditions?: Partial<Record<ConditionKey, { enabled: boolean; params: Record<string, number> }>>;
   /** Timeline interventions */
   interventions?: TestIntervention[];
   /** Subject demographics */
@@ -108,7 +101,7 @@ export async function runEngine(config: TestEngineConfig = {}): Promise<EngineRe
   const {
     duration = 1440,
     gridStep = 5,
-    profiles = {},
+    conditions = {},
     interventions = [],
     subject: subjectOverrides = {},
     transporterActivities = {},
@@ -123,8 +116,8 @@ export async function runEngine(config: TestEngineConfig = {}): Promise<EngineRe
   const subject: SubjectType = { ...DEFAULT_SUBJECT, ...subjectOverrides };
   const physiology = derivePhysiology(subject);
 
-  // Build profile state
-  const profileState: Record<ProfileKey, ProfileStateSnapshot> = {
+  // Build condition state
+  const conditionState: Record<ConditionKey, ConditionStateSnapshot> = {
     adhd: { enabled: false, params: { severity: 0.6 } },
     autism: { enabled: false, params: { eibalance: 0.5 } },
     depression: { enabled: false, params: { severity: 0.5 } },
@@ -135,17 +128,17 @@ export async function runEngine(config: TestEngineConfig = {}): Promise<EngineRe
     pcos: { enabled: false, params: { severity: 0.5 } },
   };
 
-  // Apply profile overrides
-  for (const [key, value] of Object.entries(profiles)) {
-    if (profileState[key as ProfileKey] && value) {
-      profileState[key as ProfileKey] = {
+  // Apply condition overrides
+  for (const [key, value] of Object.entries(conditions)) {
+    if (conditionState[key as ConditionKey] && value) {
+      conditionState[key as ConditionKey] = {
         enabled: value.enabled ?? false,
-        params: { ...profileState[key as ProfileKey].params, ...(value.params ?? {}) },
+        params: { ...conditionState[key as ConditionKey].params, ...(value.params ?? {}) },
       };
     }
   }
 
-  const profileAdjustments = buildProfileAdjustments(profileState);
+  const conditionAdjustments = buildConditionAdjustments(conditionState);
 
   // Build grid
   const numPoints = Math.ceil(duration / gridStep);
@@ -172,15 +165,15 @@ export async function runEngine(config: TestEngineConfig = {}): Promise<EngineRe
 
   // Merge transporter/receptor/enzyme activities
   const mergedTransporterActivities = {
-    ...profileAdjustments.transporterActivities,
+    ...conditionAdjustments.transporterActivities,
     ...transporterActivities,
   };
   const mergedReceptorDensities = {
-    ...profileAdjustments.receptorDensities,
+    ...conditionAdjustments.receptorDensities,
     ...receptorDensities,
   };
   const mergedEnzymeActivities = {
-    ...profileAdjustments.enzymeActivities,
+    ...conditionAdjustments.enzymeActivities,
     ...enzymeActivities,
   };
 
@@ -193,14 +186,14 @@ export async function runEngine(config: TestEngineConfig = {}): Promise<EngineRe
       includeSignals,
       wakeOffsetMin: wakeOffsetMin as Minute | undefined,
       sleepMinutes,
-      profileBaselines: profileAdjustments.baselines,
-      profileCouplings: profileAdjustments.couplings,
+      conditionBaselines: conditionAdjustments.baselines,
+      conditionCouplings: conditionAdjustments.couplings,
       receptorDensities: mergedReceptorDensities,
       transporterActivities: mergedTransporterActivities,
       enzymeActivities: mergedEnzymeActivities,
       subject,
       physiology,
-      enableHomeostasis: true,
+      debug: { enableHomeostasis: true, enableConditions: true } as any, // Cast to avoid full type check in test utils
     },
   };
 
@@ -243,26 +236,28 @@ async function computeEngineSync(
     isAsleep: false 
   }, options?.debug);
 
-  // Apply profile adjustments to initial state auxiliary variables (enzymes, transporters)
-  if (options?.enzymeActivities) {
-    for (const [key, val] of Object.entries(options.enzymeActivities)) {
-      if (initialState.auxiliary[key] !== undefined) {
-        initialState.auxiliary[key] += val;
+  // Apply condition adjustments to initial state auxiliary variables (enzymes, transporters)
+  if (options?.debug?.enableConditions !== false) {
+    if (options?.enzymeActivities) {
+      for (const [key, val] of Object.entries(options.enzymeActivities)) {
+        if (initialState.auxiliary[key] !== undefined) {
+          initialState.auxiliary[key] += val;
+        }
       }
     }
-  }
-  if (options?.transporterActivities) {
-    for (const [key, val] of Object.entries(options.transporterActivities)) {
-      if (initialState.auxiliary[key] !== undefined) {
-        initialState.auxiliary[key] += val;
+    if (options?.transporterActivities) {
+      for (const [key, val] of Object.entries(options.transporterActivities)) {
+        if (initialState.auxiliary[key] !== undefined) {
+          initialState.auxiliary[key] += val;
+        }
       }
     }
-  }
 
-  // Apply receptor profile adjustments
-  if (options?.receptorDensities) {
-    for (const [key, val] of Object.entries(options.receptorDensities)) {
-      initialState.receptors[`${key}_density`] = 1.0 + val;
+    // Apply receptor profile adjustments
+    if (options?.receptorDensities) {
+      for (const [key, val] of Object.entries(options.receptorDensities)) {
+        initialState.receptors[`${key}_density`] = 1.0 + val;
+      }
     }
   }
 
@@ -311,6 +306,11 @@ async function computeEngineSync(
   const standardWakeTime = 480;
   const circadianShift = standardWakeTime - wakeTimeMin;
 
+  const conditionAdjustments: ConditionAdjustments = (options?.debug?.enableConditions !== false) ? {
+    baselines: options?.conditionBaselines,
+    couplings: options?.conditionCouplings,
+  } : {};
+
   // Simulation Loop
   gridMins.forEach((minute, idx) => {
     const adjustedMinute = minute % minutesPerDay;
@@ -338,10 +338,10 @@ async function computeEngineSync(
       const subSteps = Math.max(1, Math.ceil(dt / 1.0));
       const subDt = dt / subSteps;
       for (let s = 0; s < subSteps; s++) {
-        currentState = integrateStep(currentState, minute - dt + s * subDt, subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug);
+        currentState = integrateStep(currentState, minute - dt + s * subDt, subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
       }
     } else {
-      currentState = integrateStep(currentState, minute, 0, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug);
+      currentState = integrateStep(currentState, minute, 0, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
     }
 
     for (const signal of includeSignals) {

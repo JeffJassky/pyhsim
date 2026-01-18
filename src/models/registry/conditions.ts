@@ -1,5 +1,5 @@
 /**
- * Neurophysiological Profiles Module
+ * Neurophysiological Conditions Module
  *
  * Models individual differences in neurobiology at the RECEPTOR and TRANSPORTER level,
  * rather than using phenomenological amplitude adjustments.
@@ -46,11 +46,11 @@ export type EnzymeKey =
   | 'AChE'             // Acetylcholinesterase
   | 'DAO';             // Diamine oxidase (histamine metabolism)
 
-// --- Profile Types ---
+// --- Condition Types ---
 
-export type ProfileKey = 'adhd' | 'autism' | 'depression' | 'anxiety' | 'pots' | 'mcas' | 'insomnia' | 'pcos';
+export type ConditionKey = 'adhd' | 'autism' | 'depression' | 'anxiety' | 'pots' | 'mcas' | 'insomnia' | 'pcos';
 
-export interface ProfileParam {
+export interface ConditionParam {
   key: string;
   label: string;
   type: 'slider';
@@ -114,15 +114,15 @@ export interface DerivedCouplingEffect {
   mechanism: string;
 }
 
-export interface ProfileDef {
-  key: ProfileKey;
+export interface ConditionDef {
+  key: ConditionKey;
   label: string;
   description: {
     physiology: string;
     application: string;
     references?: string[];
   };
-  params: ProfileParam[];
+  params: ConditionParam[];
 
   // Mechanistic modifiers (new approach)
   receptorModifiers?: ReceptorModifier[];
@@ -194,11 +194,11 @@ const RECEPTOR_SIGNAL_MAP: Record<ReceptorKey, { signal: Signal; gainPerDensity:
 // rather than as baseline amplitude adjustments. This provides more accurate modeling of
 // how DAT/NET/SERT activity affects synaptic neurotransmitter concentrations.
 
-// --- Profile Definitions ---
+// --- Condition Definitions ---
 
 const linear = (gain: number): ResponseSpec => ({ kind: 'linear', gain });
 
-export const PROFILE_LIBRARY: ProfileDef[] = [
+export const CONDITION_LIBRARY: ConditionDef[] = [
   {
     key: 'adhd',
     label: 'ADHD',
@@ -639,14 +639,14 @@ export const PROFILE_LIBRARY: ProfileDef[] = [
   },
 ];
 
-// --- Profile State & Adjustments ---
+// --- Condition State & Adjustments ---
 
-export interface ProfileStateSnapshot {
+export interface ConditionStateSnapshot {
   enabled: boolean;
   params: Record<string, number>;
 }
 
-export interface ProfileAdjustments {
+export interface ConditionAdjustments {
   baselines: ProfileBaselineAdjustments;
   couplings: ProfileCouplingAdjustments;
   receptorDensities: Partial<Record<ReceptorKey, number>>;
@@ -718,7 +718,7 @@ const RECEPTOR_SENSITIVITY_GAIN: Record<ReceptorKey, { signal: Signal; gainPerSe
  * Sensitivity: affects coupling efficiency → response gain to stimuli
  */
 function computeMechanisticEffects(
-  profile: ProfileDef,
+  condition: ConditionDef,
   intensity: number
 ): {
   baselines: ProfileBaselineAdjustments;
@@ -732,7 +732,7 @@ function computeMechanisticEffects(
   const sensitivities: Partial<Record<ReceptorKey, number>> = {};
 
   // Process receptor modifiers
-  for (const mod of profile.receptorModifiers ?? []) {
+  for (const mod of condition.receptorModifiers ?? []) {
     // Density affects baseline amplitude
     const densityDelta = (mod.density ?? 0) * intensity;
     if (densityDelta !== 0) {
@@ -764,7 +764,7 @@ function computeMechanisticEffects(
   // Note: We track transporter activities here but do NOT apply baseline amplitude effects.
   // The engine worker handles transporter effects dynamically by modulating effective
   // neurotransmitter levels for homeostasis inputs. This avoids double-counting.
-  for (const mod of profile.transporterModifiers ?? []) {
+  for (const mod of condition.transporterModifiers ?? []) {
     const delta = mod.activity * intensity;
     transporters[mod.transporter] = (transporters[mod.transporter] ?? 0) + delta;
     // Transporter effects are applied in engine.worker.ts via effectiveDopamine/etc.
@@ -774,11 +774,11 @@ function computeMechanisticEffects(
 }
 
 /**
- * Builds the complete profile adjustments from enabled profiles
+ * Builds the complete condition adjustments from enabled conditions
  */
-export function buildProfileAdjustments(
-  state: Record<ProfileKey, ProfileStateSnapshot>
-): ProfileAdjustments {
+export function buildConditionAdjustments(
+  state: Record<ConditionKey, ConditionStateSnapshot>
+): ConditionAdjustments {
   const baselineAdjustments: ProfileBaselineAdjustments = {};
   const couplingAdjustments: ProfileCouplingAdjustments = {};
   const receptorDensities: Partial<Record<ReceptorKey, number>> = {};
@@ -793,25 +793,25 @@ export function buildProfileAdjustments(
     return baselineAdjustments[signal] as BaselineAdj;
   };
 
-  for (const profile of PROFILE_LIBRARY) {
-    const snapshot = state[profile.key];
+  for (const condition of CONDITION_LIBRARY) {
+    const snapshot = state[condition.key];
     if (!snapshot?.enabled) continue;
 
-    const defaultParamKey = profile.params[0]?.key;
+    const defaultParamKey = condition.params[0]?.key;
 
     // --- Process Mechanistic Modifiers ---
     const hasMechanistic = !!(
-      profile.receptorModifiers?.length ||
-      profile.transporterModifiers?.length ||
-      profile.enzymeModifiers?.length
+      condition.receptorModifiers?.length ||
+      condition.transporterModifiers?.length ||
+      condition.enzymeModifiers?.length
     );
 
-    const paramKey = profile.receptorModifiers?.[0]?.paramKey ?? defaultParamKey;
+    const paramKey = condition.receptorModifiers?.[0]?.paramKey ?? defaultParamKey;
     const intensity = paramKey && snapshot.params[paramKey] !== undefined
       ? snapshot.params[paramKey]
       : 1;
 
-    const { baselines: mechBaselines, receptors, transporters, sensitivities } = computeMechanisticEffects(profile, intensity);
+    const { baselines: mechBaselines, receptors, transporters, sensitivities } = computeMechanisticEffects(condition, intensity);
 
     // Merge mechanistic effects
     for (const [signal, adj] of Object.entries(mechBaselines)) {
@@ -836,7 +836,7 @@ export function buildProfileAdjustments(
     // - Phase shifts (not modeled mechanistically)
     // - Coupling gains (not modeled mechanistically)
     // - Amplitude gains ONLY if no mechanistic modifiers exist
-    for (const modifier of profile.signalModifiers ?? []) {
+    for (const modifier of condition.signalModifiers ?? []) {
       const modParamKey = modifier.paramKey ?? defaultParamKey;
       const modIntensity = modParamKey && snapshot.params[modParamKey] !== undefined
         ? snapshot.params[modParamKey]
@@ -864,14 +864,14 @@ export function buildProfileAdjustments(
           extras.push({
             source: source as Signal,
             mapping: linear(gain * modIntensity),
-            description: `Profile (${profile.label})`,
+            description: `Condition (${condition.label})`,
           });
         }
       }
     }
 
     // Process enzyme modifiers
-    for (const mod of profile.enzymeModifiers ?? []) {
+    for (const mod of condition.enzymeModifiers ?? []) {
       const enzParamKey = mod.paramKey ?? defaultParamKey;
       const enzIntensity = enzParamKey && snapshot.params[enzParamKey] !== undefined
         ? snapshot.params[enzParamKey]

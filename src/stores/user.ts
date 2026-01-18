@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia';
-import type { ProfileKey, ProfileStateSnapshot } from '@/models/registry/profiles';
-import { PROFILE_LIBRARY } from '@/models';
+import type { ConditionKey, ConditionStateSnapshot } from '@/models/registry/conditions';
+import { CONDITION_LIBRARY } from '@/models';
 import { getAllUnifiedDefinitions } from '@/models/engine';
 import { DEFAULT_SUBJECT, DEFAULT_NUTRITION_TARGETS, type Subject, type NutritionTargets } from '@/models/domain/subject';
 import { SIGNALS_ALL, type Signal, type Goal } from '@/types';
 
-const STORAGE_KEY = 'physim:profiles';
+const STORAGE_KEY = 'physim:user';
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
-export interface ProfilesStoreState {
-  profiles: Record<ProfileKey, ProfileStateSnapshot>;
+export interface UserStoreState {
+  conditions: Record<ConditionKey, ConditionStateSnapshot>;
   subject: Subject;
   nutritionTargets: NutritionTargets;
   selectedGoals: Goal[];
@@ -18,7 +18,7 @@ export interface ProfilesStoreState {
   subscriptionTier: 'free' | 'premium';
 }
 
-const loadPersisted = (): Partial<ProfilesStoreState> | null => {
+const loadPersisted = (): Partial<UserStoreState> | null => {
   if (typeof localStorage === 'undefined') return null;
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
@@ -31,18 +31,18 @@ const loadPersisted = (): Partial<ProfilesStoreState> | null => {
 
 const persisted = loadPersisted();
 
-export const useProfilesStore = defineStore('profiles', {
-  state: (): ProfilesStoreState => ({
-    profiles: PROFILE_LIBRARY.reduce((acc, profile) => {
-      acc[profile.key] = {
-        enabled: persisted?.profiles?.[profile.key]?.enabled ?? false,
+export const useUserStore = defineStore('user', {
+  state: (): UserStoreState => ({
+    conditions: CONDITION_LIBRARY.reduce((acc, condition) => {
+      acc[condition.key] = {
+        enabled: persisted?.conditions?.[condition.key]?.enabled ?? false,
         params: {
-          ...Object.fromEntries(profile.params.map((p) => [p.key, p.default])),
-          ...(persisted?.profiles?.[profile.key]?.params || {}),
+          ...Object.fromEntries(condition.params.map((p) => [p.key, p.default])),
+          ...(persisted?.conditions?.[condition.key]?.params || {}),
         },
       };
       return acc;
-    }, {} as Record<ProfileKey, ProfileStateSnapshot>),
+    }, {} as Record<ConditionKey, ConditionStateSnapshot>),
     subject: { ...DEFAULT_SUBJECT, ...(persisted?.subject || {}) },
     nutritionTargets: {
       ...DEFAULT_NUTRITION_TARGETS,
@@ -66,7 +66,7 @@ export const useProfilesStore = defineStore('profiles', {
     persist() {
       if (typeof localStorage === 'undefined') return;
       const payload = {
-        profiles: this.profiles,
+        conditions: this.conditions,
         subject: this.subject,
         nutritionTargets: this.nutritionTargets,
         selectedGoals: this.selectedGoals,
@@ -120,14 +120,14 @@ export const useProfilesStore = defineStore('profiles', {
       this.enabledSignals[signal] = enabled;
       this.persist();
     },
-    toggleProfile(key: ProfileKey, enabled: boolean) {
-      if (!this.profiles[key]) return;
-      this.profiles[key].enabled = enabled;
+    toggleCondition(key: ConditionKey, enabled: boolean) {
+      if (!this.conditions[key]) return;
+      this.conditions[key].enabled = enabled;
       this.persist();
     },
-    updateParam(key: ProfileKey, paramKey: string, value: number) {
-      if (!this.profiles[key]) return;
-      this.profiles[key].params[paramKey] = value;
+    updateParam(key: ConditionKey, paramKey: string, value: number) {
+      if (!this.conditions[key]) return;
+      this.conditions[key].params[paramKey] = value;
       this.persist();
     },
     updateSubject(patch: Partial<Subject>) {

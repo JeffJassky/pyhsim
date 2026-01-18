@@ -1,5 +1,6 @@
-import type { Signal, Subject, Physiology } from './neurostate';
-import type { PhysiologicalUnit } from './units';
+import type { Signal, Subject, Physiology, IdealTendency } from "./neurostate";
+export type { IdealTendency };
+import type { PhysiologicalUnit } from "./units";
 
 export interface SolverDebugOptions {
   enableBaselines?: boolean;
@@ -9,38 +10,47 @@ export interface SolverDebugOptions {
   enableReceptors?: boolean;
   enableTransporters?: boolean;
   enableEnzymes?: boolean;
+  enableConditions?: boolean;
 }
 
 export interface DynamicsContext {
-  minuteOfDay: number;      // 0..1439, Wall clock time
+  minuteOfDay: number; // 0..1439, Wall clock time
   circadianMinuteOfDay: number; // 0..1439, Biological time (aligned so ~7am is wake)
-  dayOfYear: number;        // 1..366
+  dayOfYear: number; // 1..366
   isAsleep: boolean;
   subject: Subject;
   physiology: Physiology;
 }
 
 export interface ProductionTerm {
-  source: Signal | 'constant' | 'circadian';
+  source: Signal | "constant" | "circadian";
   coefficient: number;
-  transform?: (value: number, state: SimulationState, ctx: DynamicsContext) => number;
+  transform?: (
+    value: number,
+    state: SimulationState,
+    ctx: DynamicsContext,
+  ) => number;
 }
 
-export type ClearanceType = 'linear' | 'saturable' | 'enzyme-dependent';
+export type ClearanceType = "linear" | "saturable" | "enzyme-dependent";
 
 export interface ClearanceTerm {
   type: ClearanceType;
   rate: number;
-  enzyme?: string;  // e.g., 'MAO_A', 'COMT', 'DAT'
-  Km?: number;      // Michaelis constant for saturable kinetics
-  transform?: (value: number, state: SimulationState, ctx: DynamicsContext) => number;
+  enzyme?: string; // e.g., 'MAO_A', 'COMT', 'DAT'
+  Km?: number; // Michaelis constant for saturable kinetics
+  transform?: (
+    value: number,
+    state: SimulationState,
+    ctx: DynamicsContext,
+  ) => number;
 }
 
 export interface DynamicCoupling {
   source: Signal;
-  effect: 'stimulate' | 'inhibit';
+  effect: "stimulate" | "inhibit";
   strength: number;
-  delay?: number;  // Minutes
+  delay?: number; // Minutes
   saturation?: number;
 }
 
@@ -48,7 +58,7 @@ export interface SignalDynamics {
   /** Baseline/setpoint (can be circadian) */
   setpoint: (ctx: DynamicsContext) => number;
 
-  /** Time constant for return to setpoint (minutes). 
+  /** Time constant for return to setpoint (minutes).
    * Higher = slower return to baseline. */
   tau: number;
 
@@ -68,11 +78,17 @@ export interface UnifiedSignalDefinition {
   unit: PhysiologicalUnit;
   description?: string;
   dynamics: SignalDynamics;
-  initialValue: number | ((ctx: { subject: Subject; physiology: Physiology; isAsleep: boolean }) => number);
+  initialValue:
+    | number
+    | ((ctx: {
+        subject: Subject;
+        physiology: Physiology;
+        isAsleep: boolean;
+      }) => number);
   min?: number;
   max?: number;
+  idealTendency: IdealTendency;
   display: {
-    color: string;
     referenceRange?: { min: number; max: number };
   };
   goals?: string[];
@@ -88,7 +104,9 @@ export interface AuxiliaryDefinition {
     production: ProductionTerm[];
     clearance: ClearanceTerm[];
   };
-  initialValue: number | ((ctx: { subject: Subject; physiology: Physiology }) => number);
+  initialValue:
+    | number
+    | ((ctx: { subject: Subject; physiology: Physiology }) => number);
 }
 
 export interface SimulationState {
@@ -110,10 +128,10 @@ export interface SimulationState {
 
 export interface ActiveIntervention {
   id: string;
-  key: string;             // Intervention library key (e.g., 'caffeine')
-  startTime: number;       // absolute minute in simulation
-  duration: number;        // minutes
-  intensity: number;       // 0..1 scalar
+  key: string; // Intervention library key (e.g., 'caffeine')
+  startTime: number; // absolute minute in simulation
+  duration: number; // minutes
+  intensity: number; // 0..1 scalar
   params: Record<string, any>;
-  pharmacology?: any;      // Cloned from library for speed
+  pharmacology?: any; // Cloned from library for speed
 }

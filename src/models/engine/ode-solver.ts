@@ -6,39 +6,51 @@ import type {
   ProductionTerm,
   AuxiliaryDefinition,
   ActiveIntervention,
-  SolverDebugOptions
-} from '@/types/unified';
-import { type Signal } from '@/types/neurostate';
-import { addStates, scaleState, initializeZeroState } from './state';
-import { clamp, hill } from './utils';
-import { isReceptor, getReceptorSignals } from '../physiology/pharmacology';
+  SolverDebugOptions,
+} from "@/types/unified";
+import type {
+  Signal,
+  ProfileBaselineAdjustments,
+  ProfileCouplingAdjustments,
+} from "@/types/neurostate";
+import { addStates, scaleState, initializeZeroState } from "./state";
+import { clamp, hill } from "./utils";
+import { isReceptor, getReceptorSignals } from "../physiology/pharmacology";
 
 /**
  * Calculate volume of distribution in Liters based on PK spec and subject
  */
-function calculateVolumeOfDistribution(volumeSpec: any, ctx: DynamicsContext): number {
+function calculateVolumeOfDistribution(
+  volumeSpec: any,
+  ctx: DynamicsContext,
+): number {
   if (!volumeSpec) return 50; // Default ~50L for a 70kg person
 
   const weight = ctx.subject?.weight ?? 70;
-  const sex = ctx.subject?.sex ?? 'male';
-  const tbw = ctx.physiology?.tbw ?? (weight * 0.6);
-  const lbm = ctx.physiology?.leanBodyMass ?? (weight * 0.8);
+  const sex = ctx.subject?.sex ?? "male";
+  const tbw = ctx.physiology?.tbw ?? weight * 0.6;
+  const lbm = ctx.physiology?.leanBodyMass ?? weight * 0.8;
 
   switch (volumeSpec.kind) {
-    case 'tbw':
+    case "tbw":
       return tbw * (volumeSpec.fraction ?? 0.6);
-    case 'lbm':
+    case "lbm":
       return lbm * (volumeSpec.base_L_kg ?? 1.0);
-    case 'weight':
+    case "weight":
       return weight * (volumeSpec.base_L_kg ?? 0.7);
-    case 'sex-adjusted':
-      return weight * (sex === 'male' ? volumeSpec.male_L_kg : volumeSpec.female_L_kg);
+    case "sex-adjusted":
+      return (
+        weight *
+        (sex === "male" ? volumeSpec.male_L_kg : volumeSpec.female_L_kg)
+      );
     default:
       return 50;
   }
 }
 
-export type SignalDefinitionMap = Partial<Record<Signal, UnifiedSignalDefinition>>;
+export type SignalDefinitionMap = Partial<
+  Record<Signal, UnifiedSignalDefinition>
+>;
 export type AuxiliaryDefinitionMap = Record<string, AuxiliaryDefinition>;
 
 export interface SolverOptions {
@@ -46,6 +58,11 @@ export interface SolverOptions {
   auxiliaryDefinitions: AuxiliaryDefinitionMap;
   dt: number;
   debug?: SolverDebugOptions;
+}
+
+export interface ConditionAdjustments {
+  baselines?: ProfileBaselineAdjustments;
+  couplings?: ProfileCouplingAdjustments;
 }
 
 /**
@@ -58,7 +75,8 @@ export function computeDerivatives(
   definitions: SignalDefinitionMap,
   auxiliaryDefinitions: AuxiliaryDefinitionMap = {},
   interventions: ActiveIntervention[] = [],
-  debug?: SolverDebugOptions
+  debug?: SolverDebugOptions,
+  conditionAdjustments?: ConditionAdjustments,
 ): SimulationState {
   const derivatives = initializeZeroState();
 
@@ -78,11 +96,13 @@ export function computeDerivatives(
     const centralConc = state.pk[centralKey] ?? 0;
 
     // Activity-dependent interventions (sleep, exercise, meditation, etc.)
-    if (pk.model === 'activity-dependent') {
+    if (pk.model === "activity-dependent") {
       // Find if ANY intervention with this key is active
-      const activeInt = interventions.find(iv =>
-        `${iv.id}_central` === centralKey &&
-        t >= iv.startTime && t <= iv.startTime + iv.duration
+      const activeInt = interventions.find(
+        (iv) =>
+          `${iv.id}_central` === centralKey &&
+          t >= iv.startTime &&
+          t <= iv.startTime + iv.duration,
       );
       const targetConc = activeInt ? activeInt.intensity : 0;
       const tau = 5;
@@ -108,15 +128,16 @@ export function computeDerivatives(
     }
 
     // Elimination: dC/dt = totalInput - ke * C
-    const ke = pk.eliminationRate ?? (0.693 / (pk.halfLifeMin ?? 60));
+    const ke = pk.eliminationRate ?? 0.693 / (pk.halfLifeMin ?? 60);
     let dCentral = totalInput - ke * centralConc;
 
     // 2-Compartment handling
-    if (pk.model === '2-compartment' && pk.k_12 && pk.k_21) {
+    if (pk.model === "2-compartment" && pk.k_12 && pk.k_21) {
       const peripheralKey = `${intervention.id}_peripheral`;
       const peripheralConc = state.pk[peripheralKey] ?? 0;
       dCentral += pk.k_21 * peripheralConc - pk.k_12 * centralConc;
-      derivatives.pk[peripheralKey] = pk.k_12 * centralConc - pk.k_21 * peripheralConc;
+      derivatives.pk[peripheralKey] =
+        pk.k_12 * centralConc - pk.k_21 * peripheralConc;
     }
 
     derivatives.pk[centralKey] = dCentral;
@@ -128,7 +149,18 @@ export function computeDerivatives(
     if (!def) continue;
 
     const currentValue = state.signals[signalKey] ?? 0;
-    const setpoint = (debug?.enableBaselines !== false) ? def.dynamics.setpoint(ctx) : 0;
+
+    // Apply baseline adjustments (Condition/Profile effects)
+    // Note: Phase shifts are not yet supported in setpoint calc, but amplitude is.
+    let setpoint =
+      debug?.enableBaselines !== false ? def.dynamics.setpoint(ctx) : 0;
+
+    if (
+      debug?.enableConditions !== false &&
+      conditionAdjustments?.baselines?.[signalKey]?.amplitude
+    ) {
+      setpoint += conditionAdjustments.baselines[signalKey]!.amplitude!;
+    }
 
     // Base return-to-setpoint dynamics
     let dSignal = (setpoint - currentValue) / def.dynamics.tau;
@@ -137,29 +169,59 @@ export function computeDerivatives(
     if (debug?.enableBaselines !== false) {
       for (const prod of def.dynamics.production) {
         const sourceValue = getSourceValue(prod.source, state, ctx);
-        const transformedValue = prod.transform?.(sourceValue, state, ctx) ?? sourceValue;
+        const transformedValue =
+          prod.transform?.(sourceValue, state, ctx) ?? sourceValue;
         dSignal += prod.coefficient * transformedValue;
       }
     }
 
     // Clearance terms
     for (const clear of def.dynamics.clearance) {
-      const clearanceRate = computeClearanceRate(clear, currentValue, state, ctx);
+      const clearanceRate = computeClearanceRate(
+        clear,
+        currentValue,
+        state,
+        ctx,
+      );
       dSignal -= clearanceRate * currentValue;
     }
 
     // Couplings (Modulated by Receptor Sensitivity)
     // Coupling strengths are normalized by tau to convert from analytical values to ODE rates
     if (debug?.enableCouplings !== false) {
+      // 1. Standard defined couplings
       for (const coupling of def.dynamics.couplings) {
         const sourceValue = getSourceValue(coupling.source, state, ctx);
         const receptorKey = `${coupling.source}_sensitivity`;
         const sensitivity = state.receptors[receptorKey] ?? 1.0;
-        // Normalize by tau: strength represents "units change per unit source at steady state"
-        // Dividing by tau converts to rate of change per minute
+
         const normalizedStrength = coupling.strength / def.dynamics.tau;
         const effect = normalizedStrength * sourceValue * sensitivity;
-        dSignal += coupling.effect === 'stimulate' ? effect : -effect;
+        dSignal += coupling.effect === "stimulate" ? effect : -effect;
+      }
+
+      // 2. Extra couplings from Conditions/Profiles
+      if (
+        debug?.enableConditions !== false &&
+        conditionAdjustments?.couplings?.[signalKey]
+      ) {
+        for (const extra of conditionAdjustments.couplings[signalKey]!) {
+          const sourceValue = getSourceValue(extra.source, state, ctx);
+          // Check sensitivity for source? Usually condition couplings are explicit gains,
+          // but let's apply sensitivity for consistency if it represents receptor density changes.
+          const receptorKey = `${extra.source}_sensitivity`;
+          const sensitivity = state.receptors[receptorKey] ?? 1.0;
+
+          // Handle linear mapping only for now
+          // In the future we can support hill/etc from extra couplings
+          if (extra.mapping.kind === "linear") {
+            const gain = extra.mapping.gain;
+            // Mapping gain is "amplitude gain", need to normalize by tau
+            const normalizedStrength = gain / def.dynamics.tau;
+            const effect = normalizedStrength * sourceValue * sensitivity;
+            dSignal += effect;
+          }
+        }
       }
     }
 
@@ -167,8 +229,14 @@ export function computeDerivatives(
     if (debug?.enableInterventions !== false) {
       for (const intervention of interventions) {
         // 1. Simple Rate support
-        if ((intervention as any).target === signalKey && (intervention as any).type === 'rate') {
-          const isActive = t >= intervention.startTime && (!intervention.duration || t <= intervention.startTime + intervention.duration);
+        if (
+          (intervention as any).target === signalKey &&
+          (intervention as any).type === "rate"
+        ) {
+          const isActive =
+            t >= intervention.startTime &&
+            (!intervention.duration ||
+              t <= intervention.startTime + intervention.duration);
           if (isActive) {
             dSignal += (intervention as any).magnitude ?? 0;
           }
@@ -181,7 +249,7 @@ export function computeDerivatives(
 
           if (concentration > 0) {
             const pk = intervention.pharmacology.pk;
-            const isActivityDependent = pk?.model === 'activity-dependent';
+            const isActivityDependent = pk?.model === "activity-dependent";
 
             for (const effect of intervention.pharmacology.pd) {
               // Determine all signals affected by this target and their coupling sign
@@ -191,28 +259,34 @@ export function computeDerivatives(
                 targets.push({ signal: signalKey as Signal, sign: 1 });
               }
 
-              const targetSpec = targets.find(t => t.signal === signalKey);
-              
+              const targetSpec = targets.find((t) => t.signal === signalKey);
+
               if (targetSpec) {
-                const density = state.receptors[`${effect.target}_density`] ?? 1.0;
+                const density =
+                  state.receptors[`${effect.target}_density`] ?? 1.0;
                 const signalTau = def.dynamics.tau;
 
                 let response: number;
 
                 if (isActivityDependent) {
                   // Activity-dependent: concentration is 0-1
-                  // Normalize by signalTau so effectGain represents steady-state unit shift
-                  response = (concentration * (effect.effectGain ?? 10) * density) / signalTau;
+                  // Normalize by signalTau so intrinsicEfficacy represents steady-state unit shift
+                  response =
+                    (concentration *
+                      (effect.intrinsicEfficacy ?? 10) *
+                      density) /
+                    signalTau;
                 } else {
                   // Drug-based: use Hill function with Ki or EC50
                   let effectiveConc = concentration;
-                  const molarMass = intervention.pharmacology?.molecule?.molarMass;
-                  
+                  const molarMass =
+                    intervention.pharmacology?.molecule?.molarMass;
+
                   // Convert mg/L to nM or uM if specified and molar mass is available
                   if (molarMass && molarMass > 0) {
-                    if (effect.unit === 'nM') {
+                    if (effect.unit === "nM") {
                       effectiveConc = (concentration / molarMass) * 1000000;
-                    } else if (effect.unit === 'uM' || effect.unit === 'µM') {
+                    } else if (effect.unit === "uM" || effect.unit === "µM") {
                       effectiveConc = (concentration / molarMass) * 1000;
                     }
                   }
@@ -220,26 +294,36 @@ export function computeDerivatives(
                   const EC50 = effect.EC50 ?? effect.Ki ?? 100;
                   const occupancy = hill(effectiveConc, EC50, 1.2);
                   const efficacy = effect.tau ?? 10;
-                  
-                  // Normalize by signalTau so effectGain represents steady-state unit shift
-                  response = (EmaxModel(occupancy, efficacy) * (effect.effectGain ?? 50) * density) / signalTau;
+
+                  // Normalize by signalTau so intrinsicEfficacy represents steady-state unit shift
+                  response =
+                    (EmaxModel(occupancy, efficacy) *
+                      (effect.intrinsicEfficacy ?? 50) *
+                      density) /
+                    signalTau;
                 }
 
                 // Apply pathway polarity
-                if (effect.mechanism === 'agonist' || effect.mechanism === 'PAM') {
+                if (
+                  effect.mechanism === "agonist" ||
+                  effect.mechanism === "PAM"
+                ) {
                   dSignal += response * targetSpec.sign;
-                } else if (effect.mechanism === 'antagonist') {
+                } else if (effect.mechanism === "antagonist") {
                   // Antagonist logic:
                   // 1. Blocking an EXCITATORY target (sign > 0) -> Reduces signal.
                   //    Scale by current value to prevent going below zero (cannot block what isn't there).
                   // 2. Blocking an INHIBITORY target (sign < 0) -> Increases signal (Disinhibition).
                   //    Add directly (like an agonist) since we are releasing the brake.
-                  
+
                   if (targetSpec.sign > 0) {
-                    dSignal -= response * targetSpec.sign * (currentValue / (currentValue + 20));
+                    dSignal -=
+                      response *
+                      targetSpec.sign *
+                      (currentValue / (currentValue + 20));
                   } else {
                     // sign is negative, so -response * sign is positive
-                    dSignal -= response * targetSpec.sign; 
+                    dSignal -= response * targetSpec.sign;
                   }
                 }
               }
@@ -255,21 +339,24 @@ export function computeDerivatives(
   // --- 3. Receptor Adaptation Derivatives ---
   if (debug?.enableReceptors !== false) {
     for (const receptorKey of Object.keys(state.receptors)) {
-      if (receptorKey.endsWith('_density')) {
-        const baseKey = receptorKey.replace('_density', '');
+      if (receptorKey.endsWith("_density")) {
+        const baseKey = receptorKey.replace("_density", "");
         const R = state.receptors[receptorKey];
-        
+
         let totalOccupancy = 0;
         for (const intervention of interventions) {
           if (!intervention.pharmacology?.pd) continue;
           const conc = state.pk[`${intervention.id}_central`] ?? 0;
-          const effect = intervention.pharmacology.pd.find((e: any) => e.target === baseKey);
+          const effect = intervention.pharmacology.pd.find(
+            (e: any) => e.target === baseKey,
+          );
           if (effect && conc > 0) {
             totalOccupancy += hill(conc, effect.EC50 ?? 100, 1.2);
           }
         }
 
-        const dR = 0.0005 * (1.0 - R) - 0.002 * Math.min(1.0, totalOccupancy) * R;
+        const dR =
+          0.0005 * (1.0 - R) - 0.002 * Math.min(1.0, totalOccupancy) * R;
         derivatives.receptors[receptorKey] = dR;
       }
     }
@@ -279,18 +366,22 @@ export function computeDerivatives(
   for (const auxKey of Object.keys(auxiliaryDefinitions)) {
     const def = auxiliaryDefinitions[auxKey];
     const currentValue = state.auxiliary[auxKey] ?? 0;
-    const setpoint = (debug?.enableHomeostasis !== false) ? def.dynamics.setpoint(ctx) : 0;
+    const setpoint =
+      debug?.enableHomeostasis !== false ? def.dynamics.setpoint(ctx) : 0;
     let dAux = (setpoint - currentValue) / def.dynamics.tau;
 
     if (debug?.enableHomeostasis !== false) {
       for (const prod of def.dynamics.production) {
         const sourceValue = getSourceValue(prod.source, state, ctx);
-        dAux += prod.coefficient * (prod.transform?.(sourceValue, state, ctx) ?? sourceValue);
+        dAux +=
+          prod.coefficient *
+          (prod.transform?.(sourceValue, state, ctx) ?? sourceValue);
       }
     }
 
     for (const clear of def.dynamics.clearance) {
-      dAux -= computeClearanceRate(clear, currentValue, state, ctx) * currentValue;
+      dAux -=
+        computeClearanceRate(clear, currentValue, state, ctx) * currentValue;
     }
 
     // Interventions targeting auxiliary variables (Transporters/Enzymes)
@@ -301,21 +392,42 @@ export function computeDerivatives(
           const concentration = state.pk[centralKey] ?? 0;
 
           if (concentration > 0) {
+            const molarMass = intervention.pharmacology?.molecule?.molarMass;
+
             for (const effect of intervention.pharmacology.pd) {
               if (effect.target === auxKey) {
-                // For enzymes/transporters, we usually don't have density states, 
-                // but we can scale by the current value to represent percent inhibition
-                const EC50 = effect.EC50 ?? effect.Ki ?? 100;
-                const occupancy = hill(concentration, EC50, 1.2);
-                
-                // Gain here represents maximum steady-state shift
-                // For a transporter, effectGain 30.0 means it can shift activity by 30 (e.g. huge inhibition)
-                const tau = def.dynamics.tau;
-                const response = (occupancy * (effect.effectGain ?? 1.0)) / tau;
+                // Drug-based: use Hill function with Ki or EC50
+                let effectiveConc = concentration;
 
-                if (effect.mechanism === 'agonist' || effect.mechanism === 'PAM') {
+                // Convert mg/L to nM or uM if specified and molar mass is available
+                if (molarMass && molarMass > 0) {
+                  if (effect.unit === "nM") {
+                    effectiveConc = (concentration / molarMass) * 1000000;
+                  } else if (effect.unit === "uM" || effect.unit === "µM") {
+                    effectiveConc = (concentration / molarMass) * 1000;
+                  }
+                }
+
+                const EC50 = effect.EC50 ?? effect.Ki ?? 100;
+                const occupancy = hill(effectiveConc, EC50, 1.2);
+                const efficacy = effect.tau ?? 10;
+
+                // Gain here represents maximum steady-state shift
+                const tau = def.dynamics.tau;
+                const response =
+                  (EmaxModel(occupancy, efficacy) *
+                    (effect.intrinsicEfficacy ?? 1.0)) /
+                  tau;
+
+                if (
+                  effect.mechanism === "agonist" ||
+                  effect.mechanism === "PAM"
+                ) {
                   dAux += response;
-                } else if (effect.mechanism === 'antagonist' || effect.mechanism === 'NAM') {
+                } else if (
+                  effect.mechanism === "antagonist" ||
+                  effect.mechanism === "NAM"
+                ) {
                   dAux -= response * (currentValue / (currentValue + 0.1));
                 }
               }
@@ -342,28 +454,62 @@ export function integrateStep(
   definitions: SignalDefinitionMap,
   auxiliaryDefinitions: AuxiliaryDefinitionMap = {},
   interventions: ActiveIntervention[] = [],
-  debug?: SolverDebugOptions
+  debug?: SolverDebugOptions,
+  conditionAdjustments?: ConditionAdjustments,
 ): SimulationState {
-  const k1 = computeDerivatives(state, t, ctx, definitions, auxiliaryDefinitions, interventions, debug);
-  
+  const k1 = computeDerivatives(
+    state,
+    t,
+    ctx,
+    definitions,
+    auxiliaryDefinitions,
+    interventions,
+    debug,
+    conditionAdjustments,
+  );
+
   const k2State = addStates(state, scaleState(k1, dt / 2));
-  const k2 = computeDerivatives(k2State, t + dt / 2, ctx, definitions, auxiliaryDefinitions, interventions, debug);
-  
+  const k2 = computeDerivatives(
+    k2State,
+    t + dt / 2,
+    ctx,
+    definitions,
+    auxiliaryDefinitions,
+    interventions,
+    debug,
+    conditionAdjustments,
+  );
+
   const k3State = addStates(state, scaleState(k2, dt / 2));
-  const k3 = computeDerivatives(k3State, t + dt / 2, ctx, definitions, auxiliaryDefinitions, interventions, debug);
-  
+  const k3 = computeDerivatives(
+    k3State,
+    t + dt / 2,
+    ctx,
+    definitions,
+    auxiliaryDefinitions,
+    interventions,
+    debug,
+    conditionAdjustments,
+  );
+
   const k4State = addStates(state, scaleState(k3, dt));
-  const k4 = computeDerivatives(k4State, t + dt, ctx, definitions, auxiliaryDefinitions, interventions, debug);
+  const k4 = computeDerivatives(
+    k4State,
+    t + dt,
+    ctx,
+    definitions,
+    auxiliaryDefinitions,
+    interventions,
+    debug,
+    conditionAdjustments,
+  );
 
   const combined = scaleState(
     addStates(
       k1,
-      addStates(
-        scaleState(k2, 2),
-        addStates(scaleState(k3, 2), k4)
-      )
+      addStates(scaleState(k2, 2), addStates(scaleState(k3, 2), k4)),
     ),
-    1 / 6
+    1 / 6,
   );
 
   let nextState = addStates(state, scaleState(combined, dt));
@@ -373,7 +519,11 @@ export function integrateStep(
       const def = definitions[signalKey]!;
       const min = def.min ?? 0;
       const max = def.max ?? Infinity;
-      nextState.signals[signalKey] = clamp(nextState.signals[signalKey], min, max);
+      nextState.signals[signalKey] = clamp(
+        nextState.signals[signalKey],
+        min,
+        max,
+      );
     }
   }
 
@@ -385,8 +535,12 @@ export function integrateStep(
   return nextState;
 }
 
-function getSourceValue(source: ProductionTerm['source'], state: SimulationState, ctx: DynamicsContext): number {
-  if (source === 'constant' || source === 'circadian') return 1.0;
+function getSourceValue(
+  source: ProductionTerm["source"],
+  state: SimulationState,
+  ctx: DynamicsContext,
+): number {
+  if (source === "constant" || source === "circadian") return 1.0;
   return Math.max(0, state.signals[source] ?? 0);
 }
 
@@ -399,7 +553,9 @@ function EmaxModel(occupancy: number, tau: number): number {
  * Uses centralized registry from @/models/physiology/pharmacology.
  * Transporters/enzymes return empty (they work via clearance, not direct coupling).
  */
-function getSignalTargets(target: string): Array<{ signal: Signal, sign: number }> {
+function getSignalTargets(
+  target: string,
+): Array<{ signal: Signal; sign: number }> {
   if (isReceptor(target)) {
     return getReceptorSignals(target);
   }
@@ -408,18 +564,23 @@ function getSignalTargets(target: string): Array<{ signal: Signal, sign: number 
   return [];
 }
 
-function computeClearanceRate(clear: ClearanceTerm, currentValue: number, state: SimulationState, ctx: DynamicsContext): number {
+function computeClearanceRate(
+  clear: ClearanceTerm,
+  currentValue: number,
+  state: SimulationState,
+  ctx: DynamicsContext,
+): number {
   let rate = clear.rate;
 
   switch (clear.type) {
-    case 'linear':
+    case "linear":
       rate = clear.rate;
       break;
-    case 'saturable':
+    case "saturable":
       const Km = clear.Km ?? 100;
       rate = clear.rate / (Km + currentValue);
       break;
-    case 'enzyme-dependent':
+    case "enzyme-dependent":
       // Default to 1.0 if enzyme not initialized (enzymes have baseline activity of 1)
       const enzymeActivity = state.auxiliary[clear.enzyme!] ?? 1.0;
       rate = clear.rate * enzymeActivity;

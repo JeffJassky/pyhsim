@@ -91,41 +91,41 @@
       </div>
     </div>
 
-    <div v-for="profile in profiles" :key="profile.key" class="profile-card">
+    <div v-for="condition in conditions" :key="condition.key" class="profile-card">
       <div class="profile-card__header">
         <div class="profile-card__title-bar">
-          <h4>{{ profile.label }}</h4>
+          <h4>{{ condition.label }}</h4>
           <label class="switch">
             <input
               type="checkbox"
-              :checked="state[profile.key].enabled"
-              @change="toggle(profile.key, $event)"
+              :checked="state[condition.key].enabled"
+              @change="toggle(condition.key, $event)"
             />
             <span class="slider" />
           </label>
         </div>
-        <p>{{ profile.description.physiology }}</p>
+        <p>{{ condition.description.physiology }}</p>
       </div>
       <div
-        v-if="state[profile.key].enabled && profile.params.length"
+        v-if="state[condition.key].enabled && condition.params.length"
         class="profile-card__params"
       >
         <div
-          v-for="param in profile.params"
+          v-for="param in condition.params"
           :key="param.key"
           class="profile-param"
         >
           <div class="profile-param__label">
             <span>{{ param.label }}</span>
-            <span>{{ state[profile.key].params[param.key].toFixed(2) }}</span>
+            <span>{{ state[condition.key].params[param.key].toFixed(2) }}</span>
           </div>
           <input
             type="range"
             :min="param.min"
             :max="param.max"
             :step="param.step"
-            :value="state[profile.key].params[param.key]"
-            @input="update(profile.key, param.key, $event)"
+            :value="state[condition.key].params[param.key]"
+            @input="update(condition.key, param.key, $event)"
           />
         </div>
       </div>
@@ -135,25 +135,25 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { PROFILE_LIBRARY } from '@/models';
-import { useProfilesStore } from '@/stores/profiles';
-import type { ProfileKey } from '@/models/registry/profiles';
+import { CONDITION_LIBRARY } from '@/models';
+import { useUserStore } from '@/stores/user';
+import type { ConditionKey } from '@/models/registry/conditions';
 import type { Subject } from '@/models/domain/subject';
 
-const profilesStore = useProfilesStore();
-const profiles = PROFILE_LIBRARY;
-const state = computed(() => profilesStore.profiles);
-const subject = computed(() => profilesStore.subject);
+const userStore = useUserStore();
+const conditions = CONDITION_LIBRARY;
+const state = computed(() => userStore.conditions);
+const subject = computed(() => userStore.subject);
 
-const toggle = (key: ProfileKey, event: Event) => {
+const toggle = (key: ConditionKey, event: Event) => {
   const target = event.target as HTMLInputElement | null;
-  profilesStore.toggleProfile(key, Boolean(target?.checked));
+  userStore.toggleCondition(key, Boolean(target?.checked));
 };
 
-const update = (key: ProfileKey, paramKey: string, event: Event) => {
+const update = (key: ConditionKey, paramKey: string, event: Event) => {
   const target = event.target as HTMLInputElement | null;
   if (!target) return;
-  profilesStore.updateParam(key, paramKey, Number(target.value));
+  userStore.updateParam(key, paramKey, Number(target.value));
 };
 
 const updateSubject = (key: keyof Subject, event: Event) => {
@@ -163,7 +163,7 @@ const updateSubject = (key: keyof Subject, event: Event) => {
   if (key !== 'sex') {
     value = Number(value);
   }
-  profilesStore.updateSubject({ [key]: value });
+  userStore.updateSubject({ [key]: value });
 };
 </script>
 
