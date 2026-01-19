@@ -259,7 +259,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
-  padding: 1rem 2rem;
+  padding: 1rem 2rem 6rem 2rem;
 }
 
 .app-shell__mobile-toggle {

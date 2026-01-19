@@ -81,14 +81,14 @@ export type MetabolicProxy =
   | "vitaminD3"
   | "mtor"
   | "ampk"
-  | "zinc"      // Serum zinc
-  | "b12"       // Vitamin B12
-  | "folate"    // Serum folate
-  | "iron"      // Serum iron
-  | "selenium"  // Serum selenium
-  | "copper"    // Serum copper
-  | "chromium"  // Chromium status
-  | "choline";  // Choline availability
+  | "zinc" // Serum zinc
+  | "b12" // Vitamin B12
+  | "folate" // Serum folate
+  | "iron" // Serum iron
+  | "selenium" // Serum selenium
+  | "copper" // Serum copper
+  | "chromium" // Chromium status
+  | "choline"; // Choline availability
 
 export type Signal = NeuroSignal | HormoneSignal | MetabolicProxy;
 
@@ -739,8 +739,7 @@ export interface ChartSeriesSpec {
   /** optional smoothing window in minutes */
   smoothMin?: number;
   info?: {
-    physiology: string;
-    application: string;
+    description: string;
     couplings?: Array<{
       source: string;
       mapping: ResponseSpec;

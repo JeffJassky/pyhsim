@@ -17,7 +17,7 @@ export const melatonin: UnifiedSignalDefinition = {
   key: "melatonin",
   label: "Melatonin",
   unit: "pg/mL",
-  description: "Plasma melatonin concentration.",
+  description: "Often called the 'vampire hormone,' melatonin is your brain's primary signal for biological night. It doesn't knock you out like a sedative, but rather opens the 'sleep gate' and helps coordinate your body's internal clocks.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -47,7 +47,7 @@ export const orexin: UnifiedSignalDefinition = {
   key: "orexin",
   label: "Orexin",
   unit: "pg/mL",
-  description: "CSF orexin-A concentration proxy.",
+  description: "The brain's master 'wakefulness' switch. Orexin keeps you alert, motivated, and interested in the outside world. It acts as the glue that stabilizes your awake state and prevents sudden lapses into sleepiness.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -86,7 +86,7 @@ export const histamine: UnifiedSignalDefinition = {
   key: "histamine",
   label: "Histamine",
   unit: "nM",
-  description: "Extracellular histamine concentration.",
+  description: "Beyond its role in allergies, histamine in the brain is a powerful alertness chemical. It acts as a general 'on' switch for arousal and attention, which is why older antihistamines make you feel so drowsy.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {

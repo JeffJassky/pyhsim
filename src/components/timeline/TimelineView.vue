@@ -314,6 +314,7 @@ const options = (): TimelineOptions => {
       },
     },
     zoomable: true,
+    zoomKey: 'ctrlKey' as const,
 	  moveable: true,
 	  zoomMin: 3600000, // 1 hour
 	  zoomMax: durationDays.value * 86400000,

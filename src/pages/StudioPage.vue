@@ -460,8 +460,7 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
           yMax: def.max ?? 100,
           idealTendency: def.idealTendency,
           info: {
-            physiology: (def as any).description?.physiology ?? 'Unified ODE Signal',
-            application: (def as any).description?.application ?? 'Dynamic simulation',
+            description: def.description,
             couplings: def.dynamics.couplings?.map((c) => ({
               source: UNIFIED_DEFS[c.source]?.label ?? c.source,
               mapping: { kind: 'linear', gain: c.strength }, // Approximate for display
@@ -479,8 +478,7 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
           color: '#94a3b8',
           idealTendency: 'none',
           info: {
-            physiology: 'Auxiliary variable (enzyme, transporter, or pool)',
-            application: 'Mechanistic state tracking',
+            description: 'Mechanistic state tracking for auxiliary variable (enzyme, transporter, or pool)'
           }
         } as ChartSeriesSpec;
       }

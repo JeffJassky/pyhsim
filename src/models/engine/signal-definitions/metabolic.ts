@@ -17,7 +17,7 @@ export const glucose: UnifiedSignalDefinition = {
   key: "glucose",
   label: "Glucose",
   unit: "mg/dL",
-  description: "Blood glucose concentration.",
+  description: "The primary fuel for your brain and muscles. Maintaining blood sugar in a steady range is essential for consistent energy levels, mental clarity, and long-term metabolic health.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => 90, // Gb: basal glucose
@@ -53,7 +53,7 @@ export const insulin: UnifiedSignalDefinition = {
   key: "insulin",
   label: "Insulin",
   unit: "µIU/mL",
-  description: "Serum insulin concentration.",
+  description: "The 'storage' hormone. Produced by the pancreas, insulin moves sugar from the blood into your cells to be used for immediate energy or saved for later. It's the master regulator of nutrient storage.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => 8.0, // Ib: basal insulin
@@ -89,7 +89,7 @@ export const glucagon: UnifiedSignalDefinition = {
   key: "glucagon",
   label: "Glucagon",
   unit: "pg/mL",
-  description: "Plasma glucagon concentration.",
+  description: "The 'mobilization' hormone. When blood sugar drops, glucagon tells your liver to release its stores of glucose, ensuring your brain and body always have a steady supply of fuel.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {

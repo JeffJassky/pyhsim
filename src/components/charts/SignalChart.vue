@@ -130,10 +130,16 @@
                   top: indicators[spec.key].y + '%',
                 }"
               >
-                <span class="series__indicator-arrow">{{ indicators[spec.key].type === 'up' ? '▲' : '▼' }}</span>
+                <span
+                  class="series__indicator-arrow"
+                  >{{ indicators[spec.key].type === 'up' ? '▲' : '▼' }}</span
+                >
                 <span class="series__indicator-value">
                   {{ indicators[spec.key].value.toFixed(indicators[spec.key].value < 1 ? 2 : 1) }}
-                  <span class="series__indicator-unit">{{ indicators[spec.key].unit }}</span>
+                  <span
+                    class="series__indicator-unit"
+                    >{{ indicators[spec.key].unit }}</span
+                  >
                 </span>
               </div>
             </Transition>
@@ -152,13 +158,77 @@
           <div class="series-info-expanded__content">
             <div class="info-grid">
               <div class="info-section">
-                <h4>Physiology</h4>
-                <p>{{ spec.info.physiology }}</p>
+                <h4>Description</h4>
+                <p>{{ spec.info.description }}</p>
               </div>
-              <div class="info-section">
-                <h4>Application</h4>
-                <p>{{ spec.info.application }}</p>
+            </div>
+
+            <div class="series__contributors">
+              <h4>ACTIVE CONDITIONS</h4>
+              <div
+                v-if="getSignalConditions(spec.key).length"
+                class="contributors-list"
+              >
+                <div
+                  v-for="cond in getSignalConditions(spec.key)"
+                  :key="cond.label"
+                  class="contributor-item contributor-item--condition"
+                >
+                  <div class="contributor-main">
+                    <span class="contributor-icon">🧬</span>
+                    <span class="contributor-label">{{ cond.label }}</span>
+                  </div>
+                  <div class="contributor-effect">
+                    <span
+                      class="contributor-mech"
+                      >{{ cond.mechanisms.join(', ') }}</span
+                    >
+                    <span v-if="cond.value !== 0" class="contributor-value">
+                      ({{ cond.value > 0 ? '+' : ''
+
+                      }}{{ (cond.value * 100).toFixed(0) }}%)
+                    </span>
+                  </div>
+                </div>
               </div>
+              <p v-else class="no-contributors">
+                No active conditions are currently modifying this pathway.
+              </p>
+            </div>
+
+            <div class="series__contributors">
+              <h4>ACTIVE CONTRIBUTORS</h4>
+              <div
+                v-if="getSignalContributors(spec.key).length"
+                class="contributors-list"
+              >
+                <div
+                  v-for="item in getSignalContributors(spec.key)"
+                  :key="item.id + item.label"
+                  class="contributor-item"
+                >
+                  <div class="contributor-main">
+                    <span class="contributor-icon">{{ item.icon }}</span>
+                    <span class="contributor-label">{{ item.label }}</span>
+                    <span v-if="item.isIndirect" class="contributor-badge">Indirect via {{ item.via }}</span>
+                  </div>
+                  <div class="contributor-effect">
+                    <span class="contributor-mech">{{ item.mechanism }}</span>
+                    <span class="contributor-value">
+                      ({{ item.value > 0 ? '+' : ''
+
+
+
+
+
+                      }}{{ item.value.toFixed(1) }} {{ item.unit }})
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p v-else class="no-contributors">
+                No active interventions are currently affecting this pathway.
+              </p>
             </div>
 
             <div v-if="spec.info.couplings?.length" class="series__couplings">
@@ -201,6 +271,14 @@ import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/signal-units';
 import Sortable from 'sortablejs';
 import { useUserStore } from '@/stores/user';
 import { useTimelineStore } from '@/stores/timeline';
+import { useLibraryStore } from '@/stores/library';
+import {
+  isReceptor, isTransporter, isEnzyme,
+  RECEPTORS, TRANSPORTERS, ENZYMES
+} from '@/models/physiology/pharmacology/registry';
+import { CONDITION_LIBRARY, RECEPTOR_SIGNAL_MAP, RECEPTOR_SENSITIVITY_GAIN } from '@/models/registry/conditions';
+import { UNIT_CONVERSIONS } from '@/models/engine/signal-units';
+import { EnzymeTarget, ReceptorTarget, TransporterTarget } from '@/models/physiology/pharmacology';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
@@ -224,6 +302,198 @@ const emit = defineEmits<{ (e: 'playhead', min: number): void }>();
 
 const userStore = useUserStore();
 const timelineStore = useTimelineStore();
+const libraryStore = useLibraryStore();
+
+const getSignalConditions = (signalKey: string) => {
+  const contributors = [];
+  const targetSignal = signalKey as Signal;
+
+  for (const condition of CONDITION_LIBRARY) {
+    const state = userStore.conditions[condition.key];
+    if (!state?.enabled) continue;
+
+    let totalGain = 0;
+    const mechanisms: string[] = [];
+
+    // 1. Check receptor modifiers
+    for (const mod of condition.receptorModifiers ?? []) {
+      const densityMappings = RECEPTOR_SIGNAL_MAP[mod.receptor] ?? [];
+      for (const mapping of densityMappings) {
+        if (mapping.signal === targetSignal) {
+          const intensity = mod.paramKey ? (state.params[mod.paramKey] ?? 1) : 1;
+          const gain = (mod.density ?? 0) * intensity * mapping.gainPerDensity;
+          if (gain !== 0) {
+            totalGain += gain;
+            mechanisms.push(`${mod.receptor} density`);
+          }
+        }
+      }
+
+      const sensitivityMappings = RECEPTOR_SENSITIVITY_GAIN[mod.receptor] ?? [];
+      for (const mapping of sensitivityMappings) {
+        if (mapping.signal === targetSignal) {
+          const intensity = mod.paramKey ? (state.params[mod.paramKey] ?? 1) : 1;
+          const gain = (mod.sensitivity ?? 0) * intensity * mapping.gainPerSensitivity;
+          if (gain !== 0) {
+            totalGain += gain;
+            mechanisms.push(`${mod.receptor} sensitivity`);
+          }
+        }
+      }
+    }
+
+    // 2. Check transporter modifiers
+    for (const mod of condition.transporterModifiers ?? []) {
+      if (TRANSPORTERS[mod.transporter as TransporterTarget]?.primarySignal === targetSignal) {
+        // Transporters handle signal levels dynamically, but for educational purposes
+        // we can describe the intended effect on the baseline.
+        mechanisms.push(`${mod.transporter} activity`);
+      }
+    }
+
+    // 3. Check enzyme modifiers
+    for (const mod of condition.enzymeModifiers ?? []) {
+      if (ENZYMES[mod.enzyme as EnzymeTarget]?.substrates.includes(targetSignal)) {
+        mechanisms.push(`${mod.enzyme} activity`);
+      }
+    }
+
+    // 4. Check legacy signal modifiers
+    for (const mod of condition.signalModifiers ?? []) {
+      if (mod.key === targetSignal) {
+        const intensity = mod.paramKey ? (state.params[mod.paramKey] ?? 1) : 1;
+        if (mod.baseline?.amplitudeGain) {
+          totalGain += mod.baseline.amplitudeGain * intensity;
+          mechanisms.push('Baseline adjustment');
+        }
+      }
+    }
+
+    if (mechanisms.length > 0) {
+      contributors.push({
+        label: condition.label,
+        mechanisms: [...new Set(mechanisms)],
+        value: totalGain,
+        unit: '%' // Conditions usually scale baselines by percentage
+      });
+    }
+  }
+
+  return contributors.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+};
+
+const getSignalContributors = (signalKey: string) => {
+  const contributors = [];
+  const targetSignal = signalKey as Signal;
+  const signalDef = UNIFIED_DEFS[targetSignal];
+
+  // Identify signals that directly drive this one via production terms or couplings
+  const upstreamSignals = new Set<Signal>();
+  if (signalDef) {
+    signalDef.dynamics.production.forEach(p => {
+      if (typeof p.source === 'string' && p.source !== 'constant' && p.source !== 'circadian') {
+        upstreamSignals.add(p.source as Signal);
+      }
+    });
+    signalDef.dynamics.couplings.forEach(c => {
+      upstreamSignals.add(c.source);
+    });
+  }
+
+  for (const item of timelineStore.items) {
+    const def = libraryStore.defs.find((d) => d.key === item.meta.key);
+    if (!def) continue;
+
+    let pharms: any[] = [];
+    if (typeof def.pharmacology === 'function') {
+      const result = (def.pharmacology as any)(item.meta.params);
+      pharms = Array.isArray(result) ? result : [result];
+    } else {
+      pharms = [def.pharmacology];
+    }
+
+    for (const pharm of pharms) {
+      if (!pharm.pd) continue;
+      for (const effect of pharm.pd) {
+        let affects = false;
+        let isIndirect = false;
+        let via: string | undefined = undefined;
+        let sign = 1;
+
+        if (effect.target === signalKey) {
+          affects = true;
+        } else if (isReceptor(effect.target)) {
+          const coupling = RECEPTORS[effect.target as any].couplings.find((c) => c.signal === signalKey);
+          if (coupling) {
+            affects = true;
+            sign = coupling.sign;
+          }
+        } else if (isTransporter(effect.target)) {
+          if (TRANSPORTERS[effect.target as any].primarySignal === signalKey) {
+            affects = true;
+            sign = -1;
+          }
+        } else if (isEnzyme(effect.target)) {
+          if (ENZYMES[effect.target as any].substrates.includes(targetSignal)) {
+            affects = true;
+            sign = -1;
+          }
+        }
+
+        // Check for indirect effects via upstream signals
+        if (!affects) {
+          const directTarget = effect.target as Signal;
+          if (upstreamSignals.has(directTarget)) {
+            affects = true;
+            isIndirect = true;
+            via = UNIFIED_DEFS[directTarget]?.label || directTarget;
+          } else if (isReceptor(effect.target)) {
+            const upCouplings = RECEPTORS[effect.target as any].couplings;
+            const match = upCouplings.find(c => upstreamSignals.has(c.signal));
+            if (match) {
+              affects = true;
+              isIndirect = true;
+              via = UNIFIED_DEFS[match.signal]?.label || match.signal;
+            }
+          }
+        }
+
+        if (affects) {
+          let mech = effect.mechanism;
+          let magnitude = effect.intrinsicEfficacy || 0;
+          
+          if (mech === 'antagonist' && sign === -1) {
+            magnitude = Math.abs(magnitude);
+          } else if (mech === 'agonist' && sign === -1) {
+            magnitude = -Math.abs(magnitude);
+          } else if (mech === 'antagonist') {
+            magnitude = -Math.abs(magnitude);
+          } else {
+            magnitude = Math.abs(magnitude);
+          }
+
+          const scale = UNIT_CONVERSIONS[targetSignal]?.scaleFactor || 1;
+
+          contributors.push({
+            id: item.id,
+            label: def.label,
+            icon: def.icon,
+            mechanism: effect.mechanism,
+            value: magnitude * scale,
+            unit: SIGNAL_UNITS[targetSignal]?.unit || '',
+            isIndirect,
+            via
+          });
+        }
+      }
+    }
+  }
+  
+  // Deduplicate and sort by absolute magnitude
+  return contributors
+    .filter((v, i, a) => a.findIndex(t => t.id === v.id && t.label === v.label) === i)
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+};
 
 const infoOpenKey = ref<string | null>(null);
 const chartContainer = ref<HTMLElement | null>(null);
@@ -747,6 +1017,12 @@ watch(
   margin: 0;
 }
 
+.series__contributors,
+.series__couplings {
+  margin-top: 1.25rem;
+}
+
+.series__contributors h4,
 .series__couplings h4 {
   font-size: 0.65rem;
   font-weight: 800;
@@ -754,6 +1030,78 @@ watch(
   letter-spacing: 0.1em;
   color: rgba(248, 250, 252, 0.4);
   margin: 0 0 0.75rem 0;
+}
+
+.contributors-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.contributor-item {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 140px;
+}
+
+.contributor-item--condition {
+  border-left: 3px solid #818cf8;
+}
+
+.contributor-main {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.contributor-icon {
+  font-size: 0.9rem;
+}
+
+.contributor-label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #f8fafc;
+}
+
+.contributor-badge {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(248, 250, 252, 0.5);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.contributor-effect {
+  display: flex;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  align-items: baseline;
+}
+
+.contributor-mech {
+  color: #8fbf5f;
+  text-transform: capitalize;
+}
+
+.contributor-value {
+  color: rgba(248, 250, 252, 0.6);
+  font-weight: 600;
+}
+
+.no-contributors {
+  font-size: 0.8rem;
+  color: rgba(248, 250, 252, 0.4);
+  font-style: italic;
+  margin: 0 0 1.5rem 0;
 }
 
 .couplings-grid {

@@ -149,7 +149,7 @@ export interface SignalModifier {
 /**
  * Maps receptor changes to downstream signal effects
  */
-const RECEPTOR_SIGNAL_MAP: Record<ReceptorKey, { signal: Signal; gainPerDensity: number }[]> = {
+export const RECEPTOR_SIGNAL_MAP: Record<ReceptorKey, { signal: Signal; gainPerDensity: number }[]> = {
   D1: [{ signal: 'dopamine', gainPerDensity: 0.15 }],
   D2: [{ signal: 'dopamine', gainPerDensity: 0.25 }],  // D2 is major postsynaptic receptor
   D3: [{ signal: 'dopamine', gainPerDensity: 0.05 }],
@@ -662,7 +662,7 @@ type BaselineAdj = { amplitude?: number; phaseShiftMin?: number };
  * Sensitivity affects signal transduction efficiency (how strongly each receptor responds).
  * Positive sensitivity = enhanced response, negative = blunted response.
  */
-const RECEPTOR_SENSITIVITY_GAIN: Record<ReceptorKey, { signal: Signal; gainPerSensitivity: number }[]> = {
+export const RECEPTOR_SENSITIVITY_GAIN: Record<ReceptorKey, { signal: Signal; gainPerSensitivity: number }[]> = {
   // Dopamine: sensitivity affects response magnitude
   D1: [{ signal: 'dopamine', gainPerSensitivity: 0.12 }],
   D2: [{ signal: 'dopamine', gainPerSensitivity: 0.20 }],

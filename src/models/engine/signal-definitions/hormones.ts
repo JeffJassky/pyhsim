@@ -21,7 +21,7 @@ export const cortisol: UnifiedSignalDefinition = {
   key: "cortisol",
   label: "Cortisol",
   unit: "µg/dL",
-  description: "Serum cortisol concentration.",
+  description: "The body's primary 'readiness' hormone. Cortisol peaks in the morning to help you wake up and mobilize energy. While it's essential for handling stress, chronic high levels can lead to fatigue and metabolic issues.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -65,7 +65,7 @@ export const adrenaline: UnifiedSignalDefinition = {
   key: "adrenaline",
   label: "Adrenaline",
   unit: "pg/mL",
-  description: "Plasma epinephrine concentration.",
+  description: "The 'acute stress' signal. Adrenaline rapidly increases heart rate and blood pressure while mobilizing sugar for immediate energy. It's the chemical driver of the 'fight or flight' response.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -99,7 +99,7 @@ export const leptin: UnifiedSignalDefinition = {
   key: "leptin",
   label: "Leptin",
   unit: "ng/mL",
-  description: "Serum leptin.",
+  description: "The 'long-term satiety' signal. Leptin is produced by your fat cells and tells your brain how much stored energy you have. It helps regulate your metabolic rate and long-term appetite balance.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) =>
@@ -123,7 +123,7 @@ export const ghrelin: UnifiedSignalDefinition = {
   key: "ghrelin",
   label: "Ghrelin",
   unit: "pg/mL",
-  description: "Active ghrelin.",
+  description: "The 'hunger' hormone. Ghrelin rises before meals to tell your brain it's time to eat and falls after you've had enough. It also influences growth hormone release and reward seeking.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -162,7 +162,7 @@ export const thyroid: UnifiedSignalDefinition = {
   key: "thyroid",
   label: "Thyroid",
   unit: "pmol/L",
-  description: "Free T4 proxy.",
+  description: "The body's 'metabolic thermostat.' Thyroid hormones set the pace for how quickly your cells burn energy and produce heat, influencing everything from heart rate to brain function.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -206,7 +206,7 @@ export const growthHormone: UnifiedSignalDefinition = {
   key: "growthHormone",
   label: "Growth Hormone",
   unit: "ng/mL",
-  description: "Serum growth hormone.",
+  description: "The primary 'repair and recovery' signal. Released mainly during deep sleep and after intense exercise, it stimulates tissue growth, muscle repair, and helps maintain a healthy body composition.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -268,7 +268,7 @@ export const oxytocin: UnifiedSignalDefinition = {
   key: "oxytocin",
   label: "Oxytocin",
   unit: "pg/mL",
-  description: "Plasma oxytocin.",
+  description: "Often called the 'bonding hormone,' oxytocin promotes feelings of trust, safety, and social connection. It's also a powerful buffer against stress, helping to lower cortisol levels naturally.",
   idealTendency: "higher",
   dynamics: {
     setpoint: (ctx) => {
@@ -307,7 +307,7 @@ export const prolactin: UnifiedSignalDefinition = {
   key: "prolactin",
   label: "Prolactin",
   unit: "ng/mL",
-  description: "Serum prolactin.",
+  description: "Rising naturally during sleep, prolactin plays a role in immune regulation, metabolic health, and the body's 'rest and digest' state. It's an important part of the nighttime recovery cycle.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -344,7 +344,7 @@ export const vasopressin: UnifiedSignalDefinition = {
   key: "vasopressin",
   label: "Vasopressin",
   unit: "pg/mL",
-  description: "Plasma vasopressin.",
+  description: "The 'antidiuretic' hormone. It regulates your body's water balance and blood pressure. It also acts within the brain to help synchronize internal clocks and social behavior.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -380,7 +380,7 @@ export const vip: UnifiedSignalDefinition = {
   key: "vip",
   label: "VIP",
   unit: "pg/mL",
-  description: "Vasoactive intestinal peptide.",
+  description: "A master synchronizer for your internal clocks. VIP helps the brain's master clock communicate with other systems, ensuring your digestion, mood, and hormones all stay on the same daily schedule.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -412,7 +412,7 @@ export const testosterone: UnifiedSignalDefinition = {
   key: "testosterone",
   label: "Testosterone",
   unit: "ng/dL",
-  description: "Total serum testosterone.",
+  description: "The primary male sex hormone, though important for all genders. It's foundational for muscle mass, bone density, and overall drive. In the brain, it influences confidence, mood, and cognitive focus.",
   idealTendency: "higher",
   dynamics: {
     setpoint: (ctx) => {
@@ -450,7 +450,7 @@ export const estrogen: UnifiedSignalDefinition = {
   key: "estrogen",
   label: "Estrogen",
   unit: "pg/mL",
-  description: "Serum estradiol.",
+  description: "The primary female sex hormone. Beyond its role in the menstrual cycle, estrogen is vital for brain health—supporting memory, mood, and protecting neurons from damage.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -485,7 +485,7 @@ export const progesterone: UnifiedSignalDefinition = {
   key: "progesterone",
   label: "Progesterone",
   unit: "ng/mL",
-  description: "Serum progesterone.",
+  description: "Rising in the second half of the menstrual cycle, progesterone has a generally calming effect on the brain. It also plays an important role in metabolic health, body temperature, and sleep quality.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -520,7 +520,7 @@ export const lh: UnifiedSignalDefinition = {
   key: "lh",
   label: "LH",
   unit: "IU/L",
-  description: "Luteinizing hormone.",
+  description: "Luteinizing hormone. A master control signal from the brain that tells the ovaries or testes to produce their respective sex hormones. It's the primary driver of ovulation in women.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -552,7 +552,7 @@ export const fsh: UnifiedSignalDefinition = {
   key: "fsh",
   label: "FSH",
   unit: "IU/L",
-  description: "Follicle-stimulating hormone.",
+  description: "Follicle-stimulating hormone. Along with LH, this is a top-level signal from the brain that regulates reproductive health, supporting the development of eggs in women and sperm in men.",
   idealTendency: "mid",
   dynamics: {
     setpoint: (ctx) => {
@@ -584,7 +584,7 @@ export const glp1: UnifiedSignalDefinition = {
   key: "glp1",
   label: "GLP-1",
   unit: "pmol/L",
-  description: "Active GLP-1.",
+  description: "A powerful gut signal that slows down digestion and tells your brain you're getting full. It helps regulate blood sugar and is the same pathway targeted by new GLP-1 weight loss medications.",
   idealTendency: "higher",
   dynamics: {
     setpoint: (ctx) => {
