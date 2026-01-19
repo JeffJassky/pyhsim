@@ -115,6 +115,48 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
     couplings: options?.conditionCouplings,
   } : {};
 
+  // --- PRE-CALCULATE DAILY ACTIVE SETS (Layer 1 Optimization) ---
+  const allActiveInterventions: ActiveIntervention[] = [];
+  if (enableInterventions) {
+    const numDays = Math.ceil((gridMins[gridMins.length - 1] + gridStep) / 1440);
+    for (let d = 0; d < numDays; d++) {
+      for (const item of items) {
+        const def = defsMap.get(item.meta.key);
+        if (!def) continue;
+        let pharms: any[] = [];
+        if ((item as any).resolvedPharmacology) pharms = (item as any).resolvedPharmacology;
+        else if (def.pharmacology && typeof def.pharmacology !== 'function') pharms = [def.pharmacology];
+
+        pharms.forEach((pharm, index) => {
+          const agentId = pharms.length > 1 ? `${item.id}_${index}` : item.id;
+          allActiveInterventions.push({
+            id: agentId, key: def.key, startTime: item.startMin + (d * 1440),
+            duration: item.durationMin, intensity: item.meta.intensity ?? 1.0,
+            params: item.meta.params, pharmacology: pharm
+          });
+        });
+      }
+    }
+  }
+  allActiveInterventions.sort((a, b) => a.startTime - b.startTime);
+
+  let activePointer = 0;
+  let activeSet: ActiveIntervention[] = [];
+
+  function updateActiveSet(t: number) {
+    // 1. Remove expired items (t > startTime + duration)
+    activeSet = activeSet.filter(iv => t <= iv.startTime + iv.duration);
+    
+    // 2. Add newly started items (t >= startTime)
+    while (activePointer < allActiveInterventions.length && allActiveInterventions[activePointer].startTime <= t) {
+      const iv = allActiveInterventions[activePointer];
+      if (t <= iv.startTime + iv.duration) {
+        activeSet.push(iv);
+      }
+      activePointer++;
+    }
+  }
+
   // --- ANALYTICAL EVALUATOR ---
   function getAnalyticalConc(id: string, t: number): number {
     const instances = agentsById.get(id);
@@ -178,8 +220,10 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
   if (options?.initialHomeostasisState) {
     currentState = { ...currentState, ...(options.initialHomeostasisState as any) };
   } else {
-    // 24-HOUR WARM-UP
+    activePointer = 0;
+    activeSet = [];
     for (let t_warm = -1440; t_warm < 0; t_warm += 1.0) {
+      updateActiveSet(t_warm);
       const wallMin = (t_warm % 1440 + 1440) % 1440;
       const isAsleep_warm = enableInterventions && items.some(item => {
         const def = defsMap.get(item.meta.key); if (def?.key !== 'sleep') return false;
@@ -191,11 +235,13 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
         dayOfYear: 1, isAsleep: isAsleep_warm, subject: options?.subject ?? ({} as any), physiology: options?.physiology ?? ({} as any),
       };
       for (const id of uniqueInterventions.keys()) currentState.pk[`${id}_central`] = getAnalyticalConc(id, t_warm);
-      currentState = integrateStep(currentState, t_warm, 1.0, warmUpCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, solverInterventions, options?.debug, conditionAdjustments);
+      currentState = integrateStep(currentState, t_warm, 1.0, warmUpCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
     }
   }
 
   // --- SIMULATION LOOP ---
+  activePointer = 0;
+  activeSet = [];
   gridMins.forEach((minute, idx) => {
     const adjustedMinute = (minute % minutesPerDay + minutesPerDay) % minutesPerDay;
     const circadianMinuteOfDay = (adjustedMinute + circadianShift + minutesPerDay) % minutesPerDay;
@@ -205,32 +251,32 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
       const subDt = dt / subSteps;
       for (let s = 0; s < subSteps; s++) {
         const t = minute - dt + s * subDt;
+        updateActiveSet(t);
         const currentMin = (t % minutesPerDay + minutesPerDay) % minutesPerDay;
         const isAsleep = enableInterventions && items.some(item => {
           const def = defsMap.get(item.meta.key); if (def?.key !== 'sleep') return false;
           const start = item.startMin; const end = item.startMin + item.durationMin;
-          return (currentMin >= start && currentMin <= end) || (currentMin+1440 >= start && currentMin+1440 <= end) || (currentMin-1440 >= start && currentMin-1440 <= end);
+          const m = t;
+          return (m >= start && m <= end) || (m + 1440 >= start && m + 1440 <= end) || (m - 1440 >= start && m - 1440 <= end);
         });
         const dynamicsCtx: DynamicsContext = {
           minuteOfDay: currentMin, circadianMinuteOfDay: (currentMin + circadianShift + minutesPerDay) % minutesPerDay,
           dayOfYear: 1, isAsleep, subject: options?.subject ?? ({} as any), physiology: options?.physiology ?? ({} as any),
         };
-        // Manual RK4 stages for analytical PK injection
         for (const id of uniqueInterventions.keys()) currentState.pk[`${id}_central`] = getAnalyticalConc(id, t);
-        const k1 = computeDerivatives(currentState, t, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, solverInterventions, options?.debug, conditionAdjustments);
+        const k1 = computeDerivatives(currentState, t, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
         const k2State = addStates(currentState, scaleState(k1, subDt / 2));
         for (const id of uniqueInterventions.keys()) k2State.pk[`${id}_central`] = getAnalyticalConc(id, t + subDt / 2);
-        const k2 = computeDerivatives(k2State, t + subDt / 2, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, solverInterventions, options?.debug, conditionAdjustments);
+        const k2 = computeDerivatives(k2State, t + subDt / 2, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
         const k3State = addStates(currentState, scaleState(k2, subDt / 2));
         for (const id of uniqueInterventions.keys()) k3State.pk[`${id}_central`] = getAnalyticalConc(id, t + subDt / 2);
-        const k3 = computeDerivatives(k3State, t + subDt / 2, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, solverInterventions, options?.debug, conditionAdjustments);
+        const k3 = computeDerivatives(k3State, t + subDt / 2, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
         const k4State = addStates(currentState, scaleState(k3, subDt));
         for (const id of uniqueInterventions.keys()) k4State.pk[`${id}_central`] = getAnalyticalConc(id, t + subDt);
-        const k4 = computeDerivatives(k4State, t + subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, solverInterventions, options?.debug, conditionAdjustments);
+        const k4 = computeDerivatives(k4State, t + subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
         const combined = scaleState(addStates(k1, addStates(scaleState(k2, 2), addStates(scaleState(k3, 2), k4))), 1 / 6);
         currentState = addStates(currentState, scaleState(combined, subDt));
 
-        // Clamp signals after manual RK4 (matching ode-solver.ts behavior)
         if (options?.debug?.enableBaselines !== false) {
           for (const signalKey of Object.keys(unifiedDefinitions)) {
             const def = unifiedDefinitions[signalKey];
@@ -246,14 +292,16 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
         }
       }
     } else {
+      updateActiveSet(minute);
       for (const id of uniqueInterventions.keys()) currentState.pk[`${id}_central`] = getAnalyticalConc(id, minute);
       const isAsleep = enableInterventions && items.some(item => {
         const def = defsMap.get(item.meta.key); if (def?.key !== 'sleep') return false;
         const start = item.startMin; const end = item.startMin + item.durationMin;
-        return (minute >= start && minute <= end) || (minute+1440 >= start && minute+1440 <= end) || (minute-1440 >= start && minute-1440 <= end);
+        const m = minute;
+        return (m >= start && m <= end) || (m + 1440 >= start && m + 1440 <= end) || (m - 1440 >= start && m - 1440 <= end);
       });
       const dynamicsCtx = { minuteOfDay: adjustedMinute, circadianMinuteOfDay, dayOfYear: 1, isAsleep, subject: options?.subject ?? ({} as any), physiology: options?.physiology ?? ({} as any) };
-      currentState = integrateStep(currentState, minute, 0, dynamicsCtx as any, unifiedDefinitions, AUXILIARY_DEFINITIONS, solverInterventions, options?.debug, conditionAdjustments);
+      currentState = integrateStep(currentState, minute, 0, dynamicsCtx as any, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
     }
     for (const signal of includeSignals) series[signal][idx] = currentState.signals[signal] ?? 0;
     for (const auxKey of Object.keys(auxiliarySeries)) auxiliarySeries[auxKey][idx] = currentState.auxiliary[auxKey] ?? 0;
@@ -277,7 +325,6 @@ function integrateStep(state: SimulationState, t: number, dt: number, ctx: Dynam
   const combined = scaleState(addStates(k1, addStates(scaleState(k2, 2), addStates(scaleState(k3, 2), k4))), 1 / 6);
   const nextState = addStates(state, scaleState(combined, dt));
 
-  // Clamp signals to min/max (matching ode-solver.ts behavior)
   if (debug?.enableBaselines !== false) {
     for (const signalKey of Object.keys(defs)) {
       const def = defs[signalKey];
@@ -288,11 +335,8 @@ function integrateStep(state: SimulationState, t: number, dt: number, ctx: Dynam
       }
     }
   }
-
-  // Clamp auxiliary variables to [0, 2]
   for (const auxKey of Object.keys(auxDefs)) {
     nextState.auxiliary[auxKey] = Math.max(0, Math.min(2.0, nextState.auxiliary[auxKey]));
   }
-
   return nextState;
 }
