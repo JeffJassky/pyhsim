@@ -3,3 +3,4 @@ dist
 test-results
 .env.local
 .env
+tsconfig.tsbuildinfo

@@ -94,15 +94,19 @@ export const Agents = {
         {
           target: "glucose",
           mechanism: "agonist",
-          intrinsicEfficacy: amountGrams * 2.0 * giMultiplier, // High GI = higher spike
+          intrinsicEfficacy: amountGrams * 2.0 * giMultiplier,
           unit: "mg/dL",
+          description:
+            "Carbs break down into blood sugar. Higher glycemic index foods spike it faster—this is the energy you feel (or the crash that follows).",
         },
         {
           target: "insulin",
           mechanism: "agonist",
-          intrinsicEfficacy: amountGrams * 0.5 * giMultiplier, // High GI = more insulin
+          intrinsicEfficacy: amountGrams * 0.5 * giMultiplier,
           unit: "µIU/mL",
           tau: 45,
+          description:
+            "Your pancreas releases insulin to move sugar into cells. Bigger carb loads mean more insulin, which also affects hunger and fat storage.",
         },
         {
           target: "glp1",
@@ -110,81 +114,103 @@ export const Agents = {
           intrinsicEfficacy: glp1Effect,
           unit: "pmol/L",
           tau: 35,
+          description:
+            "A gut hormone that amplifies insulin and tells your brain you're getting full. This is what Ozempic mimics—carbs naturally trigger it.",
         },
         // Reward and mood
         {
           target: "dopamine",
           mechanism: "agonist",
-          intrinsicEfficacy: Math.min(20, palatability * 20), // Palatability-driven reward
+          intrinsicEfficacy: Math.min(20, palatability * 20),
           unit: "nM",
           tau: 20,
+          description:
+            "Sweet and palatable foods trigger reward circuits. This is the 'mmm' feeling—and why sugary foods can feel hard to resist.",
         },
         {
           target: "serotonin",
           mechanism: "agonist",
           intrinsicEfficacy: carbSerotoninEffect,
           unit: "nM",
-          tau: 150, // Slow: tryptophan must be absorbed and converted
+          tau: 150,
+          description:
+            "Carbs help tryptophan enter the brain to make serotonin. This is why carb-heavy meals can improve mood and feel comforting.",
         },
         // Satiety signals
         {
           target: "gaba",
           mechanism: "agonist",
-          intrinsicEfficacy: gabaSatiety * 25, // GABA-ergic satiety
+          intrinsicEfficacy: gabaSatiety * 25,
           unit: "nM",
           tau: 30,
+          description:
+            "Eating activates calming circuits that signal satisfaction. This is part of why a good meal makes you feel content and relaxed.",
         },
         {
           target: "leptin",
           mechanism: "agonist",
           intrinsicEfficacy: leptinEffect,
           unit: "ng/mL",
-          tau: 180, // Leptin is slow to rise post-meal
+          tau: 180,
+          description:
+            "The 'fullness' hormone that tells your brain you've eaten enough. Takes a while to kick in—eating slowly helps you notice it.",
         },
         // Metabolic switching (fed state)
         {
           target: "ketone",
           mechanism: "antagonist",
-          intrinsicEfficacy: Math.min(1.5, amountGrams * 0.02), // Suppress ketogenesis
+          intrinsicEfficacy: Math.min(1.5, amountGrams * 0.02),
           unit: "mmol/L",
           tau: 60,
+          description:
+            "When carbs are available, your body stops burning fat for fuel. This is why eating carbs knocks you out of ketosis.",
         },
         {
           target: "ampk",
           mechanism: "antagonist",
-          intrinsicEfficacy: Math.min(0.5, amountGrams * 0.01), // Fed state suppresses AMPK
+          intrinsicEfficacy: Math.min(0.5, amountGrams * 0.01),
           unit: "fold-change",
           tau: 30,
+          description:
+            "Eating turns off the 'low fuel' sensor. Your body shifts from scavenging mode to storage mode.",
         },
         // Post-prandial sedation ("food coma")
         {
           target: "orexin",
           mechanism: "antagonist",
-          intrinsicEfficacy: orexinSuppression, // Orexin drives wakefulness; suppression → drowsiness
+          intrinsicEfficacy: orexinSuppression,
           unit: "pg/mL",
           tau: 45,
+          description:
+            "Big carb meals suppress your wakefulness signals. This is the 'food coma'—especially noticeable after high-GI meals.",
         },
         {
           target: "norepi",
           mechanism: "antagonist",
-          intrinsicEfficacy: norepinephrineSuppression, // Sympathetic withdrawal
+          intrinsicEfficacy: norepinephrineSuppression,
           unit: "pg/mL",
           tau: 30,
+          description:
+            "Your body shifts from 'alert mode' to 'rest and digest.' Less fight-or-flight chemicals means you feel calmer and sleepier.",
         },
         {
           target: "cortisol",
           mechanism: "antagonist",
-          intrinsicEfficacy: cortisolSuppression, // Rest-and-digest suppresses stress
+          intrinsicEfficacy: cortisolSuppression,
           unit: "µg/dL",
           tau: 60,
+          description:
+            "Eating signals safety to your body, so stress hormones drop. A comforting meal genuinely does reduce stress chemistry.",
         },
         // Thermic Effect of Food (TEF)
         {
           target: "thyroid",
           mechanism: "agonist",
-          intrinsicEfficacy: thyroidEffect, // T4→T3 conversion increases with feeding
+          intrinsicEfficacy: thyroidEffect,
           unit: "pmol/L",
-          tau: 60, // Peaks ~1hr post-meal
+          tau: 60,
+          description:
+            "Your metabolism speeds up to process the food. About 8% of carb calories go toward digestion itself.",
         },
       ],
     };
@@ -248,10 +274,12 @@ export const Agents = {
         // Satiety and hunger signals
         {
           target: "ghrelin",
-          mechanism: "antagonist", // Strong hunger suppression
+          mechanism: "antagonist",
           intrinsicEfficacy: amountGrams * 3.0,
           unit: "pg/mL",
           tau: 60,
+          description:
+            "Fat powerfully suppresses the hunger hormone. This is why fatty meals keep you satisfied for hours—fat is the most satiating macronutrient.",
         },
         {
           target: "leptin",
@@ -259,14 +287,18 @@ export const Agents = {
           intrinsicEfficacy: leptinEffect,
           unit: "ng/mL",
           tau: 120,
+          description:
+            "Fat triggers strong fullness signaling. Your body registers calorie-dense food and reduces appetite accordingly.",
         },
         // Incretin and metabolic
         {
           target: "glp1",
           mechanism: "agonist",
-          intrinsicEfficacy: amountGrams * 0.3, // Fat is a good GLP-1 stimulant
+          intrinsicEfficacy: amountGrams * 0.3,
           unit: "pmol/L",
           tau: 90,
+          description:
+            "Fat stimulates the same gut hormone that Ozempic mimics. This helps regulate appetite and slows stomach emptying.",
         },
         // Parasympathetic activation (rest and digest)
         {
@@ -275,6 +307,8 @@ export const Agents = {
           intrinsicEfficacy: vagalEffect,
           unit: "index",
           tau: 45,
+          description:
+            "Fatty meals activate the 'rest and digest' nerve. Your body prioritizes digestion, which is why rich meals make you want to relax.",
         },
         {
           target: "acetylcholine",
@@ -282,28 +316,36 @@ export const Agents = {
           intrinsicEfficacy: achEffect,
           unit: "nM",
           tau: 30,
+          description:
+            "The parasympathetic signal that tells your gut to secrete digestive enzymes. Fat requires thorough processing.",
         },
         // Reward, comfort, and bliss
         {
           target: "dopamine",
           mechanism: "agonist",
-          intrinsicEfficacy: Math.min(8, amountGrams * 0.2), // Fat is palatable
+          intrinsicEfficacy: Math.min(8, amountGrams * 0.2),
           unit: "nM",
           tau: 25,
+          description:
+            "Rich, fatty foods light up reward circuits. Evolution wired us to seek calorie-dense food—hence the appeal of butter and cream.",
         },
         {
           target: "oxytocin",
           mechanism: "agonist",
-          intrinsicEfficacy: Math.min(3, amountGrams * 0.08), // Comfort/social eating signal
+          intrinsicEfficacy: Math.min(3, amountGrams * 0.08),
           unit: "pg/mL",
           tau: 60,
+          description:
+            "Comfort foods trigger the 'bonding' hormone. This is why ice cream after a breakup actually does feel emotionally soothing.",
         },
         {
           target: "endocannabinoid",
           mechanism: "agonist",
-          intrinsicEfficacy: endocannabinoidEffect, // Anandamide "bliss molecule"
+          intrinsicEfficacy: endocannabinoidEffect,
           unit: "nM",
           tau: 90,
+          description:
+            "Fat triggers your body's own 'bliss molecules' (similar to what cannabis activates). This creates that deep satisfaction from rich food.",
         },
         // Post-prandial sedation
         {
@@ -311,7 +353,9 @@ export const Agents = {
           mechanism: "antagonist",
           intrinsicEfficacy: orexinSuppression,
           unit: "pg/mL",
-          tau: 90, // Slower onset than carbs
+          tau: 90,
+          description:
+            "Heavy fatty meals suppress wakefulness signals. The drowsiness comes on slower than with carbs but lasts longer.",
         },
         {
           target: "norepi",
@@ -319,6 +363,8 @@ export const Agents = {
           intrinsicEfficacy: norepinephrineSuppression,
           unit: "pg/mL",
           tau: 60,
+          description:
+            "Alertness chemicals drop as your body focuses on digestion. You shift from 'go mode' to 'processing mode.'",
         },
         {
           target: "cortisol",
@@ -326,14 +372,18 @@ export const Agents = {
           intrinsicEfficacy: cortisolSuppression,
           unit: "µg/dL",
           tau: 90,
+          description:
+            "A satisfying meal signals safety, lowering stress hormones. Comfort eating genuinely reduces cortisol—at least temporarily.",
         },
         // Inflammatory response
         {
           target: "inflammation",
           mechanism: "agonist",
-          intrinsicEfficacy: amountGrams * 0.05, // Post-prandial inflammation
+          intrinsicEfficacy: amountGrams * 0.05,
           unit: "index",
           tau: 120,
+          description:
+            "Large fatty meals cause temporary inflammation as fat enters the bloodstream. This is normal but excessive with very high-fat meals.",
         },
         // Thermic Effect of Food (TEF) - Fat has lowest TEF
         {
@@ -341,7 +391,9 @@ export const Agents = {
           mechanism: "agonist",
           intrinsicEfficacy: thyroidEffect,
           unit: "pmol/L",
-          tau: 120, // Slow: fat digestion is slow
+          tau: 120,
+          description:
+            "Fat has the lowest metabolic cost to process—only 3% of calories go to digestion. This is why fat is efficiently stored.",
         },
       ],
     };
@@ -417,24 +469,30 @@ export const Agents = {
         {
           target: "mtor",
           mechanism: "agonist",
-          intrinsicEfficacy: amountGrams * 1.0, // Strong mTOR activation
+          intrinsicEfficacy: amountGrams * 1.0,
           unit: "fold-change",
           tau: 90,
+          description:
+            "Protein flips the 'build muscle' switch. This is the main signal that tells your body to repair and grow tissue after exercise.",
         },
         // Metabolic hormones
         {
           target: "insulin",
           mechanism: "agonist",
-          intrinsicEfficacy: amountGrams * 0.2, // Less than carbs
+          intrinsicEfficacy: amountGrams * 0.2,
           unit: "µIU/mL",
           tau: 45,
+          description:
+            "Protein raises insulin, but less than carbs. This helps amino acids enter muscles without causing the same blood sugar swings.",
         },
         {
           target: "glucagon",
-          mechanism: "agonist", // Protein uniquely stimulates glucagon
+          mechanism: "agonist",
           intrinsicEfficacy: amountGrams * 0.5,
           unit: "pg/mL",
           tau: 30,
+          description:
+            "Protein uniquely raises glucagon alongside insulin. This maintains stable blood sugar—why protein is better for steady energy.",
         },
         {
           target: "glp1",
@@ -442,14 +500,18 @@ export const Agents = {
           intrinsicEfficacy: glp1Effect,
           unit: "pmol/L",
           tau: 60,
+          description:
+            "Protein triggers the gut fullness hormone, adding to its satiating effect. Another reason high-protein diets help with appetite.",
         },
         // Satiety signals
         {
           target: "ghrelin",
           mechanism: "antagonist",
-          intrinsicEfficacy: amountGrams * 2.5, // Protein is very satiating
+          intrinsicEfficacy: amountGrams * 2.5,
           unit: "pg/mL",
           tau: 60,
+          description:
+            "Protein strongly suppresses hunger—more than carbs or fat calorie-for-calorie. This is a key reason high-protein diets work for weight loss.",
         },
         {
           target: "leptin",
@@ -457,29 +519,37 @@ export const Agents = {
           intrinsicEfficacy: leptinEffect,
           unit: "ng/mL",
           tau: 150,
+          description:
+            "Protein signals fullness to your brain over the hours after eating. Part of why you stay satisfied longer after a steak than after pasta.",
         },
         // Neurotransmitter precursors
         {
           target: "dopamine",
           mechanism: "agonist",
-          intrinsicEfficacy: dopaminePrecursorEffect, // Tyrosine → L-DOPA → Dopamine
+          intrinsicEfficacy: dopaminePrecursorEffect,
           unit: "nM",
-          tau: 120, // Slow: requires absorption and synthesis
+          tau: 120,
+          description:
+            "Protein provides tyrosine, the raw material for dopamine. Good protein intake supports motivation, focus, and drive.",
         },
         {
           target: "serotonin",
           mechanism: "agonist",
-          intrinsicEfficacy: serotoninPrecursorEffect, // Tryptophan → 5-HTP → Serotonin
+          intrinsicEfficacy: serotoninPrecursorEffect,
           unit: "nM",
           tau: 150,
+          description:
+            "Protein provides tryptophan, which becomes serotonin. However, protein-heavy meals can actually reduce brain serotonin—see carbs for boosting it.",
         },
         // Excitatory amino acids
         {
           target: "glutamate",
           mechanism: "agonist",
-          intrinsicEfficacy: glutamateEffect, // Glutamic acid → glutamate
+          intrinsicEfficacy: glutamateEffect,
           unit: "µM",
           tau: 60,
+          description:
+            "Protein-rich foods contain glutamate—this is the 'umami' taste. It's also an alerting brain chemical, which is why protein meals feel energizing.",
         },
         // Histamine from histidine
         {
@@ -488,6 +558,8 @@ export const Agents = {
           intrinsicEfficacy: histamineEffect,
           unit: "nM",
           tau: 90,
+          description:
+            "High-protein foods (especially aged ones) contain histidine, which becomes histamine. Sensitive people may notice flushing or alertness.",
         },
         // Neurotrophin support
         {
@@ -495,7 +567,9 @@ export const Agents = {
           mechanism: "agonist",
           intrinsicEfficacy: bdnfEffect,
           unit: "ng/mL",
-          tau: 180, // Very slow: gene expression
+          tau: 180,
+          description:
+            "Protein provides the building blocks for BDNF, which supports brain health and learning. Adequate protein intake matters for cognition.",
         },
         // Mild sedation from satiety (less than carbs due to tyrosine counter)
         {
@@ -504,14 +578,18 @@ export const Agents = {
           intrinsicEfficacy: orexinSuppression,
           unit: "pg/mL",
           tau: 90,
+          description:
+            "Protein causes less food coma than carbs. The tyrosine (alerting) partly counteracts the sedation from fullness signals.",
         },
         // Thermic Effect of Food (TEF) - Protein has HIGHEST TEF (~25%)
         {
           target: "thyroid",
           mechanism: "agonist",
-          intrinsicEfficacy: thyroidEffect, // Strong metabolic activation
+          intrinsicEfficacy: thyroidEffect,
           unit: "pmol/L",
-          tau: 90, // Moderate onset
+          tau: 90,
+          description:
+            "Protein has the highest metabolic cost—25% of calories go to digestion. This 'thermic effect' is why high-protein diets boost metabolism.",
         },
       ],
     };
@@ -569,22 +647,28 @@ export const Agents = {
           mechanism: "agonist",
           intrinsicEfficacy: glp1Effect,
           unit: "pmol/L",
-          tau: 120, // Delayed: fermentation required
+          tau: 120,
+          description:
+            "Fiber feeds gut bacteria that release compounds triggering GLP-1. This delayed fullness signal helps you stay satisfied between meals.",
         },
         {
           target: "ghrelin",
           mechanism: "antagonist",
-          intrinsicEfficacy: amountGrams * 1.5, // Bulk/distension signal
+          intrinsicEfficacy: amountGrams * 1.5,
           unit: "pg/mL",
-          tau: 30, // Faster: mechanical effect
+          tau: 30,
+          description:
+            "Fiber physically fills your stomach, immediately suppressing hunger. This mechanical stretch is why high-fiber meals feel filling even with fewer calories.",
         },
         // Gut-brain axis (SCFA-mediated)
         {
           target: "gaba",
           mechanism: "agonist",
-          intrinsicEfficacy: scfaGabaEffect, // Gut bacteria produce GABA
+          intrinsicEfficacy: scfaGabaEffect,
           unit: "nM",
-          tau: 180, // Very delayed: bacterial fermentation
+          tau: 180,
+          description:
+            "Gut bacteria literally produce calming chemicals from fiber. This gut-brain connection is why fiber intake affects mood and anxiety hours later.",
         },
         {
           target: "vagal",
@@ -592,13 +676,17 @@ export const Agents = {
           intrinsicEfficacy: vagalEffect,
           unit: "index",
           tau: 60,
+          description:
+            "Fiber activates the nerve connecting your gut to your brain. This is how your gut 'talks' to your brain about what you've eaten.",
         },
         {
           target: "serotonin",
           mechanism: "agonist",
-          intrinsicEfficacy: gutSerotoninEffect, // Enterochromaffin cell stimulation
+          intrinsicEfficacy: gutSerotoninEffect,
           unit: "nM",
           tau: 90,
+          description:
+            "90% of your serotonin is made in the gut. Fiber feeds the bacteria that support this production—another reason diet affects mood.",
         },
         // Anti-inflammatory (gut barrier, microbiome)
         {
@@ -606,7 +694,9 @@ export const Agents = {
           mechanism: "antagonist",
           intrinsicEfficacy: scfaAntiInflammatory,
           unit: "index",
-          tau: 240, // Very slow: requires microbiome adaptation
+          tau: 240,
+          description:
+            "Fiber produces compounds that reduce gut inflammation and strengthen the intestinal barrier. This is why fiber protects against many chronic diseases.",
         },
         // Thermic Effect of Food (TEF) - from fermentation
         {
@@ -614,7 +704,9 @@ export const Agents = {
           mechanism: "agonist",
           intrinsicEfficacy: thyroidEffect,
           unit: "pmol/L",
-          tau: 240, // Very delayed: fermentation takes hours
+          tau: 240,
+          description:
+            "Bacteria expend energy fermenting fiber, generating a small metabolic boost. The calories from fiber are harder to extract than other carbs.",
         },
       ],
     };
@@ -640,6 +732,8 @@ export const Agents = {
           intrinsicEfficacy: 300 * intensity,
           unit: "pg/mL",
           tau: 5,
+          description:
+            "Exercise triggers an immediate rush of norepinephrine. This is the focus and alertness you feel—your brain preparing for physical demands.",
         },
         {
           target: "adrenaline",
@@ -647,6 +741,8 @@ export const Agents = {
           intrinsicEfficacy: 250 * intensity,
           unit: "pg/mL",
           tau: 2,
+          description:
+            "The classic 'adrenaline rush.' Your heart beats faster, airways open, and blood flows to muscles. The intensity you feel during exercise.",
         },
         {
           target: "cortisol",
@@ -654,6 +750,8 @@ export const Agents = {
           intrinsicEfficacy: 15 * intensity,
           unit: "µg/dL",
           tau: 15,
+          description:
+            "Exercise is a controlled stressor that raises cortisol. This mobilizes energy stores and is healthy in short bursts—it's chronic elevation that's harmful.",
         },
       ],
     };
@@ -674,6 +772,8 @@ export const Agents = {
           intrinsicEfficacy: 20 * intensity,
           unit: "fold-change",
           tau: 10,
+          description:
+            "When muscles burn energy, AMPK activates to restore it. This 'fuel gauge' sensor drives many benefits of exercise—improved insulin sensitivity, fat burning, mitochondria building.",
         },
         {
           target: "glucose",
@@ -681,13 +781,17 @@ export const Agents = {
           intrinsicEfficacy: 40 * intensity,
           unit: "mg/dL",
           tau: 5,
-        }, // Uptake
+          description:
+            "Working muscles pull glucose out of your blood. This is why exercise lowers blood sugar and improves insulin sensitivity—your muscles become glucose sinks.",
+        },
         {
           target: "bdnf",
           mechanism: "agonist",
           intrinsicEfficacy: 30 * intensity,
           unit: "ng/mL",
           tau: 30,
+          description:
+            "Exercise is the most powerful BDNF booster known. This 'brain fertilizer' improves memory, mood, and neuroplasticity—a key reason exercise helps depression.",
         },
       ],
     };
@@ -708,6 +812,8 @@ export const Agents = {
           intrinsicEfficacy: 15 * intensity,
           unit: "fold-change",
           tau: 120,
+          description:
+            "Lifting heavy things activates the 'build muscle' pathway. This mechanical tension is THE signal that tells your body to grow stronger.",
         },
         {
           target: "testosterone",
@@ -715,6 +821,8 @@ export const Agents = {
           intrinsicEfficacy: 5 * intensity,
           unit: "ng/dL",
           tau: 60,
+          description:
+            "Resistance training boosts testosterone acutely. This anabolic hormone helps build muscle and bone—one reason strength training benefits everyone.",
         },
         {
           target: "growthHormone",
@@ -722,6 +830,8 @@ export const Agents = {
           intrinsicEfficacy: 10 * intensity,
           unit: "ng/mL",
           tau: 30,
+          description:
+            "Heavy lifting triggers growth hormone release, especially with shorter rest periods. This aids muscle repair and fat metabolism.",
         },
         {
           target: "inflammation",
@@ -729,7 +839,9 @@ export const Agents = {
           intrinsicEfficacy: 0.5 * intensity,
           unit: "index",
           tau: 240,
-        }, // DOMS
+          description:
+            "Muscle damage creates inflammation—this is the soreness you feel 1-2 days later (DOMS). It's part of the repair process that makes muscles stronger.",
+        },
       ],
     };
   },
@@ -748,14 +860,14 @@ export const Agents = {
       volume: { kind: "lbm", base_L_kg: 2.0 },
     },
     pd: [
-      // Normalized: intrinsicEfficacy per mg approx.
-      // Target 10mg -> Gain 30.0. So 3.0 per mg.
       {
         target: "DAT",
         mechanism: "antagonist",
         Ki: 34,
         intrinsicEfficacy: mg * 3.0,
         unit: "nM",
+        description:
+          "Blocks dopamine reuptake, the main mechanism for focus. Dopamine stays active longer in the synapse, improving attention and motivation.",
       },
       {
         target: "NET",
@@ -763,6 +875,8 @@ export const Agents = {
         Ki: 300,
         intrinsicEfficacy: mg * 3.0,
         unit: "nM",
+        description:
+          "Also blocks norepinephrine reuptake, adding to alertness and focus. This contributes to the 'locked in' feeling during tasks.",
       },
       {
         target: "cortisol",
@@ -770,6 +884,8 @@ export const Agents = {
         EC50: 0.2,
         intrinsicEfficacy: mg * 0.5,
         unit: "µg/dL",
+        description:
+          "Mildly raises stress hormones, part of why it increases arousal. This can contribute to appetite suppression and elevated heart rate.",
       },
       {
         target: "SERT",
@@ -777,6 +893,8 @@ export const Agents = {
         Ki: 2000,
         intrinsicEfficacy: mg * 0.1,
         unit: "nM",
+        description:
+          "Very weak serotonin effects compared to dopamine. This is why methylphenidate feels more 'focused' than 'happy' compared to some other medications.",
       },
     ],
   }),
@@ -799,7 +917,8 @@ export const Agents = {
         Ki: 2400,
         intrinsicEfficacy: mg * 0.4,
         unit: "nM",
-        description: "Blocks adenosine from binding, preventing the 'sleep pressure' signal from reaching neurons.",
+        description:
+          "Blocks adenosine from binding, preventing the 'sleep pressure' signal from reaching neurons.",
       },
       {
         target: "Adenosine_A1",
@@ -807,7 +926,8 @@ export const Agents = {
         Ki: 12000,
         intrinsicEfficacy: mg * 0.2,
         unit: "nM",
-        description: "Inhibits the general slowing of neural activity, maintaining higher cognitive speed.",
+        description:
+          "Inhibits the general slowing of neural activity, maintaining higher cognitive speed.",
       },
       {
         target: "cortisol",
@@ -815,7 +935,8 @@ export const Agents = {
         EC50: 25000,
         intrinsicEfficacy: mg * 0.08,
         unit: "µg/dL",
-        description: "Triggers a modest release of the body's primary stress hormone.",
+        description:
+          "Triggers a modest release of the body's primary stress hormone.",
       },
       {
         target: "adrenaline",
@@ -823,7 +944,8 @@ export const Agents = {
         EC50: 30000,
         intrinsicEfficacy: mg * 0.12,
         unit: "pg/mL",
-        description: "Activates the 'fight or flight' response, increasing physical readiness.",
+        description:
+          "Activates the 'fight or flight' response, increasing physical readiness.",
       },
       {
         target: "norepi",
@@ -831,7 +953,8 @@ export const Agents = {
         EC50: 30000,
         intrinsicEfficacy: mg * 0.9375,
         unit: "pg/mL",
-        description: "Boosts focus and vigilance by increasing norepinephrine levels in the brain.",
+        description:
+          "Boosts focus and vigilance by increasing norepinephrine levels in the brain.",
       },
     ],
   }),
@@ -853,7 +976,8 @@ export const Agents = {
         Ki: 0.08,
         intrinsicEfficacy: mg * 8.33,
         unit: "pg/mL",
-        description: "Primary sleep-onset receptor. Activates the 'biological night' signal in the brain's master clock.",
+        description:
+          "Primary sleep-onset receptor. Activates the 'biological night' signal in the brain's master clock.",
       },
       {
         target: "MT2",
@@ -861,7 +985,8 @@ export const Agents = {
         Ki: 0.23,
         intrinsicEfficacy: mg * 6.66,
         unit: "pg/mL",
-        description: "Circadian phase shifter. Helps synchronize the timing of various biological rhythms.",
+        description:
+          "Circadian phase shifter. Helps synchronize the timing of various biological rhythms.",
       },
       {
         target: "orexin",
@@ -869,7 +994,8 @@ export const Agents = {
         EC50: 50,
         intrinsicEfficacy: mg * 3.33,
         unit: "pg/mL",
-        description: "Directly suppresses the 'wakefulness' peptide, reducing arousal and alertness.",
+        description:
+          "Directly suppresses the 'wakefulness' peptide, reducing arousal and alertness.",
       },
       {
         target: "cortisol",
@@ -877,7 +1003,8 @@ export const Agents = {
         EC50: 100,
         intrinsicEfficacy: mg * 1.66,
         unit: "µg/dL",
-        description: "Blunts the stress hormone response, facilitating the transition into deep rest.",
+        description:
+          "Blunts the stress hormone response, facilitating the transition into deep rest.",
       },
       {
         target: "GABA_A",
@@ -885,7 +1012,8 @@ export const Agents = {
         EC50: 200,
         intrinsicEfficacy: mg * 16.0,
         unit: "nM",
-        description: "Enhances the brain's primary inhibitory signal, providing a gentle sedative effect.",
+        description:
+          "Enhances the brain's primary inhibitory signal, providing a gentle sedative effect.",
       },
     ],
   }),
@@ -903,13 +1031,14 @@ export const Agents = {
       volume: { kind: "tbw", fraction: 0.5 },
     },
     pd: [
-      // Original 200mg -> Gain 72. So 0.36 per mg.
       {
         target: "GABA_A",
         mechanism: "PAM",
         EC50: 20.0,
         intrinsicEfficacy: mg * 0.36,
         unit: "nM",
+        description:
+          "Enhances your brain's natural calming signals. This is the main reason theanine promotes relaxation without drowsiness—it works with your GABA system gently.",
       },
       {
         target: "NMDA",
@@ -917,6 +1046,8 @@ export const Agents = {
         Ki: 50.0,
         intrinsicEfficacy: mg * 0.0021,
         unit: "µM",
+        description:
+          "Mildly reduces excitatory brain activity. This helps take the 'edge' off stimulation, which is why theanine pairs well with caffeine.",
       },
       {
         target: "serotonin",
@@ -924,6 +1055,8 @@ export const Agents = {
         EC50: 30.0,
         intrinsicEfficacy: mg * 0.004,
         unit: "nM",
+        description:
+          "Modestly supports serotonin levels, contributing to the calm, content feeling. Not strong enough to affect mood dramatically on its own.",
       },
       {
         target: "dopamine",
@@ -931,6 +1064,8 @@ export const Agents = {
         EC50: 35.0,
         intrinsicEfficacy: mg * 0.005,
         unit: "nM",
+        description:
+          "Slightly supports dopamine, which may help maintain motivation while relaxed. This is the 'alert but calm' quality of theanine.",
       },
       {
         target: "cortisol",
@@ -938,6 +1073,8 @@ export const Agents = {
         EC50: 25.0,
         intrinsicEfficacy: mg * 0.03,
         unit: "µg/dL",
+        description:
+          "Reduces stress hormone response, especially during demanding situations. This is why theanine can help with performance anxiety.",
       },
     ],
   }),
@@ -960,19 +1097,25 @@ export const Agents = {
           mechanism: "PAM",
           intrinsicEfficacy: units * 1.6,
           unit: "fold-change",
+          description:
+            "Alcohol's main effect—it amplifies your brain's 'calm down' signals. This causes relaxation, reduced anxiety, impaired coordination, and at high doses, sedation.",
         },
         {
           target: "ethanol",
           mechanism: "agonist",
           intrinsicEfficacy: grams * 10,
           unit: "mg/dL",
-        }, // Approx peak
+          description:
+            "Blood alcohol level. Legal limit is typically 80 mg/dL. Effects progress from relaxation to impairment to danger as this rises.",
+        },
         {
           target: "dopamine",
           mechanism: "agonist",
           intrinsicEfficacy: units * 3.3,
           unit: "nM",
           tau: 10,
+          description:
+            "The 'buzz'—alcohol releases dopamine in reward circuits. This pleasurable feeling drives the desire for more and underlies alcohol's addictive potential.",
         },
         {
           target: "NMDA",
@@ -980,24 +1123,32 @@ export const Agents = {
           Ki: 50000,
           intrinsicEfficacy: units * 0.13,
           unit: "fold-change",
+          description:
+            "Alcohol blocks learning and memory circuits. This is why you don't remember things well when drunk—and why blackouts happen at high doses.",
         },
         {
           target: "vasopressin",
           mechanism: "antagonist",
           intrinsicEfficacy: units * 6.6,
           unit: "pg/mL",
+          description:
+            "Suppresses the hormone that tells your kidneys to retain water. This is why alcohol makes you urinate frequently and causes dehydration (and hangovers).",
         },
         {
           target: "cortisol",
           mechanism: "agonist",
           intrinsicEfficacy: units * 6.6,
           unit: "µg/dL",
+          description:
+            "Alcohol raises stress hormones, especially as it wears off. This contributes to 'hangxiety'—the anxious, jittery feeling the morning after drinking.",
         },
         {
           target: "inflammation",
           mechanism: "agonist",
           intrinsicEfficacy: units * 0.33,
           unit: "index",
+          description:
+            "Alcohol triggers inflammatory responses throughout the body. Regular drinking increases baseline inflammation, affecting liver, brain, and overall health.",
         },
       ],
     };
@@ -1043,7 +1194,9 @@ export const Agents = {
           mechanism: "agonist",
           intrinsicEfficacy: dopamineEffect,
           unit: "nM",
-          tau: 90, // Slow: requires synthesis
+          tau: 90,
+          description:
+            "Provides raw material for dopamine production. Most helpful when you're depleted from stress or demanding cognitive work—won't do much if stores are already full.",
         },
         {
           target: "norepi",
@@ -1051,6 +1204,8 @@ export const Agents = {
           intrinsicEfficacy: norepinephrineEffect,
           unit: "pg/mL",
           tau: 120,
+          description:
+            "Supports norepinephrine synthesis for sustained alertness. Particularly useful during prolonged stress or sleep deprivation when these stores run low.",
         },
         {
           target: "adrenaline",
@@ -1058,6 +1213,8 @@ export const Agents = {
           intrinsicEfficacy: adrenalineEffect,
           unit: "pg/mL",
           tau: 150,
+          description:
+            "Adrenaline is made from norepinephrine, so tyrosine indirectly supports it. Helpful for maintaining stress response capacity.",
         },
         // Thyroid hormone support
         {
@@ -1065,7 +1222,9 @@ export const Agents = {
           mechanism: "agonist",
           intrinsicEfficacy: thyroidEffect,
           unit: "pmol/L",
-          tau: 240, // Very slow: thyroid synthesis
+          tau: 240,
+          description:
+            "Tyrosine is a building block for thyroid hormones. This is a minor effect—tyrosine deficiency is rare, so most people won't notice thyroid benefits.",
         },
         // Mild alertness from catecholamine support
         {
@@ -1074,6 +1233,8 @@ export const Agents = {
           intrinsicEfficacy: Math.min(3, mg * 0.003),
           unit: "pg/mL",
           tau: 90,
+          description:
+            "May support wakefulness signals indirectly through catecholamine support. The effect is subtle—more like preventing a dip than creating a boost.",
         },
       ],
     };
@@ -1115,7 +1276,9 @@ export const Agents = {
           mechanism: "agonist",
           intrinsicEfficacy: dopamineEffect,
           unit: "nM",
-          tau: 30, // Fast: direct precursor
+          tau: 30,
+          description:
+            "L-DOPA converts directly to dopamine, bypassing the usual rate-limiting step. This is why it's so effective for Parkinson's—and why it has stronger effects than tyrosine.",
         },
         // Secondary catecholamine effects
         {
@@ -1124,14 +1287,18 @@ export const Agents = {
           intrinsicEfficacy: norepinephrineEffect,
           unit: "pg/mL",
           tau: 60,
+          description:
+            "Some dopamine converts to norepinephrine, adding to alertness and focus. This cascade effect contributes to the overall stimulating quality.",
         },
         // Endocrine effects
         {
           target: "prolactin",
           mechanism: "antagonist",
-          intrinsicEfficacy: prolactinSuppression, // Dopamine inhibits prolactin
+          intrinsicEfficacy: prolactinSuppression,
           unit: "ng/mL",
           tau: 45,
+          description:
+            "Dopamine naturally suppresses prolactin release. This is why L-DOPA/Mucuna is sometimes used to lower elevated prolactin levels.",
         },
         {
           target: "growthHormone",
@@ -1139,6 +1306,8 @@ export const Agents = {
           intrinsicEfficacy: ghEffect,
           unit: "ng/mL",
           tau: 60,
+          description:
+            "Dopamine stimulates growth hormone release. This is why Mucuna supplements are sometimes marketed for fitness—though the effect is modest.",
         },
         // Mood/reward
         {
@@ -1147,6 +1316,8 @@ export const Agents = {
           intrinsicEfficacy: Math.min(5, mg * 0.02),
           unit: "pg/mL",
           tau: 45,
+          description:
+            "The dopamine boost supports wakefulness and motivation. You may notice increased drive and interest in activities.",
         },
       ],
     };
@@ -1855,226 +2026,244 @@ export const Agents = {
     return {
       molecule: { name: "Cold Exposure", molarMass: 0 },
       pk: { model: "activity-dependent" },
-      pd: [
-        // Primary sympathetic activation
-        {
-          target: "norepi",
-          mechanism: "agonist",
-          intrinsicEfficacy: norepinephrineEffect,
-          unit: "pg/mL",
-          tau: 5, // Very fast onset
+          pd: [
+              // Primary sympathetic activation
+              {
+                target: "norepi",
+                mechanism: "agonist",
+                intrinsicEfficacy: norepinephrineEffect,
+                unit: "pg/mL",
+                tau: 5, // Very fast onset
+                description: "Cold triggers a massive rush of norepinephrine, boosting alertness and metabolism far beyond what caffeine can do.",
+              },
+              {
+                target: "adrenaline",
+                mechanism: "agonist",
+                intrinsicEfficacy: adrenalineEffect,
+                unit: "pg/mL",
+                tau: 3,
+                description: "The 'cold shock' response immediately prepares your body for survival, spiking energy and heart rate.",
+              },
+              // Dopamine mood lift (delayed, persists post-exposure)
+              {
+                target: "dopamine",
+                mechanism: "agonist",
+                intrinsicEfficacy: dopamineEffect,
+                unit: "nM",
+                tau: 30,
+                description: "Cold immersion can raise dopamine by up to 250%. This creates a steady, multi-hour mood lift without the 'crash'.",
+              },
+              // Stress response
+              {
+                target: "cortisol",
+                mechanism: "agonist",
+                intrinsicEfficacy: cortisolEffect,
+                unit: "µg/dL",
+                tau: 15,
+                description: "Briefly raises cortisol. This 'hormetic' stress helps train your nervous system to stay calm under pressure.",
+              },
+              // Neurotrophic (cold shock proteins)
+              {
+                target: "bdnf",
+                mechanism: "agonist",
+                intrinsicEfficacy: bdnfEffect,
+                unit: "ng/mL",
+                tau: 60,
+                description: "Activates 'cold shock' proteins that support brain health and protect neurons from damage.",
+              },
+              // Metabolic activation (BAT)
+              {
+                target: "thyroid",
+                mechanism: "agonist",
+                intrinsicEfficacy: thyroidEffect,
+                unit: "pmol/L",
+                tau: 30,
+                description: "Stimulates brown adipose tissue (BAT) to burn fat for heat, increasing your overall metabolic rate.",
+              },
+              // Vagal dive reflex (brief parasympathetic activation)
+              {
+                target: "vagal",
+                mechanism: "agonist",
+                intrinsicEfficacy: vagalEffect,
+                unit: "index",
+                tau: 10,
+                description: "Immersion triggers the 'dive reflex,' which can help reset the heart rate and calm the nervous system afterward.",
+              },
+              // Anti-inflammatory (chronic adaptation)
+              {
+                target: "inflammation",
+                mechanism: "antagonist",
+                intrinsicEfficacy: antiInflammatory,
+                unit: "index",
+                tau: 120,
+                description: "Regular cold exposure helps lower systemic inflammation and speeds up physical recovery.",
+              },
+              // Alertness
+              {
+                target: "orexin",
+                mechanism: "agonist",
+                intrinsicEfficacy: Math.min(20, effectiveIntensity * 15),
+                unit: "pg/mL",
+                tau: 10,
+                description: "Directly stimulates wakefulness signals, instantly clearing brain fog and sleep inertia.",
+              },
+            ],
+          };
         },
-        {
-          target: "adrenaline",
-          mechanism: "agonist",
-          intrinsicEfficacy: adrenalineEffect,
-          unit: "pg/mL",
-          tau: 3,
+      
+        /**
+         * HEAT EXPOSURE
+         * Sauna, steam room, hot baths.
+         * 
+         * Comprehensive effects:
+         * - Heat shock proteins: BDNF ↑, inflammation ↓
+         * - Growth hormone: ↑↑ (major effect, up to 16x increase)
+         * - Prolactin: ↑
+         * - Relaxation: cortisol ↓, vagal ↑
+         * - Serotonin: ↑
+         * - Vasodilation: blood pressure effects
+         * - Dehydration stress: vasopressin ↑
+         */
+        HeatExposure: (
+          tempCelsius: number,
+          type: "dry" | "infrared" | "steam" = "dry",
+          intensity: number = 1.0,
+        ): PharmacologyDef => {
+          // Temperature affects intensity
+          // Dry sauna: 80-100°C (strongest)
+          // Infrared: 45-65°C (moderate, deeper penetration)
+          // Steam: 40-50°C (humidity compensates for lower temp)
+      
+          let tempFactor: number;
+          let ghMultiplier: number;
+      
+          switch (type) {
+            case "dry":
+              tempFactor = Math.min(1.5, (tempCelsius - 60) / 40);
+              ghMultiplier = 1.0; // Strongest GH response
+              break;
+            case "infrared":
+              tempFactor = Math.min(1.2, (tempCelsius - 35) / 30);
+              ghMultiplier = 0.7; // Moderate GH
+              break;
+            case "steam":
+              tempFactor = Math.min(1.3, (tempCelsius - 35) / 15);
+              ghMultiplier = 0.8; // Good GH, humidity helps
+              break;
+            default:
+              tempFactor = 1.0;
+              ghMultiplier = 1.0;
+          }
+      
+          const effectiveIntensity = Math.max(0.3, intensity * tempFactor);
+      
+          // Growth hormone can increase 2-16x with heat exposure
+          const ghEffect = Math.min(25, effectiveIntensity * ghMultiplier * 20);
+          const prolactinEffect = Math.min(15, effectiveIntensity * 10);
+          const bdnfEffect = Math.min(12, effectiveIntensity * 10);
+          const serotoninEffect = Math.min(8, effectiveIntensity * 6);
+          const vagalEffect = Math.min(0.4, effectiveIntensity * 0.3);
+          const cortisolReduction = Math.min(5, effectiveIntensity * 4);
+          const antiInflammatory = Math.min(0.25, effectiveIntensity * 0.2);
+          const vasopressinEffect = Math.min(8, effectiveIntensity * 6); // Dehydration signal
+      
+          return {
+            molecule: { name: "Heat Exposure", molarMass: 0 },
+            pk: { model: "activity-dependent" },
+            pd: [
+              // Major growth hormone release
+              {
+                target: "growthHormone",
+                mechanism: "agonist",
+                intrinsicEfficacy: ghEffect,
+                unit: "ng/mL",
+                tau: 20,
+                description: "Sauna use can spike growth hormone by 200-1600%, supporting muscle repair and anti-aging.",
+              },
+              // Prolactin increase
+              {
+                target: "prolactin",
+                mechanism: "agonist",
+                intrinsicEfficacy: prolactinEffect,
+                unit: "ng/mL",
+                tau: 30,
+                description: "Heat stress triggers prolactin, which may help with heat adaptation and neurogenesis.",
+              },
+              // Neurotrophic (heat shock proteins)
+              {
+                target: "bdnf",
+                mechanism: "agonist",
+                intrinsicEfficacy: bdnfEffect,
+                unit: "ng/mL",
+                tau: 45,
+                description: "Activates 'heat shock' proteins that support brain health and help repair damaged proteins.",
+              },
+              // Mood and relaxation
+              {
+                target: "serotonin",
+                mechanism: "agonist",
+                intrinsicEfficacy: serotoninEffect,
+                unit: "nM",
+                tau: 30,
+                description: "The warmth boosts serotonin levels, creating a feeling of peacefulness and well-being.",
+              },
+              {
+                target: "vagal",
+                mechanism: "agonist",
+                intrinsicEfficacy: vagalEffect,
+                unit: "index",
+                tau: 20,
+                description: "As your body relaxes into the heat, vagal tone increases, helping you shift into recovery mode.",
+              },
+              // Stress reduction
+              {
+                target: "cortisol",
+                mechanism: "antagonist",
+                intrinsicEfficacy: cortisolReduction,
+                unit: "µg/dL",
+                tau: 45,
+                description: "Deep heat is a powerful stress-reliever that helps lower systemic cortisol levels.",
+              },
+              // Anti-inflammatory
+              {
+                target: "inflammation",
+                mechanism: "antagonist",
+                intrinsicEfficacy: antiInflammatory,
+                unit: "index",
+                tau: 90,
+                description: "Helps reduce markers of inflammation and muscle soreness, making it great for recovery.",
+              },
+              // Fluid balance
+              {
+                target: "vasopressin",
+                mechanism: "agonist",
+                intrinsicEfficacy: vasopressinEffect,
+                unit: "pg/mL",
+                tau: 30,
+                description: "Sweating triggers the hormone that helps your body retain water and manage hydration.",
+              },
+              // Mild sedation post-exposure
+              {
+                target: "orexin",
+                mechanism: "antagonist",
+                intrinsicEfficacy: Math.min(8, effectiveIntensity * 6),
+                unit: "pg/mL",
+                tau: 60,
+                description: "Heat exposure can lead to a pleasant post-sauna drowsiness, signaling deep relaxation and recovery."
+              },
+              // Endocannabinoid activation (relaxation)
+              {
+                target: "endocannabinoid",
+                mechanism: "agonist",
+                intrinsicEfficacy: Math.min(5, effectiveIntensity * 4),
+                unit: "nM",
+                tau: 30,
+                description: "Heat activates your body's natural 'bliss molecules,' contributing to the profound sense of well-being and calm after a session."
+              }
+            ],
+          };
         },
-        // Dopamine mood lift (delayed, persists post-exposure)
-        {
-          target: "dopamine",
-          mechanism: "agonist",
-          intrinsicEfficacy: dopamineEffect,
-          unit: "nM",
-          tau: 30,
-        },
-        // Stress response
-        {
-          target: "cortisol",
-          mechanism: "agonist",
-          intrinsicEfficacy: cortisolEffect,
-          unit: "µg/dL",
-          tau: 15,
-        },
-        // Neurotrophic (cold shock proteins)
-        {
-          target: "bdnf",
-          mechanism: "agonist",
-          intrinsicEfficacy: bdnfEffect,
-          unit: "ng/mL",
-          tau: 60,
-        },
-        // Metabolic activation (BAT)
-        {
-          target: "thyroid",
-          mechanism: "agonist",
-          intrinsicEfficacy: thyroidEffect,
-          unit: "pmol/L",
-          tau: 30,
-        },
-        // Vagal dive reflex (brief parasympathetic activation)
-        {
-          target: "vagal",
-          mechanism: "agonist",
-          intrinsicEfficacy: vagalEffect,
-          unit: "index",
-          tau: 10,
-        },
-        // Anti-inflammatory (chronic adaptation)
-        {
-          target: "inflammation",
-          mechanism: "antagonist",
-          intrinsicEfficacy: antiInflammatory,
-          unit: "index",
-          tau: 120,
-        },
-        // Alertness
-        {
-          target: "orexin",
-          mechanism: "agonist",
-          intrinsicEfficacy: Math.min(20, effectiveIntensity * 15),
-          unit: "pg/mL",
-          tau: 10,
-        },
-      ],
-    };
-  },
-
-  /**
-   * HEAT EXPOSURE
-   * Sauna, steam room, hot baths.
-   *
-   * Comprehensive effects:
-   * - Heat shock proteins: BDNF ↑, inflammation ↓
-   * - Growth hormone: ↑↑ (major effect, up to 16x increase)
-   * - Prolactin: ↑
-   * - Relaxation: cortisol ↓, vagal ↑
-   * - Serotonin: ↑
-   * - Vasodilation: blood pressure effects
-   * - Dehydration stress: vasopressin ↑
-   */
-  HeatExposure: (
-    tempCelsius: number,
-    type: "dry" | "infrared" | "steam" = "dry",
-    intensity: number = 1.0,
-  ): PharmacologyDef => {
-    // Temperature affects intensity
-    // Dry sauna: 80-100°C (strongest)
-    // Infrared: 45-65°C (moderate, deeper penetration)
-    // Steam: 40-50°C (humidity compensates for lower temp)
-
-    let tempFactor: number;
-    let ghMultiplier: number;
-
-    switch (type) {
-      case "dry":
-        tempFactor = Math.min(1.5, (tempCelsius - 60) / 40);
-        ghMultiplier = 1.0; // Strongest GH response
-        break;
-      case "infrared":
-        tempFactor = Math.min(1.2, (tempCelsius - 35) / 30);
-        ghMultiplier = 0.7; // Moderate GH
-        break;
-      case "steam":
-        tempFactor = Math.min(1.3, (tempCelsius - 35) / 15);
-        ghMultiplier = 0.8; // Good GH, humidity helps
-        break;
-      default:
-        tempFactor = 1.0;
-        ghMultiplier = 1.0;
-    }
-
-    const effectiveIntensity = Math.max(0.3, intensity * tempFactor);
-
-    // Growth hormone can increase 2-16x with heat exposure
-    const ghEffect = Math.min(25, effectiveIntensity * ghMultiplier * 20);
-    const prolactinEffect = Math.min(15, effectiveIntensity * 10);
-    const bdnfEffect = Math.min(12, effectiveIntensity * 10);
-    const serotoninEffect = Math.min(8, effectiveIntensity * 6);
-    const vagalEffect = Math.min(0.4, effectiveIntensity * 0.3);
-    const cortisolReduction = Math.min(5, effectiveIntensity * 4);
-    const antiInflammatory = Math.min(0.25, effectiveIntensity * 0.2);
-    const vasopressinEffect = Math.min(8, effectiveIntensity * 6); // Dehydration signal
-
-    return {
-      molecule: { name: "Heat Exposure", molarMass: 0 },
-      pk: { model: "activity-dependent" },
-      pd: [
-        // Major growth hormone release
-        {
-          target: "growthHormone",
-          mechanism: "agonist",
-          intrinsicEfficacy: ghEffect,
-          unit: "ng/mL",
-          tau: 20,
-        },
-        // Prolactin increase
-        {
-          target: "prolactin",
-          mechanism: "agonist",
-          intrinsicEfficacy: prolactinEffect,
-          unit: "ng/mL",
-          tau: 30,
-        },
-        // Neurotrophic (heat shock proteins)
-        {
-          target: "bdnf",
-          mechanism: "agonist",
-          intrinsicEfficacy: bdnfEffect,
-          unit: "ng/mL",
-          tau: 45,
-        },
-        // Relaxation and mood
-        {
-          target: "serotonin",
-          mechanism: "agonist",
-          intrinsicEfficacy: serotoninEffect,
-          unit: "nM",
-          tau: 30,
-        },
-        {
-          target: "vagal",
-          mechanism: "agonist",
-          intrinsicEfficacy: vagalEffect,
-          unit: "index",
-          tau: 20,
-        },
-        // Stress reduction
-        {
-          target: "cortisol",
-          mechanism: "antagonist",
-          intrinsicEfficacy: cortisolReduction,
-          unit: "µg/dL",
-          tau: 45,
-        },
-        // Anti-inflammatory
-        {
-          target: "inflammation",
-          mechanism: "antagonist",
-          intrinsicEfficacy: antiInflammatory,
-          unit: "index",
-          tau: 90,
-        },
-        // Dehydration/fluid balance
-        {
-          target: "vasopressin",
-          mechanism: "agonist",
-          intrinsicEfficacy: vasopressinEffect,
-          unit: "pg/mL",
-          tau: 30,
-        },
-        // Mild sedation post-exposure
-        {
-          target: "orexin",
-          mechanism: "antagonist",
-          intrinsicEfficacy: Math.min(8, effectiveIntensity * 6),
-          unit: "pg/mL",
-          tau: 60,
-        },
-        // Endocannabinoid activation (relaxation)
-        {
-          target: "endocannabinoid",
-          mechanism: "agonist",
-          intrinsicEfficacy: Math.min(5, effectiveIntensity * 4),
-          unit: "nM",
-          tau: 30,
-        },
-      ],
-    };
-  },
-
-  // =============================================================================
+        // =============================================================================
   // PRESCRIPTION MEDICATIONS - ADHD
   // =============================================================================
 
@@ -2434,7 +2623,7 @@ export const Agents = {
    * SNRI - dose-dependent NET effects.
    */
   Venlafaxine: (mg: number): PharmacologyDef => ({
-    molecule: { name: "Venlafaxine", molarMass: 277.40, logP: 2.74 },
+    molecule: { name: "Venlafaxine", molarMass: 277.4, logP: 2.74 },
     pk: {
       model: "1-compartment",
       bioavailability: 0.45,
@@ -2759,7 +2948,7 @@ export const Agents = {
    * Azapirone anxiolytic - 5-HT1A partial agonist.
    */
   Buspirone: (mg: number): PharmacologyDef => ({
-    molecule: { name: "Buspirone", molarMass: 385.50, logP: 1.74 },
+    molecule: { name: "Buspirone", molarMass: 385.5, logP: 1.74 },
     pk: {
       model: "1-compartment",
       bioavailability: 0.04, // Very low (extensive first-pass)
@@ -2819,6 +3008,7 @@ export const Agents = {
         Ki: 2,
         intrinsicEfficacy: mg * 0.8,
         unit: "nM",
+        description: "Blocks histamine, the brain's main 'wake' signal. This is why it's so effective for both allergies and sleep.",
       },
       // Sedation via H1
       {
@@ -2827,6 +3017,7 @@ export const Agents = {
         intrinsicEfficacy: mg * 0.3,
         unit: "pg/mL",
         tau: 60,
+        description: "Indirectly lowers wakefulness peptides, helping quiet a racing mind and reduce physical agitation.",
       },
       // mAChR antagonism (anticholinergic)
       {
@@ -2835,6 +3026,7 @@ export const Agents = {
         intrinsicEfficacy: mg * 0.15,
         unit: "nM",
         tau: 60,
+        description: "Mildly reduces acetylcholine activity, which contributes to the 'fuzzy' or relaxed mental feeling.",
       },
       // 5-HT2A antagonism (anxiolytic)
       {
@@ -2843,6 +3035,7 @@ export const Agents = {
         intrinsicEfficacy: mg * 0.05,
         unit: "nM",
         tau: 90,
+        description: "Gently modulates serotonin pathways to help stabilize mood and reduce acute anxiety.",
       },
       // Mild anxiolysis
       {
@@ -2851,6 +3044,7 @@ export const Agents = {
         intrinsicEfficacy: mg * 0.2,
         unit: "µg/dL",
         tau: 90,
+        description: "Blunts the physical stress response, helping lower the body's 'panic' signals during high anxiety.",
       },
     ],
   }),
@@ -2886,6 +3080,7 @@ export const Agents = {
           intrinsicEfficacy: gabaEffect,
           unit: "nM",
           tau: 90,
+          description: "Supports the brain's natural calming system, making it easier to handle repetitive thoughts or worries.",
         },
         // Serotonin receptor sensitivity
         {
@@ -2894,6 +3089,7 @@ export const Agents = {
           intrinsicEfficacy: serotoninEffect,
           unit: "nM",
           tau: 120,
+          description: "Helps your serotonin receptors work more efficiently, which can improve mood stability over time.",
         },
         // Insulin signaling support
         {
@@ -2902,6 +3098,7 @@ export const Agents = {
           intrinsicEfficacy: insulinEffect,
           unit: "µIU/mL",
           tau: 180,
+          description: "Improves how your cells respond to insulin, supporting better blood sugar balance and hormone health.",
         },
         // Anxiolysis
         {
@@ -2910,6 +3107,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(3, mg * 0.0002),
           unit: "µg/dL",
           tau: 120,
+          description: "Gently lowers the stress response, contributing to an overall sense of calm and better resilience.",
         },
       ],
     };
@@ -2942,6 +3140,7 @@ export const Agents = {
           intrinsicEfficacy: zincSignalEffect,
           unit: "µg/dL",
           tau: 120,
+          description: "Restores elemental zinc levels, which are critical for over 300 different enzymatic reactions in your body.",
         },
         // Testosterone support
         {
@@ -2950,6 +3149,7 @@ export const Agents = {
           intrinsicEfficacy: testosteroneEffect,
           unit: "ng/dL",
           tau: 480,
+          description: "Zinc is a foundational building block for male hormones. Supporting your levels helps maintain healthy testosterone production.",
         },
         // NMDA modulation
         {
@@ -2958,6 +3158,7 @@ export const Agents = {
           intrinsicEfficacy: nmdaEffect,
           unit: "µM",
           tau: 120,
+          description: "Acts as a natural brake on excitatory signals in the brain, helping protect neurons and support a steady mood.",
         },
         // Immune/inflammation modulation
         {
@@ -2966,6 +3167,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(0.15, mg * 0.004),
           unit: "index",
           tau: 360,
+          description: "Powers the 'search and destroy' cells of your immune system while helping keep systemic inflammation in check.",
         },
       ],
     };
@@ -2994,6 +3196,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(20, mg * 15),
           unit: "µg/dL",
           tau: 180,
+          description: "Maintains copper status, which is vital for building connective tissue and keeping your nervous system healthy.",
         },
         // Iron metabolism support (ceruloplasmin)
         {
@@ -3002,6 +3205,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(10, mg * 5),
           unit: "µg/dL",
           tau: 360,
+          description: "Works with iron to help your body form red blood cells and transport oxygen to your muscles and brain.",
         },
       ],
     };
@@ -3032,6 +3236,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(200, b12_mcg * 0.2),
           unit: "pg/mL",
           tau: 360,
+          description: "Essential for protecting your nerves and creating the DNA in every cell of your body.",
         },
         // Folate signal elevation
         {
@@ -3040,6 +3245,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(8, folate_mcg * 0.01),
           unit: "ng/mL",
           tau: 360,
+          description: "Helps your body build new proteins and support the 'methylation' process that keeps your cells running smoothly.",
         },
         // Energy metabolism
         {
@@ -3048,6 +3254,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(0.1, (b12_mcg + folate_mcg) * 0.00005),
           unit: "index",
           tau: 240,
+          description: "Acts as a spark plug for your mitochondria, helping your cells turn food into the energy you feel.",
         },
         // Homocysteine reduction → inflammation
         {
@@ -3056,6 +3263,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(0.1, (b12_mcg + folate_mcg) * 0.00005),
           unit: "index",
           tau: 720,
+          description: "Helps clear metabolic byproducts like homocysteine, which can otherwise cause inflammation in your arteries.",
         },
       ],
     };
@@ -3084,6 +3292,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(0.3, mcg * 0.0005),
           unit: "index",
           tau: 480,
+          description: "Supports chromium levels, a trace mineral your body uses to move sugar from the blood into cells.",
         },
         // Insulin sensitivity
         {
@@ -3092,6 +3301,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(3, mcg * 0.005),
           unit: "µIU/mL",
           tau: 360,
+          description: "Helps insulin work more effectively, making it easier for your body to manage blood sugar after meals.",
         },
         // Glucose handling
         {
@@ -3100,6 +3310,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(10, mcg * 0.015),
           unit: "mg/dL",
           tau: 360,
+          description: "By improving insulin action, chromium helps lower and stabilize blood sugar levels.",
         },
       ],
     };
@@ -3132,6 +3343,7 @@ export const Agents = {
           intrinsicEfficacy: cortisolModulation,
           unit: "µg/dL",
           tau: 90,
+          description: "This adaptogen helps 'balance' your cortisol levels, so you feel less frazzled during stressful times.",
         },
         // MAO-B inhibition → dopamine
         {
@@ -3140,6 +3352,7 @@ export const Agents = {
           intrinsicEfficacy: dopamineSupport,
           unit: "nM",
           tau: 60,
+          description: "Gently boosts dopamine availability, which can improve focus, motivation, and mental clarity.",
         },
         // Serotonin support
         {
@@ -3148,6 +3361,7 @@ export const Agents = {
           intrinsicEfficacy: serotoninSupport,
           unit: "nM",
           tau: 90,
+          description: "Supports serotonin levels to help stabilize your mood and improve emotional resilience.",
         },
         // AMPK activation (metabolic)
         {
@@ -3156,6 +3370,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(0.15, mg * 0.0003),
           unit: "fold-change",
           tau: 120,
+          description: "Activates your body's energy-sensing pathway, helping your cells burn fuel more efficiently.",
         },
         // Energy/alertness
         {
@@ -3164,6 +3379,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(5, mg * 0.01),
           unit: "pg/mL",
           tau: 60,
+          description: "Nudges your 'wakefulness' signal, providing a steady sense of alertness without the jitters of caffeine.",
         },
       ],
     };
@@ -3196,6 +3412,7 @@ export const Agents = {
           intrinsicEfficacy: cholineEffect,
           unit: "µmol/L",
           tau: 60,
+          description: "Restores your pool of choline, the raw material for keeping your brain's communication fast and clear.",
         },
         // Acetylcholine synthesis
         {
@@ -3204,6 +3421,7 @@ export const Agents = {
           intrinsicEfficacy: achEffect,
           unit: "nM",
           tau: 45,
+          description: "Boosts acetylcholine, the primary 'learning chemical' your brain uses for memory and focus.",
         },
         // Dopamine receptor density support
         {
@@ -3212,6 +3430,7 @@ export const Agents = {
           intrinsicEfficacy: dopamineSupport,
           unit: "nM",
           tau: 120,
+          description: "May help keep your dopamine receptors healthy and responsive, supporting long-term motivation.",
         },
         // Focus/alertness
         {
@@ -3220,6 +3439,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(3, mg * 0.008),
           unit: "pg/mL",
           tau: 45,
+          description: "Supports wakefulness and cognitive drive by nudge-activating your brain's alertness signals.",
         },
       ],
     };
@@ -3252,6 +3472,7 @@ export const Agents = {
           intrinsicEfficacy: energyEffect,
           unit: "index",
           tau: 120,
+          description: "Helps shuttle fatty acids into your mitochondria, giving your brain and body more fuel to work with.",
         },
         // BDNF support
         {
@@ -3260,6 +3481,7 @@ export const Agents = {
           intrinsicEfficacy: bdnfEffect,
           unit: "ng/mL",
           tau: 240,
+          description: "Gently supports the production of 'brain fertilizer,' which helps maintain and protect your neurons.",
         },
         // Acetylcholine enhancement
         {
@@ -3268,6 +3490,7 @@ export const Agents = {
           intrinsicEfficacy: achEffect,
           unit: "nM",
           tau: 120,
+          description: "Supports clear thinking and mental speed by providing resources for your brain's primary messaging chemical.",
         },
         // Mild dopamine support
         {
@@ -3276,6 +3499,7 @@ export const Agents = {
           intrinsicEfficacy: Math.min(3, mg * 0.002),
           unit: "nM",
           tau: 180,
+          description: "Subtly assists dopamine signaling, which can help maintain a steady sense of drive throughout the day.",
         },
       ],
     };
@@ -3298,6 +3522,7 @@ export const Agents = {
           intrinsicEfficacy: units * 3,
           unit: "pmol/L",
           tau: 30,
+          description: "Breaking down food more efficiently can boost 'fullness' signals, helping you feel satisfied with your meal.",
         },
         // Reduced gut inflammation
         {
@@ -3306,6 +3531,7 @@ export const Agents = {
           intrinsicEfficacy: units * 0.1,
           unit: "index",
           tau: 90,
+          description: "By preventing large, undigested food particles from irritating your gut, these enzymes help lower localized inflammation.",
         },
         // Vagal tone support (gut-brain axis)
         {
@@ -3314,6 +3540,7 @@ export const Agents = {
           intrinsicEfficacy: units * 0.1,
           unit: "index",
           tau: 60,
+          description: "Smoother digestion keeps your 'gut-to-brain' nerve pathway calm and responsive.",
         },
         // Better satiety signaling
         {
@@ -3322,6 +3549,7 @@ export const Agents = {
           intrinsicEfficacy: units * 15,
           unit: "pg/mL",
           tau: 45,
+          description: "Helps turn off 'hunger' hormones more quickly as your body registers that food is being effectively processed.",
         },
       ],
     };

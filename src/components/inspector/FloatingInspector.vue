@@ -63,7 +63,7 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(4px);
   padding: 1em;
   overflow: auto;
-  max-height: 90vh;
+  max-height: calc(100vh - 260px);
 }
 
 .float-fade-enter-active,
