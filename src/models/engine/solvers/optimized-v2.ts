@@ -16,6 +16,8 @@ import {
 } from "@/models/engine";
 import { calculateVd } from "../pharmacokinetics";
 import { addStates, scaleState } from "../state";
+import { isReceptor, getReceptorSignals } from "../../physiology/pharmacology";
+import { hill } from "../utils";
 
 /**
  * OPTIMIZED SOLVER V2 (Production Bateman Edition)
@@ -24,7 +26,45 @@ import { addStates, scaleState } from "../state";
  * 1. Manual RK4 Injection: Syncs PK analytical values at k1, k2, k3, k4.
  * 2. First-Order Bateman Model: Matches V1's "Gut -> Central" oral kinetics.
  * 3. 24-hour Warm-up: Establishes residue from yesterday for seamless day-wrapping.
+ * 4. System Vectorization: Maps all state to a flat Float64Array for O(1) access.
  */
+
+// --- VECTORIZED ENGINE TYPES ---
+
+interface VectorLayout {
+  size: number;
+  signals: Map<Signal, number>;
+  auxiliary: Map<string, number>;
+  receptors: Map<string, number>;
+  keys: string[]; // For reconstruction
+}
+
+interface PreResolvedDefinition {
+  index: number;
+  tau: number;
+  setpoint: (ctx: DynamicsContext) => number;
+  production: Array<{
+    coefficient: number;
+    sourceIndex: number; // -1 for constant/circadian
+    transform?: (v: number, state: any, ctx: any) => number;
+  }>;
+  clearance: Array<{
+    rate: number;
+    type: string;
+    enzymeIndex: number;
+    Km?: number;
+    transform?: (v: number, state: any, ctx: any) => number;
+  }>;
+  couplings: Array<{
+    sourceIndex: number;
+    receptorIndex: number;
+    normalizedStrength: number; // strength / tau
+    isStimulate: boolean;
+  }>;
+  min: number;
+  max: number;
+}
+
 export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResponse {
   const { gridMins, items, defs, options } = request;
 
@@ -115,50 +155,8 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
     couplings: options?.conditionCouplings,
   } : {};
 
-  // --- PRE-CALCULATE DAILY ACTIVE SETS (Layer 1 Optimization) ---
-  const allActiveInterventions: ActiveIntervention[] = [];
-  if (enableInterventions) {
-    const numDays = Math.ceil((gridMins[gridMins.length - 1] + gridStep) / 1440);
-    for (let d = 0; d < numDays; d++) {
-      for (const item of items) {
-        const def = defsMap.get(item.meta.key);
-        if (!def) continue;
-        let pharms: any[] = [];
-        if ((item as any).resolvedPharmacology) pharms = (item as any).resolvedPharmacology;
-        else if (def.pharmacology && typeof def.pharmacology !== 'function') pharms = [def.pharmacology];
-
-        pharms.forEach((pharm, index) => {
-          const agentId = pharms.length > 1 ? `${item.id}_${index}` : item.id;
-          allActiveInterventions.push({
-            id: agentId, key: def.key, startTime: item.startMin + (d * 1440),
-            duration: item.durationMin, intensity: item.meta.intensity ?? 1.0,
-            params: item.meta.params, pharmacology: pharm
-          });
-        });
-      }
-    }
-  }
-  allActiveInterventions.sort((a, b) => a.startTime - b.startTime);
-
-  let activePointer = 0;
-  let activeSet: ActiveIntervention[] = [];
-
-  function updateActiveSet(t: number) {
-    // 1. Remove expired items (t > startTime + duration)
-    activeSet = activeSet.filter(iv => t <= iv.startTime + iv.duration);
-    
-    // 2. Add newly started items (t >= startTime)
-    while (activePointer < allActiveInterventions.length && allActiveInterventions[activePointer].startTime <= t) {
-      const iv = allActiveInterventions[activePointer];
-      if (t <= iv.startTime + iv.duration) {
-        activeSet.push(iv);
-      }
-      activePointer++;
-    }
-  }
-
-  // --- ANALYTICAL EVALUATOR ---
-  function getAnalyticalConc(id: string, t: number): number {
+  // --- ANALYTICAL EVALUATOR (Base Equation) ---
+  function getAnalyticalConcRaw(id: string, t: number): number {
     const instances = agentsById.get(id);
     if (!instances) return 0;
     let sum = 0;
@@ -191,35 +189,301 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
     return sum;
   }
 
-  // --- INITIALIZE BUFFERS ---
-  const series: Record<Signal, Float32Array> = {} as Record<Signal, Float32Array>;
-  for (const signal of includeSignals) series[signal] = new Float32Array(gridMins.length);
-  const auxiliarySeries: Record<string, Float32Array> = {};
-  for (const key of Object.keys(AUXILIARY_DEFINITIONS)) auxiliarySeries[key] = new Float32Array(gridMins.length);
+  // --- LAYER 2: ANALYTICAL PK PRE-COMPUTATION ---
+  const pkMinT = -1440;
+  const pkMaxT = gridMins.length > 0 ? Math.ceil(gridMins[gridMins.length - 1]) : 0;
+  const pkRange = pkMaxT - pkMinT + 1;
+  const pkBuffers = new Map<string, Float32Array>();
 
-  const homeostasisSeries = {
-    glucosePool: new Float32Array(gridMins.length), insulinPool: new Float32Array(gridMins.length), hepaticGlycogen: new Float32Array(gridMins.length),
-    adenosinePressure: new Float32Array(gridMins.length), cortisolPool: new Float32Array(gridMins.length), cortisolIntegral: new Float32Array(gridMins.length),
-    adrenalineReserve: new Float32Array(gridMins.length), dopamineVesicles: new Float32Array(gridMins.length), serotoninPrecursor: new Float32Array(gridMins.length),
-    norepinephrineVesicles: new Float32Array(gridMins.length), acetylcholineTone: new Float32Array(gridMins.length), gabaPool: new Float32Array(gridMins.length),
-    bdnfExpression: new Float32Array(gridMins.length), ghReserve: new Float32Array(gridMins.length),
-  };
+  for (const id of uniqueInterventions.keys()) {
+    const buffer = new Float32Array(pkRange);
+    for (let t = pkMinT; t <= pkMaxT; t++) {
+      buffer[t - pkMinT] = getAnalyticalConcRaw(id, t);
+    }
+    pkBuffers.set(id, buffer);
+  }
 
-  // --- STATE & WARM-UP ---
-  let currentState = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
+  function getAnalyticalConc(id: string, t: number): number {
+    const buffer = pkBuffers.get(id);
+    if (!buffer) return 0;
+    const floatIdx = t - pkMinT;
+    const idx0 = Math.floor(floatIdx);
+    const idx1 = idx0 + 1;
+    if (idx0 < 0) return buffer[0] ?? 0;
+    if (idx1 >= buffer.length) return buffer[buffer.length - 1] ?? 0;
+    const v0 = buffer[idx0];
+    const v1 = buffer[idx1];
+    const frac = floatIdx - idx0;
+    return v0 + (v1 - v0) * frac;
+  }
+
+  // --- PRE-CALCULATE DAILY ACTIVE SETS (Layer 1 Optimization) ---
+  const allActiveInterventions: ActiveIntervention[] = [];
+  if (enableInterventions) {
+    const numDays = Math.ceil((gridMins[gridMins.length - 1] + gridStep) / 1440);
+    for (let d = 0; d < numDays; d++) {
+      for (const item of items) {
+        const def = defsMap.get(item.meta.key);
+        if (!def) continue;
+        let pharms: any[] = [];
+        if ((item as any).resolvedPharmacology) pharms = (item as any).resolvedPharmacology;
+        else if (def.pharmacology && typeof def.pharmacology !== 'function') pharms = [def.pharmacology];
+
+        pharms.forEach((pharm, index) => {
+          const agentId = pharms.length > 1 ? `${item.id}_${index}` : item.id;
+          allActiveInterventions.push({
+            id: agentId, key: def.key, startTime: item.startMin + (d * 1440),
+            duration: item.durationMin, intensity: item.meta.intensity ?? 1.0,
+            params: item.meta.params, pharmacology: pharm
+          });
+        });
+      }
+    }
+  }
+  allActiveInterventions.sort((a, b) => a.startTime - b.startTime);
+
+  let activePointer = 0;
+  let activeSet: ActiveIntervention[] = [];
+
+  function updateActiveSet(t: number) {
+    activeSet = activeSet.filter(iv => t <= iv.startTime + iv.duration);
+    while (activePointer < allActiveInterventions.length && allActiveInterventions[activePointer].startTime <= t) {
+      const iv = allActiveInterventions[activePointer];
+      if (t <= iv.startTime + iv.duration) {
+        activeSet.push(iv);
+      }
+      activePointer++;
+    }
+  }
+
+  // --- LAYER 3: SYSTEM VECTORIZATION (Setup) ---
+  const initialObjState = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
     subject: options?.subject ?? ({} as any), physiology: options?.physiology ?? ({} as any), isAsleep: false 
   }, options?.debug);
 
   if (options?.debug?.enableConditions !== false) {
-    if (options?.enzymeActivities) for (const [k, v] of Object.entries(options.enzymeActivities)) if (currentState.auxiliary[k] !== undefined) currentState.auxiliary[k] += v;
-    if (options?.transporterActivities) for (const [k, v] of Object.entries(options.transporterActivities)) if (currentState.auxiliary[k] !== undefined) currentState.auxiliary[k] += v;
-    if (options?.receptorDensities) for (const [k, v] of Object.entries(options.receptorDensities)) currentState.receptors[`${k}_density`] = 1.0 + v;
-    if (options?.receptorSensitivities) for (const [k, v] of Object.entries(options.receptorSensitivities)) currentState.receptors[`${k}_sensitivity`] = 1.0 + v;
+    if (options?.enzymeActivities) for (const [k, v] of Object.entries(options.enzymeActivities)) if (initialObjState.auxiliary[k] !== undefined) initialObjState.auxiliary[k] += v;
+    if (options?.transporterActivities) for (const [k, v] of Object.entries(options.transporterActivities)) if (initialObjState.auxiliary[k] !== undefined) initialObjState.auxiliary[k] += v;
+    if (options?.receptorDensities) for (const [k, v] of Object.entries(options.receptorDensities)) initialObjState.receptors[`${k}_density`] = 1.0 + v;
+    if (options?.receptorSensitivities) for (const [k, v] of Object.entries(options.receptorSensitivities)) initialObjState.receptors[`${k}_sensitivity`] = 1.0 + v;
   }
 
+  const layout: VectorLayout = { size: 0, signals: new Map(), auxiliary: new Map(), receptors: new Map(), keys: [] };
+  for (const s of SIGNALS_ALL) { layout.signals.set(s, layout.size); layout.keys[layout.size] = s; layout.size++; }
+  for (const k of Object.keys(initialObjState.auxiliary)) { layout.auxiliary.set(k, layout.size); layout.keys[layout.size] = k; layout.size++; }
+  for (const k of Object.keys(initialObjState.receptors)) { layout.receptors.set(k, layout.size); layout.keys[layout.size] = k; layout.size++; }
+
+  const initialStateVector = new Float64Array(layout.size);
+  layout.signals.forEach((idx, s) => initialStateVector[idx] = initialObjState.signals[s] ?? 0);
+  layout.auxiliary.forEach((idx, k) => initialStateVector[idx] = initialObjState.auxiliary[k] ?? 0);
+  layout.receptors.forEach((idx, k) => initialStateVector[idx] = initialObjState.receptors[k] ?? 0);
+
+  const resolvedSignals: PreResolvedDefinition[] = [];
+  SIGNALS_ALL.forEach(s => {
+    const def = unifiedDefinitions[s];
+    resolvedSignals.push({
+      index: layout.signals.get(s)!,
+      tau: def.dynamics.tau,
+      setpoint: def.dynamics.setpoint,
+      min: def.min ?? 0,
+      max: def.max ?? Infinity,
+      production: def.dynamics.production.map(p => ({
+        coefficient: p.coefficient,
+        sourceIndex: p.source === 'constant' || p.source === 'circadian' ? -1 : layout.signals.get(p.source as Signal) ?? -1,
+        transform: p.transform
+      })),
+      clearance: def.dynamics.clearance.map(c => ({
+        rate: c.rate, type: c.type, enzymeIndex: c.enzyme ? layout.auxiliary.get(c.enzyme) ?? -1 : -1, Km: c.Km, transform: c.transform
+      })),
+      couplings: def.dynamics.couplings.map(c => ({
+        sourceIndex: layout.signals.get(c.source) ?? -1,
+        receptorIndex: layout.receptors.get(`${c.source}_sensitivity`) ?? -1,
+        normalizedStrength: c.strength / def.dynamics.tau,
+        isStimulate: c.effect === 'stimulate'
+      }))
+    });
+  });
+
+  const resolvedAux: PreResolvedDefinition[] = [];
+  layout.auxiliary.forEach((idx, k) => {
+    const def = AUXILIARY_DEFINITIONS[k];
+    if (!def) return;
+    resolvedAux.push({
+      index: idx, tau: def.dynamics.tau, setpoint: def.dynamics.setpoint, min: 0, max: 2.0,
+      production: def.dynamics.production.map(p => ({
+        coefficient: p.coefficient,
+        sourceIndex: p.source === 'constant' || p.source === 'circadian' ? -1 : layout.signals.get(p.source as Signal) ?? -1,
+        transform: p.transform
+      })),
+      clearance: def.dynamics.clearance.map(c => ({
+        rate: c.rate, type: c.type, enzymeIndex: c.enzyme ? layout.auxiliary.get(c.enzyme) ?? -1 : -1, Km: c.Km, transform: c.transform
+      })),
+      couplings: []
+    });
+  });
+
+  const getSignalTargetsVector = (target: string) => {
+    const targets: Array<{ index: number, sign: number }> = [];
+    if (isReceptor(target)) {
+      getReceptorSignals(target).forEach(ts => {
+        const idx = layout.signals.get(ts.signal);
+        if (idx !== undefined) targets.push({ index: idx, sign: ts.sign });
+      });
+    }
+    const directIdx = layout.signals.get(target as Signal);
+    if (directIdx !== undefined) targets.push({ index: directIdx, sign: 1 });
+    return targets;
+  };
+
+  // --- RK4 WORKSPACE ---
+  const k1 = new Float64Array(layout.size);
+  const k2 = new Float64Array(layout.size);
+  const k3 = new Float64Array(layout.size);
+  const k4 = new Float64Array(layout.size);
+  const tmpState = new Float64Array(layout.size);
+
+  /**
+   * Helper to provide a legacy-compatible state object for transform functions
+   * that expect state.signals.X or state.auxiliary.Y
+   */
+  function createLegacyProxy(vector: Float64Array): SimulationState {
+    return {
+      signals: new Proxy({}, {
+        get: (_, prop) => vector[layout.signals.get(prop as Signal)!] ?? 0
+      }),
+      auxiliary: new Proxy({}, {
+        get: (_, prop) => vector[layout.auxiliary.get(prop as string)!] ?? 0
+      }),
+      receptors: new Proxy({}, {
+        get: (_, prop) => vector[layout.receptors.get(prop as string)!] ?? 0
+      }),
+      pk: {}, // Analytical PK doesn't use state.pk
+      accumulators: {}
+    } as SimulationState;
+  }
+
+  function computeDerivativesVector(state: Float64Array, t: number, ctx: DynamicsContext, interventions: ActiveIntervention[], derivs: Float64Array) {
+    derivs.fill(0);
+    const legacyState = createLegacyProxy(state);
+
+    // 1. Signals
+    for (let i = 0; i < resolvedSignals.length; i++) {
+      const rd = resolvedSignals[i];
+      const val = state[rd.index];
+      let setpoint = options?.debug?.enableBaselines !== false ? rd.setpoint(ctx) : 0;
+      if (options?.debug?.enableConditions !== false && conditionAdjustments?.baselines?.[SIGNALS_ALL[i]]?.amplitude) setpoint += conditionAdjustments.baselines[SIGNALS_ALL[i]]!.amplitude!;
+      let dS = (setpoint - val) / rd.tau;
+      if (options?.debug?.enableBaselines !== false) {
+        for (const p of rd.production) {
+          const srcVal = p.sourceIndex === -1 ? 1.0 : state[p.sourceIndex];
+          dS += p.coefficient * (p.transform ? p.transform(srcVal, legacyState, ctx) : srcVal);
+        }
+      }
+      for (const c of rd.clearance) {
+        let rate = c.rate;
+        if (c.type === 'saturable') rate /= (c.Km! + val);
+        else if (c.type === 'enzyme-dependent') rate *= (state[c.enzymeIndex] ?? 1.0);
+        if (c.transform) rate *= c.transform(val, legacyState, ctx);
+        dS -= rate * val;
+      }
+      if (options?.debug?.enableCouplings !== false) {
+        for (const cp of rd.couplings) {
+          const srcVal = state[cp.sourceIndex];
+          const sensitivity = cp.receptorIndex === -1 ? 1.0 : state[cp.receptorIndex];
+          dS += (cp.normalizedStrength * srcVal * sensitivity) * (cp.isStimulate ? 1 : -1);
+        }
+      }
+      if (options?.debug?.enableInterventions !== false) {
+        const signalKey = SIGNALS_ALL[i];
+        for (const iv of interventions) {
+          if ((iv as any).target === signalKey && (iv as any).type === "rate") dS += (iv as any).magnitude ?? 0;
+          if (iv.pharmacology?.pd) {
+            const conc = getAnalyticalConc(iv.id, t);
+            if (conc > 0) {
+              for (const eff of iv.pharmacology.pd) {
+                const targets = getSignalTargetsVector(eff.target);
+                for (const tgt of targets) {
+                  if (tgt.index === rd.index) {
+                    const dIdx = layout.receptors.get(`${eff.target}_density`);
+                    const density = dIdx !== undefined ? state[dIdx] : 1.0;
+                    const response = (conc * (eff.intrinsicEfficacy ?? 10) * density) / rd.tau;
+                    if (eff.mechanism === 'agonist') dS += response * tgt.sign;
+                    else if (eff.mechanism === 'antagonist') {
+                      if (tgt.sign > 0) dS -= response * tgt.sign * (val / (val + 20));
+                      else dS -= response * tgt.sign;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      derivs[rd.index] = dS;
+    }
+    // 2. Aux
+    for (let i = 0; i < resolvedAux.length; i++) {
+      const rd = resolvedAux[i];
+      const val = state[rd.index];
+      let setpoint = options?.debug?.enableHomeostasis !== false ? rd.setpoint(ctx) : 0;
+      let dA = (setpoint - val) / rd.tau;
+      if (options?.debug?.enableHomeostasis !== false) {
+        for (const p of rd.production) {
+          const srcVal = p.sourceIndex === -1 ? 1.0 : state[p.sourceIndex];
+          dA += p.coefficient * (p.transform ? p.transform(srcVal, legacyState, ctx) : srcVal);
+        }
+      }
+      for (const c of rd.clearance) {
+        let rate = c.rate;
+        if (c.type === 'saturable') rate /= (c.Km! + val);
+        else if (c.type === 'enzyme-dependent') rate *= (state[c.enzymeIndex] ?? 1.0);
+        if (c.transform) rate *= c.transform(val, legacyState, ctx);
+        dA -= rate * val;
+      }
+      derivs[rd.index] = dA;
+    }
+    // 3. Receptors
+    if (options?.debug?.enableReceptors !== false) {
+      layout.receptors.forEach((idx, k) => {
+        if (k.endsWith('_density')) {
+          const base = k.replace('_density', '');
+          let totalOccupancy = 0;
+          for (const iv of interventions) {
+            if (iv.pharmacology?.pd) {
+              const conc = getAnalyticalConc(iv.id, t);
+              const eff = iv.pharmacology.pd.find((e: any) => e.target === base);
+              if (eff && conc > 0) totalOccupancy += hill(conc, eff.EC50 ?? 100, 1.2);
+            }
+          }
+          derivs[idx] = 0.0005 * (1.0 - state[idx]) - 0.002 * Math.min(1.0, totalOccupancy) * state[idx];
+        }
+      });
+    }
+  }
+
+  function integrateStepVector(state: Float64Array, t: number, dt: number, ctx: DynamicsContext, interventions: ActiveIntervention[]) {
+    if (dt === 0) return;
+    computeDerivativesVector(state, t, ctx, interventions, k1);
+    for (let i = 0; i < layout.size; i++) tmpState[i] = state[i] + k1[i] * (dt / 2);
+    computeDerivativesVector(tmpState, t + dt / 2, ctx, interventions, k2);
+    for (let i = 0; i < layout.size; i++) tmpState[i] = state[i] + k2[i] * (dt / 2);
+    computeDerivativesVector(tmpState, t + dt / 2, ctx, interventions, k3);
+    for (let i = 0; i < layout.size; i++) tmpState[i] = state[i] + k3[i] * dt;
+    computeDerivativesVector(tmpState, t + dt, ctx, interventions, k4);
+    for (let i = 0; i < layout.size; i++) state[i] += (dt / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+    resolvedSignals.forEach(rs => state[rs.index] = Math.max(rs.min, Math.min(rs.max, state[rs.index])));
+    resolvedAux.forEach(ra => state[ra.index] = Math.max(ra.min, Math.min(ra.max, state[ra.index])));
+  }
+
+  let currentStateVector = initialStateVector;
+
   if (options?.initialHomeostasisState) {
-    currentState = { ...currentState, ...(options.initialHomeostasisState as any) };
+    const s = options.initialHomeostasisState as any;
+    if (s.signals) Object.entries(s.signals).forEach(([k, v]) => { const idx = layout.signals.get(k as any); if (idx !== undefined) currentStateVector[idx] = v as number; });
+    if (s.auxiliary) Object.entries(s.auxiliary).forEach(([k, v]) => { const idx = layout.auxiliary.get(k); if (idx !== undefined) currentStateVector[idx] = v as number; });
+    if (s.receptors) Object.entries(s.receptors).forEach(([k, v]) => { const idx = layout.receptors.get(k); if (idx !== undefined) currentStateVector[idx] = v as number; });
   } else {
+    // 24-HOUR WARM-UP
     activePointer = 0;
     activeSet = [];
     for (let t_warm = -1440; t_warm < 0; t_warm += 1.0) {
@@ -234,17 +498,36 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
         minuteOfDay: wallMin, circadianMinuteOfDay: (wallMin + circadianShift + 1440) % 1440,
         dayOfYear: 1, isAsleep: isAsleep_warm, subject: options?.subject ?? ({} as any), physiology: options?.physiology ?? ({} as any),
       };
-      for (const id of uniqueInterventions.keys()) currentState.pk[`${id}_central`] = getAnalyticalConc(id, t_warm);
-      currentState = integrateStep(currentState, t_warm, 1.0, warmUpCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
+      integrateStepVector(currentStateVector, t_warm, 1.0, warmUpCtx, activeSet);
     }
   }
 
   // --- SIMULATION LOOP ---
+  const series: Record<Signal, Float32Array> = {} as Record<Signal, Float32Array>;
+  for (const signal of includeSignals) series[signal] = new Float32Array(gridMins.length);
+  const auxiliarySeries: Record<string, Float32Array> = {};
+  for (const key of Object.keys(AUXILIARY_DEFINITIONS)) auxiliarySeries[key] = new Float32Array(gridMins.length);
+
+  const homeostasisSeries = {
+    glucosePool: new Float32Array(gridMins.length), insulinPool: new Float32Array(gridMins.length), hepaticGlycogen: new Float32Array(gridMins.length),
+    adenosinePressure: new Float32Array(gridMins.length), cortisolPool: new Float32Array(gridMins.length), cortisolIntegral: new Float32Array(gridMins.length),
+    adrenalineReserve: new Float32Array(gridMins.length), dopamineVesicles: new Float32Array(gridMins.length), serotoninPrecursor: new Float32Array(gridMins.length),
+    norepinephrineVesicles: new Float32Array(gridMins.length), acetylcholineTone: new Float32Array(gridMins.length), gabaPool: new Float32Array(gridMins.length),
+    bdnfExpression: new Float32Array(gridMins.length), ghReserve: new Float32Array(gridMins.length),
+  };
+
   activePointer = 0;
   activeSet = [];
   gridMins.forEach((minute, idx) => {
     const adjustedMinute = (minute % minutesPerDay + minutesPerDay) % minutesPerDay;
     const circadianMinuteOfDay = (adjustedMinute + circadianShift + minutesPerDay) % minutesPerDay;
+    const isAsleep = enableInterventions && items.some(item => {
+      const def = defsMap.get(item.meta.key); if (def?.key !== 'sleep') return false;
+      const start = item.startMin; const end = item.startMin + item.durationMin;
+      const m = minute;
+      return (m >= start && m <= end) || (m + 1440 >= start && m + 1440 <= end) || (m - 1440 >= start && m - 1440 <= end);
+    });
+
     const dt = idx === 0 ? 0 : gridStep;
     if (dt > 0) {
       const subSteps = Math.max(1, Math.ceil(dt / 1.0));
@@ -253,65 +536,46 @@ export function runOptimizedV2(request: WorkerComputeRequest): WorkerComputeResp
         const t = minute - dt + s * subDt;
         updateActiveSet(t);
         const currentMin = (t % minutesPerDay + minutesPerDay) % minutesPerDay;
-        const isAsleep = enableInterventions && items.some(item => {
-          const def = defsMap.get(item.meta.key); if (def?.key !== 'sleep') return false;
-          const start = item.startMin; const end = item.startMin + item.durationMin;
-          const m = t;
-          return (m >= start && m <= end) || (m + 1440 >= start && m + 1440 <= end) || (m - 1440 >= start && m - 1440 <= end);
-        });
         const dynamicsCtx: DynamicsContext = {
           minuteOfDay: currentMin, circadianMinuteOfDay: (currentMin + circadianShift + minutesPerDay) % minutesPerDay,
           dayOfYear: 1, isAsleep, subject: options?.subject ?? ({} as any), physiology: options?.physiology ?? ({} as any),
         };
-        for (const id of uniqueInterventions.keys()) currentState.pk[`${id}_central`] = getAnalyticalConc(id, t);
-        const k1 = computeDerivatives(currentState, t, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
-        const k2State = addStates(currentState, scaleState(k1, subDt / 2));
-        for (const id of uniqueInterventions.keys()) k2State.pk[`${id}_central`] = getAnalyticalConc(id, t + subDt / 2);
-        const k2 = computeDerivatives(k2State, t + subDt / 2, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
-        const k3State = addStates(currentState, scaleState(k2, subDt / 2));
-        for (const id of uniqueInterventions.keys()) k3State.pk[`${id}_central`] = getAnalyticalConc(id, t + subDt / 2);
-        const k3 = computeDerivatives(k3State, t + subDt / 2, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
-        const k4State = addStates(currentState, scaleState(k3, subDt));
-        for (const id of uniqueInterventions.keys()) k4State.pk[`${id}_central`] = getAnalyticalConc(id, t + subDt);
-        const k4 = computeDerivatives(k4State, t + subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
-        const combined = scaleState(addStates(k1, addStates(scaleState(k2, 2), addStates(scaleState(k3, 2), k4))), 1 / 6);
-        currentState = addStates(currentState, scaleState(combined, subDt));
-
-        if (options?.debug?.enableBaselines !== false) {
-          for (const signalKey of Object.keys(unifiedDefinitions)) {
-            const def = unifiedDefinitions[signalKey];
-            if (def) {
-              const min = def.min ?? 0;
-              const max = def.max ?? Infinity;
-              currentState.signals[signalKey] = Math.max(min, Math.min(max, currentState.signals[signalKey]));
-            }
-          }
-        }
-        for (const auxKey of Object.keys(AUXILIARY_DEFINITIONS)) {
-          currentState.auxiliary[auxKey] = Math.max(0, Math.min(2.0, currentState.auxiliary[auxKey]));
-        }
+        integrateStepVector(currentStateVector, t, subDt, dynamicsCtx, activeSet);
       }
     } else {
       updateActiveSet(minute);
-      for (const id of uniqueInterventions.keys()) currentState.pk[`${id}_central`] = getAnalyticalConc(id, minute);
-      const isAsleep = enableInterventions && items.some(item => {
-        const def = defsMap.get(item.meta.key); if (def?.key !== 'sleep') return false;
-        const start = item.startMin; const end = item.startMin + item.durationMin;
-        const m = minute;
-        return (m >= start && m <= end) || (m + 1440 >= start && m + 1440 <= end) || (m - 1440 >= start && m - 1440 <= end);
-      });
       const dynamicsCtx = { minuteOfDay: adjustedMinute, circadianMinuteOfDay, dayOfYear: 1, isAsleep, subject: options?.subject ?? ({} as any), physiology: options?.physiology ?? ({} as any) };
-      currentState = integrateStep(currentState, minute, 0, dynamicsCtx as any, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeSet, options?.debug, conditionAdjustments);
+      integrateStepVector(currentStateVector, minute, 0, dynamicsCtx as any, activeSet);
     }
-    for (const signal of includeSignals) series[signal][idx] = currentState.signals[signal] ?? 0;
-    for (const auxKey of Object.keys(auxiliarySeries)) auxiliarySeries[auxKey][idx] = currentState.auxiliary[auxKey] ?? 0;
-    homeostasisSeries.glucosePool[idx] = currentState.signals.glucose ?? 0; homeostasisSeries.insulinPool[idx] = currentState.signals.insulin ?? 0; homeostasisSeries.hepaticGlycogen[idx] = currentState.auxiliary.hepaticGlycogen ?? 0;
-    homeostasisSeries.adenosinePressure[idx] = currentState.auxiliary.adenosinePressure ?? 0; homeostasisSeries.cortisolPool[idx] = currentState.signals.cortisol ?? 0; homeostasisSeries.cortisolIntegral[idx] = currentState.auxiliary.cortisolIntegral ?? 0;
-    homeostasisSeries.adrenalineReserve[idx] = currentState.signals.adrenaline ?? 0; homeostasisSeries.dopamineVesicles[idx] = currentState.auxiliary.dopamineVesicles ?? 0; homeostasisSeries.norepinephrineVesicles[idx] = currentState.auxiliary.norepinephrineVesicles ?? 0;
-    homeostasisSeries.serotoninPrecursor[idx] = currentState.auxiliary.serotoninPrecursor ?? 0; homeostasisSeries.acetylcholineTone[idx] = currentState.signals.acetylcholine ?? 0; homeostasisSeries.gabaPool[idx] = currentState.auxiliary.gabaPool ?? 0;
-    homeostasisSeries.bdnfExpression[idx] = currentState.auxiliary.bdnfExpression ?? 0; homeostasisSeries.ghReserve[idx] = currentState.auxiliary.ghReserve ?? 0;
+
+    layout.signals.forEach((idxV, s) => { if (series[s]) series[s][idx] = currentStateVector[idxV]; });
+    layout.auxiliary.forEach((idxV, k) => { if (auxiliarySeries[k]) auxiliarySeries[k][idx] = currentStateVector[idxV]; });
+
+    const getV = (key: string, map: Map<string, number>) => { const idxV = map.get(key); return idxV !== undefined ? currentStateVector[idxV] : 0; };
+    homeostasisSeries.glucosePool[idx] = getV('glucose', layout.signals);
+    homeostasisSeries.insulinPool[idx] = getV('insulin', layout.signals);
+    homeostasisSeries.hepaticGlycogen[idx] = getV('hepaticGlycogen', layout.auxiliary);
+    homeostasisSeries.adenosinePressure[idx] = getV('adenosinePressure', layout.auxiliary);
+    homeostasisSeries.cortisolPool[idx] = getV('cortisol', layout.signals);
+    homeostasisSeries.cortisolIntegral[idx] = getV('cortisolIntegral', layout.auxiliary);
+    homeostasisSeries.adrenalineReserve[idx] = getV('adrenaline', layout.signals);
+    homeostasisSeries.dopamineVesicles[idx] = getV('dopamineVesicles', layout.auxiliary);
+    homeostasisSeries.norepinephrineVesicles[idx] = getV('norepinephrineVesicles', layout.auxiliary);
+    homeostasisSeries.serotoninPrecursor[idx] = getV('serotoninPrecursor', layout.auxiliary);
+    homeostasisSeries.acetylcholineTone[idx] = getV('acetylcholine', layout.signals);
+    homeostasisSeries.gabaPool[idx] = getV('gabaPool', layout.auxiliary);
+    homeostasisSeries.bdnfExpression[idx] = getV('bdnfExpression', layout.auxiliary);
+    homeostasisSeries.ghReserve[idx] = getV('ghReserve', layout.auxiliary);
   });
-  return { series, auxiliarySeries, finalHomeostasisState: currentState as any, homeostasisSeries: homeostasisSeries as any };
+
+  const finalHomeostasisState: any = {
+    signals: Object.fromEntries(Array.from(layout.signals.entries()).map(([k, idx]) => [k, currentStateVector[idx]])),
+    auxiliary: Object.fromEntries(Array.from(layout.auxiliary.entries()).map(([k, idx]) => [k, currentStateVector[idx]])),
+    receptors: Object.fromEntries(Array.from(layout.receptors.entries()).map(([k, idx]) => [k, currentStateVector[idx]])),
+    pk: {}, accumulators: {}
+  };
+
+  return { series, auxiliarySeries, finalHomeostasisState, homeostasisSeries: homeostasisSeries as any };
 }
 
 function integrateStep(state: SimulationState, t: number, dt: number, ctx: DynamicsContext, defs: any, auxDefs: any, ivs: any, debug: any, cond: any) {
@@ -324,7 +588,6 @@ function integrateStep(state: SimulationState, t: number, dt: number, ctx: Dynam
   const k4 = computeDerivatives(k4State, t + dt, ctx, defs, auxDefs, ivs, debug, cond);
   const combined = scaleState(addStates(k1, addStates(scaleState(k2, 2), addStates(scaleState(k3, 2), k4))), 1 / 6);
   const nextState = addStates(state, scaleState(combined, dt));
-
   if (debug?.enableBaselines !== false) {
     for (const signalKey of Object.keys(defs)) {
       const def = defs[signalKey];
@@ -335,8 +598,6 @@ function integrateStep(state: SimulationState, t: number, dt: number, ctx: Dynam
       }
     }
   }
-  for (const auxKey of Object.keys(auxDefs)) {
-    nextState.auxiliary[auxKey] = Math.max(0, Math.min(2.0, nextState.auxiliary[auxKey]));
-  }
+  for (const auxKey of Object.keys(auxDefs)) nextState.auxiliary[auxKey] = Math.max(0, Math.min(2.0, nextState.auxiliary[auxKey]));
   return nextState;
 }

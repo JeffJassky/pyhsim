@@ -314,17 +314,17 @@ export interface PharmacologyDef {
     // Dynamic physiology-dependent parameters
     clearance?: ClearanceSpec;
     volume?: VolumeSpec;
-    /** If true, the solver will not calculate derivatives for this agent's PK, 
+    /** If true, the solver will not calculate derivatives for this agent's PK,
      * assuming the concentration is injected externally. */
     isAnalytical?: boolean;
   };
   pd?: Array<{
     target: PharmacologicalTarget; // e.g. "Adenosine_A2a", "DAT", or direct signal like "dopamine"
+    unit?: PhysiologicalUnit; // Explicit unit for validation and clarity
     mechanism: PDMechanism;
     Ki?: number; // nM
     EC50?: number; // nM
     intrinsicEfficacy?: number; // Mapping to engine units (e.g. 50.0)
-    unit?: PhysiologicalUnit; // Explicit unit for validation and clarity
     /** Efficacy parameter (Black & Leff operational model)
      * - Full agonist: tau = 10 (default)
      * - Partial agonist: tau = 1-3
