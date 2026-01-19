@@ -186,6 +186,8 @@
                     <span v-if="cond.value !== 0" class="contributor-value">
                       ({{ cond.value > 0 ? '+' : ''
 
+
+
                       }}{{ (cond.value * 100).toFixed(0) }}%)
                     </span>
                   </div>
@@ -210,12 +212,16 @@
                   <div class="contributor-main">
                     <span class="contributor-icon">{{ item.icon }}</span>
                     <span class="contributor-label">{{ item.label }}</span>
-                    <span v-if="item.isIndirect" class="contributor-badge">Indirect via {{ item.via }}</span>
+                    <span v-if="item.isIndirect" class="contributor-badge"
+                      >Indirect via {{ item.via }}</span
+                    >
                   </div>
                   <div class="contributor-effect">
                     <span class="contributor-mech">{{ item.mechanism }}</span>
                     <span class="contributor-value">
                       ({{ item.value > 0 ? '+' : ''
+
+
 
 
 
@@ -423,18 +429,18 @@ const getSignalContributors = (signalKey: string) => {
         if (effect.target === signalKey) {
           affects = true;
         } else if (isReceptor(effect.target)) {
-          const coupling = RECEPTORS[effect.target as any].couplings.find((c) => c.signal === signalKey);
+          const coupling = RECEPTORS[effect.target as ReceptorTarget].couplings.find((c) => c.signal === signalKey);
           if (coupling) {
             affects = true;
             sign = coupling.sign;
           }
         } else if (isTransporter(effect.target)) {
-          if (TRANSPORTERS[effect.target as any].primarySignal === signalKey) {
+          if (TRANSPORTERS[effect.target as TransporterTarget].primarySignal === signalKey) {
             affects = true;
             sign = -1;
           }
         } else if (isEnzyme(effect.target)) {
-          if (ENZYMES[effect.target as any].substrates.includes(targetSignal)) {
+          if (ENZYMES[effect.target as EnzymeTarget].substrates.includes(targetSignal)) {
             affects = true;
             sign = -1;
           }
@@ -448,7 +454,7 @@ const getSignalContributors = (signalKey: string) => {
             isIndirect = true;
             via = UNIFIED_DEFS[directTarget]?.label || directTarget;
           } else if (isReceptor(effect.target)) {
-            const upCouplings = RECEPTORS[effect.target as any].couplings;
+            const upCouplings = RECEPTORS[effect.target as ReceptorTarget].couplings;
             const match = upCouplings.find(c => upstreamSignals.has(c.signal));
             if (match) {
               affects = true;
@@ -461,7 +467,7 @@ const getSignalContributors = (signalKey: string) => {
         if (affects) {
           let mech = effect.mechanism;
           let magnitude = effect.intrinsicEfficacy || 0;
-          
+
           if (mech === 'antagonist' && sign === -1) {
             magnitude = Math.abs(magnitude);
           } else if (mech === 'agonist' && sign === -1) {
@@ -488,7 +494,7 @@ const getSignalContributors = (signalKey: string) => {
       }
     }
   }
-  
+
   // Deduplicate and sort by absolute magnitude
   return contributors
     .filter((v, i, a) => a.findIndex(t => t.id === v.id && t.label === v.label) === i)
