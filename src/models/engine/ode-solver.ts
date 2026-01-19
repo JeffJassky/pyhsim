@@ -87,6 +87,10 @@ export function computeDerivatives(
   for (const intervention of interventions) {
     if (!intervention.pharmacology?.pk) continue;
     const pk = intervention.pharmacology.pk;
+
+    // Skip numerical PK calculation if the engine is providing analytical values
+    if (pk.isAnalytical) continue;
+
     const centralKey = `${intervention.id}_central`;
 
     // Skip if we've already processed this compartment
@@ -110,8 +114,19 @@ export function computeDerivatives(
       continue;
     }
 
-    // Drug-based: sum inputs from ALL interventions sharing this compartment
-    let totalInput = 0;
+    // First-order absorption model:
+    // dA_gut/dt = -ka * A_gut (+ bolus input at dose time)
+    // dC_central/dt = (ka * A_gut) / Vd - ke * C_central
+
+    const ke = pk.eliminationRate ?? 0.693 / (pk.halfLifeMin ?? 60);
+    const ka = pk.absorptionRate ?? (ke * 4); // Default: absorption 4x faster than elimination
+
+    const gutKey = `${intervention.id}_gut`;
+    const gutAmount = state.pk[gutKey] ?? 0;
+    const Vd = calculateVolumeOfDistribution(pk.volume, ctx);
+
+    // Calculate gut input from doses that are currently being administered
+    let gutInput = 0;
     for (const iv of interventions) {
       if (`${iv.id}_central` !== centralKey) continue;
       if (!iv.pharmacology?.pk) continue;
@@ -122,14 +137,16 @@ export function computeDerivatives(
       const dose = iv.params?.mg ?? iv.params?.dose ?? iv.params?.units ?? 100;
       const bioavailability = iv.pharmacology.pk.bioavailability ?? 1.0;
       const effectiveDose = dose * bioavailability * iv.intensity;
-      const Vd = calculateVolumeOfDistribution(iv.pharmacology.pk.volume, ctx);
 
-      totalInput += effectiveDose / iv.duration / Vd;
+      // Dose enters gut compartment over the duration (for numerical stability)
+      gutInput += effectiveDose / iv.duration;
     }
 
-    // Elimination: dC/dt = totalInput - ke * C
-    const ke = pk.eliminationRate ?? 0.693 / (pk.halfLifeMin ?? 60);
-    let dCentral = totalInput - ke * centralConc;
+    // Gut compartment: input from dose, output via absorption
+    derivatives.pk[gutKey] = gutInput - ka * gutAmount;
+
+    // Central compartment: input from gut absorption, output via elimination
+    let dCentral = (ka * gutAmount) / Vd - ke * centralConc;
 
     // 2-Compartment handling
     if (pk.model === "2-compartment" && pk.k_12 && pk.k_21) {
@@ -227,6 +244,7 @@ export function computeDerivatives(
 
     // Interventions (Forcing functions)
     if (debug?.enableInterventions !== false) {
+      const pdProcessed = new Set<string>();
       for (const intervention of interventions) {
         // 1. Simple Rate support
         if (
@@ -245,6 +263,9 @@ export function computeDerivatives(
         // 2. Mechanistic PD support
         if (intervention.pharmacology?.pd) {
           const centralKey = `${intervention.id}_central`;
+          if (pdProcessed.has(centralKey)) continue;
+          pdProcessed.add(centralKey);
+
           const concentration = state.pk[centralKey] ?? 0;
 
           if (concentration > 0) {
@@ -344,9 +365,14 @@ export function computeDerivatives(
         const R = state.receptors[receptorKey];
 
         let totalOccupancy = 0;
+        const occupancyProcessed = new Set<string>();
         for (const intervention of interventions) {
           if (!intervention.pharmacology?.pd) continue;
-          const conc = state.pk[`${intervention.id}_central`] ?? 0;
+          const centralKey = `${intervention.id}_central`;
+          if (occupancyProcessed.has(centralKey)) continue;
+          occupancyProcessed.add(centralKey);
+
+          const conc = state.pk[centralKey] ?? 0;
           const effect = intervention.pharmacology.pd.find(
             (e: any) => e.target === baseKey,
           );
@@ -386,9 +412,13 @@ export function computeDerivatives(
 
     // Interventions targeting auxiliary variables (Transporters/Enzymes)
     if (debug?.enableInterventions !== false) {
+      const auxPdProcessed = new Set<string>();
       for (const intervention of interventions) {
         if (intervention.pharmacology?.pd) {
           const centralKey = `${intervention.id}_central`;
+          if (auxPdProcessed.has(centralKey)) continue;
+          auxPdProcessed.add(centralKey);
+
           const concentration = state.pk[centralKey] ?? 0;
 
           if (concentration > 0) {

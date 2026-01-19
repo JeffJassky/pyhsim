@@ -1,5 +1,6 @@
 import { storeToRefs } from 'pinia';
 import { watch } from 'vue';
+import { useDebounceFn } from '@vueuse/core';
 import { useEngineStore } from '@/stores/engine';
 import { useTimelineStore } from '@/stores/timeline';
 import { useLibraryStore } from '@/stores/library';
@@ -11,7 +12,9 @@ export const useEngine = () => {
   const library = useLibraryStore();
   const user = useUserStore();
 
-  const compute = () => engine.recompute({ items: timeline.items, defs: library.defs });
+  const compute = useDebounceFn(() => {
+    engine.recompute({ items: timeline.items, defs: library.defs });
+  }, 200);
 
   watch(
     () => [timeline.items, engine.gridStepMin],

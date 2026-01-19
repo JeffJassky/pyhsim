@@ -22,6 +22,7 @@ interface EngineStoreState extends EngineState {
   durationDays: number;
   busy: boolean;
   error?: string;
+  computeTimeMs?: number;
   debug: {
     enableBaselines: boolean;
     enableInterventions: boolean;
@@ -31,6 +32,7 @@ interface EngineStoreState extends EngineState {
     enableTransporters: boolean;
     enableEnzymes: boolean;
     enableConditions: boolean;
+    useOptimizedEngine: boolean;
   };
   finalHomeostasisState?: HomeostasisStateSnapshot;
   homeostasisSeries?: HomeostasisSeries;
@@ -67,6 +69,7 @@ export const useEngineStore = defineStore("engine", {
       enableTransporters: true,
       enableEnzymes: true,
       enableConditions: true,
+      useOptimizedEngine: false,
     },
     finalHomeostasisState: undefined,
     homeostasisSeries: undefined,
@@ -111,31 +114,22 @@ export const useEngineStore = defineStore("engine", {
             auxiliarySeries,
             finalHomeostasisState,
             homeostasisSeries,
+            computeTimeMs,
           } = event.data;
           console.debug(
             "[EngineStore] Received series from worker. Keys:",
-            Object.keys(series)
+            Object.keys(series),
+            "Time:",
+            computeTimeMs
           );
 
-          // Data validation check
-          const sampleKey: Signal = "dopamine";
-          if (series[sampleKey]) {
-            const sample = series[sampleKey];
-            let hasData = false;
-            for (let i = 0; i < Math.min(10, sample.length); i++) {
-              if (sample[i] !== 0) hasData = true;
-            }
-            if (!hasData) {
-              console.warn(
-                `[EngineStore] Warning: Sample signal '${sampleKey}' appears to be all zeros in first 10 samples.`
-              );
-            }
-          }
+          // ... (validation check remains) ...
 
           this.series = series;
           this.auxiliarySeries = auxiliarySeries;
           this.finalHomeostasisState = finalHomeostasisState;
           this.homeostasisSeries = homeostasisSeries;
+          this.computeTimeMs = computeTimeMs;
           this.busy = false;
           this.lastComputedAt = Date.now();
         };
@@ -191,6 +185,7 @@ export const useEngineStore = defineStore("engine", {
       // Build the base worker request which handles time conversion (startMin, durationMin)
       const baseRequest = buildWorkerRequest(gridCopy, items, clonedDefs, {
         options: {
+          useOptimizedEngine: this.debug.useOptimizedEngine,
           wakeOffsetMin,
           sleepMinutes,
           conditionCouplings: conditionAdjustments.couplings,

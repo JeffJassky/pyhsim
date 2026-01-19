@@ -314,6 +314,9 @@ export interface PharmacologyDef {
     // Dynamic physiology-dependent parameters
     clearance?: ClearanceSpec;
     volume?: VolumeSpec;
+    /** If true, the solver will not calculate derivatives for this agent's PK, 
+     * assuming the concentration is injected externally. */
+    isAnalytical?: boolean;
   };
   pd?: Array<{
     target: PharmacologicalTarget; // e.g. "Adenosine_A2a", "DAT", or direct signal like "dopamine"
@@ -397,8 +400,8 @@ export interface WorkerComputeRequest {
   items: ItemForWorker[]; // timeline activities
   defs: InterventionDef[]; // library (for kernels)
   baselines?: BaselineMapSerialized;
-  /** Optional extra knobs the worker can use (e.g., user sensitivity) */
   options?: {
+    useOptimizedEngine?: boolean;
     clampMin?: number; // e.g., -1
     clampMax?: number; // e.g., 1.5
     includeSignals?: readonly Signal[]; // limit to speed up
@@ -439,10 +442,9 @@ export type BaselineMapSerialized = Partial<Record<Signal, string>>; // stringif
 export interface WorkerComputeResponse {
   series: Record<Signal, Float32Array>;
   auxiliarySeries: Record<string, Float32Array>;
-  /** Final homeostasis state after simulation (for chaining multi-day scenarios) */
-  finalHomeostasisState?: HomeostasisStateSnapshot;
-  /** Time series of homeostasis state variables for visualization */
-  homeostasisSeries?: HomeostasisSeries;
+  finalHomeostasisState: HomeostasisStateSnapshot;
+  homeostasisSeries: HomeostasisSeries;
+  computeTimeMs?: number;
 }
 
 /* ===========================

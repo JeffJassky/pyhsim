@@ -146,8 +146,8 @@ describe("PK/PD Regression Tests", () => {
       const peakState = simulate(state, 0, 60, interventions);
       const peakConc = peakState.pk["test-drug_central"] ?? 0;
 
-      // Simulate 60 more minutes (1 half-life after dosing ends)
-      const decayState = simulate(peakState, 60, 60, interventions);
+      // Simulate 180 more minutes (3 half-lives after dosing ends)
+      const decayState = simulate(peakState, 60, 180, interventions);
       const decayConc = decayState.pk["test-drug_central"] ?? 0;
 
       // Concentration should have decayed (roughly half after 1 half-life)

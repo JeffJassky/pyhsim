@@ -10,262 +10,51 @@ import {
   WorkerComputeResponse,
 } from "@/types";
 import { SIGNALS_ALL } from "@/types";
-import type { SimulationState, DynamicsContext, ActiveIntervention } from '@/types/unified';
-import {
-  integrateStep,
-  createInitialState,
-  getAllUnifiedDefinitions,
-  AUXILIARY_DEFINITIONS,
-  SIGNAL_DEFINITIONS,
-  type ConditionAdjustments,
-} from "@/models/engine";
+import { runNumericalV1 } from "../models/engine/solvers/numerical-v1";
+import { runOptimizedV2 } from "../models/engine/solvers/optimized-v2";
 
 self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
-  const { gridMins, items, defs, options } = event.data;
+  const startTime = performance.now();
+  const request = event.data;
+  const { options } = request;
 
-  const enableInterventions = options?.debug?.enableInterventions ?? true;
+  let result: WorkerComputeResponse;
 
-  const includeSignals = options?.includeSignals ?? SIGNALS_ALL;
-  const gridStep = gridMins.length > 1 ? gridMins[1] - gridMins[0] : 5;
-  const wakeOffsetMin = options?.wakeOffsetMin ?? (0 as Minute);
-  const minutesPerDay = 24 * 60;
+  if (options?.useOptimizedEngine) {
+    console.debug("[EngineWorker] Running Optimized V2 solver...");
+    result = runOptimizedV2(request);
 
-  const baselineContext: BaselineContext = {
-    chronotypeShiftMin: wakeOffsetMin,
-    sleepDebt: 0,
-    subject: options?.subject,
-    physiology: options?.physiology,
-  };
-
-  const series: Record<Signal, Float32Array> = {} as Record<Signal, Float32Array>;
-  for (const signal of includeSignals) {
-    series[signal] = new Float32Array(gridMins.length);
-  }
-
-  const auxiliarySeries: Record<string, Float32Array> = {};
-  for (const key of Object.keys(AUXILIARY_DEFINITIONS)) {
-    auxiliarySeries[key] = new Float32Array(gridMins.length);
-  }
-
-  const homeostasisSeries = {
-    glucosePool: new Float32Array(gridMins.length),
-    insulinPool: new Float32Array(gridMins.length),
-    hepaticGlycogen: new Float32Array(gridMins.length),
-    adenosinePressure: new Float32Array(gridMins.length),
-    cortisolPool: new Float32Array(gridMins.length),
-    cortisolIntegral: new Float32Array(gridMins.length),
-    adrenalineReserve: new Float32Array(gridMins.length),
-    dopamineVesicles: new Float32Array(gridMins.length),
-    serotoninPrecursor: new Float32Array(gridMins.length),
-    norepinephrineVesicles: new Float32Array(gridMins.length),
-    acetylcholineTone: new Float32Array(gridMins.length),
-    gabaPool: new Float32Array(gridMins.length),
-    bdnfExpression: new Float32Array(gridMins.length),
-    ghReserve: new Float32Array(gridMins.length),
-  };
-
-  const defsMap = new Map(defs.map((def) => [def.key, def]));
-
-  // --- Unified ODE Simulation ---
-  const unifiedDefinitions = getAllUnifiedDefinitions();
-  
-  // Initialize state
-  let initialState: SimulationState = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
-    subject: options?.subject ?? ({} as any),
-    physiology: options?.physiology ?? ({} as any),
-    isAsleep: false 
-  }, options?.debug);
-
-  // Apply profile adjustments to initial state auxiliary variables (enzymes, transporters)
-  if (options?.debug?.enableConditions !== false) {
-    if (options?.enzymeActivities) {
-      for (const [key, val] of Object.entries(options.enzymeActivities)) {
-        if (initialState.auxiliary[key] !== undefined) {
-          initialState.auxiliary[key] += val;
-        }
+    // --- Optional: Parallel Validation Mode ---
+    // Uncomment to detect mathematical divergence during development
+    /*
+    const goldStandard = runNumericalV1(request);
+    let maxDiff = 0;
+    for (const sig of SIGNALS_ALL) {
+      if (!result.series[sig] || !goldStandard.series[sig]) continue;
+      for (let i = 0; i < result.series[sig].length; i++) {
+        maxDiff = Math.max(maxDiff, Math.abs(result.series[sig][i] - goldStandard.series[sig][i]));
       }
     }
-    if (options?.transporterActivities) {
-      for (const [key, val] of Object.entries(options.transporterActivities)) {
-        if (initialState.auxiliary[key] !== undefined) {
-          initialState.auxiliary[key] += val;
-        }
-      }
-    }
-
-    // Apply receptor profile adjustments
-    if (options?.receptorDensities) {
-      for (const [key, val] of Object.entries(options.receptorDensities)) {
-        initialState.receptors[`${key}_density`] = 1.0 + val;
-      }
-    }
-    if (options?.receptorSensitivities) {
-      for (const [key, val] of Object.entries(options.receptorSensitivities)) {
-        initialState.receptors[`${key}_sensitivity`] = 1.0 + val;
-      }
-    }
-  }
-
-  let currentState: SimulationState = options?.initialHomeostasisState
-    ? (options.initialHomeostasisState as any) 
-    : initialState;
-
-  // Prepare mechanistic interventions
-  const activeInterventions: ActiveIntervention[] = [];
-  let wakeTimeMin = 480; // Default 8:00 AM
-  let foundWakeTime = false;
-
-  if (enableInterventions) {
-    const numDays = Math.ceil((gridMins[gridMins.length - 1] + gridStep) / 1440);
-    
-    // First pass: find wake time for circadian alignment
-    // We look for the FIRST wake or sleep event to establish the rhythm anchor
-    // (Simplification: assuming consistent schedule or using the first day as anchor)
-    for (const item of items) {
-      if (foundWakeTime) break;
-      const def = defsMap.get(item.meta.key);
-      if (!def) continue;
-
-      if (def.key === 'wake') {
-        wakeTimeMin = item.startMin % 1440;
-        foundWakeTime = true;
-      } else if (def.key === 'sleep') {
-        // Wake time is end of sleep
-        wakeTimeMin = (item.startMin + item.durationMin) % 1440;
-        foundWakeTime = true;
-      }
-    }
-
-    for (let d = 0; d < numDays; d++) {
-      for (const item of items) {
-        const def = defsMap.get(item.meta.key);
-        if (!def) continue;
-
-        // Use pre-resolved pharmacology passed from Main Thread
-        // Fallback to def.pharmacology only if it's a static object (legacy/test path)
-        let pharmList: any[] = [];
-        
-        if ((item as any).resolvedPharmacology) {
-          pharmList = (item as any).resolvedPharmacology;
-        } else if (def.pharmacology && typeof def.pharmacology !== 'function') {
-           // Fallback for static definitions if not resolved
-           pharmList = [def.pharmacology];
-        }
-
-        // Create an active intervention for EACH distinct agent/molecule returned
-        pharmList.forEach((pharm, index) => {
-           // We append an index suffix to the ID if there are multiple agents, 
-           // to ensure unique PK tracking (e.g. "meal123_0", "meal123_1")
-           const agentId = pharmList.length > 1 ? `${item.id}_${index}` : item.id;
-
-           const intervention: ActiveIntervention = {
-            id: agentId, 
-            key: def.key,
-            startTime: item.startMin + (d * 1440),
-            duration: item.durationMin,
-            intensity: item.meta.intensity ?? 1.0,
-            params: item.meta.params,
-            pharmacology: pharm
-          };
-
-          activeInterventions.push(intervention);
-        });
-      }
-    }
-  }
-
-  // Calculate shift needed to align user's wake time to "Standard Model Time" (8:00 AM)
-  const standardWakeTime = 480;
-  const circadianShift = standardWakeTime - wakeTimeMin;
-
-  const conditionAdjustments: ConditionAdjustments = (options?.debug?.enableConditions !== false) ? {
-    baselines: options?.conditionBaselines,
-    couplings: options?.conditionCouplings,
-  } : {};
-
-  // Simulation Loop
-  gridMins.forEach((minute, idx) => {
-    const adjustedMinute = minute % minutesPerDay;
-    const circadianMinuteOfDay = (adjustedMinute + circadianShift + minutesPerDay) % minutesPerDay;
-    
-    const isAsleep = enableInterventions && items.some(item => {
-      const def = defsMap.get(item.meta.key);
-      if (def?.key !== 'sleep') return false;
-      
-      const start = item.startMin;
-      const end = item.startMin + item.durationMin;
-      
-      // Normal range check
-      if (minute >= start && minute <= end) return true;
-      
-      // Wrapped range check (for sessions crossing midnight)
-      // If we are at minute 10 of day 2, and sleep started at 1400 (11:20 PM) of day 1 and lasted 200 mins (until 160 of day 2)
-      // Then minute (1450) is >= 1400 and <= 1600.
-      if ((minute + 1440) >= start && (minute + 1440) <= end) return true;
-      if ((minute - 1440) >= start && (minute - 1440) <= end) return true;
-      
-      return false;
-    });
-
-    const dynamicsCtx: DynamicsContext = {
-      minuteOfDay: adjustedMinute,
-      circadianMinuteOfDay,
-      dayOfYear: 1, 
-      isAsleep,
-      subject: options?.subject ?? ({} as any),
-      physiology: options?.physiology ?? ({} as any),
-    };
-
-    // Step ODE
-    const dt = idx === 0 ? 0 : gridStep;
-    if (dt > 0) {
-      const subSteps = Math.max(1, Math.ceil(dt / 1.0)); // 1 minute sub-steps for stability
-      const subDt = dt / subSteps;
-      for (let s = 0; s < subSteps; s++) {
-        currentState = integrateStep(currentState, minute - dt + s * subDt, subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
-      }
+    if (maxDiff > 1e-6) {
+      console.warn(`[EngineWorker] WARNING: Optimized engine divergent! Max delta: ${maxDiff}`);
     } else {
-      currentState = integrateStep(currentState, minute, 0, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
+      console.debug(`[EngineWorker] Validation passed. Max delta: ${maxDiff}`);
     }
-
-    // Write results to series
-    for (const signal of includeSignals) {
-      series[signal][idx] = currentState.signals[signal] ?? 0;
-    }
-
-    // Write results to auxiliary series
-    for (const auxKey of Object.keys(auxiliarySeries)) {
-      auxiliarySeries[auxKey][idx] = currentState.auxiliary[auxKey] ?? 0;
-    }
-
-    // Map unified auxiliary to homeostasis series for UI compatibility
-    homeostasisSeries.glucosePool[idx] = currentState.signals.glucose ?? 0;
-    homeostasisSeries.insulinPool[idx] = currentState.signals.insulin ?? 0;
-    homeostasisSeries.hepaticGlycogen[idx] = currentState.auxiliary.hepaticGlycogen ?? 0;
-    homeostasisSeries.adenosinePressure[idx] = currentState.auxiliary.adenosinePressure ?? 0;
-    homeostasisSeries.cortisolPool[idx] = currentState.signals.cortisol ?? 0;
-    homeostasisSeries.cortisolIntegral[idx] = currentState.auxiliary.cortisolIntegral ?? 0;
-    homeostasisSeries.adrenalineReserve[idx] = currentState.signals.adrenaline ?? 0;
-    homeostasisSeries.dopamineVesicles[idx] = currentState.auxiliary.dopamineVesicles ?? 0;
-    homeostasisSeries.norepinephrineVesicles[idx] = currentState.auxiliary.norepinephrineVesicles ?? 0;
-    homeostasisSeries.serotoninPrecursor[idx] = currentState.auxiliary.serotoninPrecursor ?? 0;
-    homeostasisSeries.acetylcholineTone[idx] = currentState.signals.acetylcholine ?? 0; // mapped to signal
-    homeostasisSeries.gabaPool[idx] = currentState.auxiliary.gabaPool ?? 0;
-    homeostasisSeries.bdnfExpression[idx] = currentState.auxiliary.bdnfExpression ?? 0;
-    homeostasisSeries.ghReserve[idx] = currentState.auxiliary.ghReserve ?? 0;
-  });
+    */
+  } else {
+    console.debug("[EngineWorker] Running Numerical V1 solver...");
+    result = runNumericalV1(request);
+  }
 
   const payload: WorkerComputeResponse = {
-    series,
-    auxiliarySeries,
-    finalHomeostasisState: currentState as any,
-    homeostasisSeries: homeostasisSeries as any,
+    ...result,
+    computeTimeMs: performance.now() - startTime,
   };
 
   const transferables = [
-    ...Object.values(series).map((buffer) => buffer.buffer),
-    ...Object.values(auxiliarySeries).map((buffer) => buffer.buffer),
-    ...Object.values(homeostasisSeries).map((buffer) => buffer.buffer),
+    ...Object.values(result.series).map((buffer) => buffer.buffer),
+    ...Object.values(result.auxiliarySeries).map((buffer) => buffer.buffer),
+    ...Object.values(result.homeostasisSeries).map((buffer) => buffer.buffer),
   ];
   (self as any).postMessage(payload, transferables);
 };

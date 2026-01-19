@@ -153,6 +153,18 @@ const finalStateJson = computed(() => {
                   </label>
                   <p class="toggle-desc">Metabolic enzyme activity modulation.</p>
                 </div>
+
+                <div class="toggle-item toggle-item--optimized">
+                  <label class="toggle-row">
+                    <span class="toggle-label">Optimized Engine (v2)</span>
+                    <input
+                      type="checkbox"
+                      :checked="engineStore.debug.useOptimizedEngine"
+                      @change="engineStore.updateDebug({ useOptimizedEngine: ($event.target as HTMLInputElement).checked })"
+                    />
+                  </label>
+                  <p class="toggle-desc">Use the new experimental optimized solver path.</p>
+                </div>
               </div>
             </div>
 
@@ -338,6 +350,15 @@ const finalStateJson = computed(() => {
 
 .toggle-item:hover {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.toggle-item--optimized {
+  border: 1px solid rgba(143, 191, 95, 0.3);
+  background: rgba(143, 191, 95, 0.05);
+}
+
+.toggle-item--optimized .toggle-label {
+  color: #8fbf5f;
 }
 
 .toggle-label {

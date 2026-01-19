@@ -111,6 +111,13 @@
       />
       <div class="fab-group">
         <button
+          class="studio-fab studio-fab--comprehensive"
+          type="button"
+          @click="addComprehensiveDay"
+        >
+          📅 Comprehensive Day
+        </button>
+        <button
           class="studio-fab"
           type="button"
           @click="addItemModalOpen = true"
@@ -294,6 +301,44 @@ const handleTimelineSelect = (id?: UUID) => {
 };
 const handleInspectorClose = () => {
   inspectorVisible.value = false;
+};
+
+const addComprehensiveDay = () => {
+  const date = new Date(timeline.selectedDate + 'T00:00:00');
+
+  const interventions = [
+    { key: 'caffeine', start: 495, duration: 240, params: { mg: 100 } },
+    { key: 'omega3', start: 510, duration: 720, params: { mg: 2000 } },
+    { key: 'exercise_cardio', start: 600, duration: 45, params: { intensity: 1 } },
+    { key: 'food', start: 660, duration: 30, params: {
+      carbSugar: 35, carbStarch: 40, protein: 30, fat: 20, fiber: 5,
+      glycemicIndex: 60, waterMl: 200, temperature: 'warm'
+    } },
+    { key: 'exercise_resistance', start: 840, duration: 60, params: { intensity: 1 } },
+    { key: 'alphaGPC', start: 930, duration: 360, params: { mg: 300 } },
+    { key: 'ltheanine', start: 960, duration: 300, params: { mg: 200 } },
+    { key: 'social', start: 1050, duration: 60, params: {} },
+    { key: 'vitaminD', start: 1080, duration: 1440, params: { iu: 5000 } },
+    { key: 'food', start: 1140, duration: 30, params: {
+      carbSugar: 15, carbStarch: 50, protein: 40, fat: 30, fiber: 10,
+      glycemicIndex: 40, waterMl: 200, temperature: 'warm'
+    } },
+    { key: 'meditation', start: 1230, duration: 20, params: {} },
+    { key: 'magnesium', start: 1260, duration: 480, params: { mg: 400 } },
+    { key: 'melatonin', start: 1320, duration: 360, params: { mg: 3 } },
+  ];
+
+  interventions.forEach(iv => {
+    const start = minuteToISO(iv.start as Minute, date);
+    const end = minuteToISO((iv.start + iv.duration) as Minute, date);
+    timeline.addItem(start, end, {
+      key: iv.key as any,
+      params: iv.params,
+      intensity: 1
+    });
+  });
+
+  scrollTimelineIntoView();
 };
 
 const isEditableTarget = (target: EventTarget | null) => {
@@ -1023,6 +1068,11 @@ const interventionBands = computed(() => {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   white-space: nowrap;
+}
+
+.studio-fab--comprehensive {
+  background: linear-gradient(120deg, #38bdf8, #0ea5e9);
+  color: white;
 }
 
 .studio-fab--secondary {
