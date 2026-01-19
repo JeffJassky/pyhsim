@@ -130,7 +130,11 @@
                   top: indicators[spec.key].y + '%',
                 }"
               >
-                {{ indicators[spec.key].type === 'up' ? '▲' : '▼' }}
+                <span class="series__indicator-arrow">{{ indicators[spec.key].type === 'up' ? '▲' : '▼' }}</span>
+                <span class="series__indicator-value">
+                  {{ indicators[spec.key].value.toFixed(indicators[spec.key].value < 1 ? 2 : 1) }}
+                  <span class="series__indicator-unit">{{ indicators[spec.key].unit }}</span>
+                </span>
               </div>
             </Transition>
 
@@ -283,7 +287,7 @@ const normalize = (val: number, spec: ChartSeriesSpec) => {
 };
 
 // --- Change Tracking & Indicators ---
-const indicators = ref<Record<string, { type: 'up' | 'down'; x: number; y: number; id: number }>>({});
+const indicators = ref<Record<string, { type: 'up' | 'down'; x: number; y: number; id: number; value: number; unit: string }>>({});
 const flashStates = ref<Record<string, boolean>>({});
 const previousData = new Map<string, number[]>();
 
@@ -326,11 +330,15 @@ watch(
           const y = (yPos / 30) * 100;
 
           const id = Math.random();
+          const display = getDisplayValue(key as Signal, newArr[maxIdx]);
+
           indicators.value[key] = {
             type: maxDelta > 0 ? 'up' : 'down',
             x,
             y,
             id,
+            value: display.value,
+            unit: display.unit
           };
 
           // Trigger gentle flash
@@ -637,30 +645,55 @@ watch(
   position: absolute;
   pointer-events: none;
   z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
+  animation: indicator-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.series__indicator-arrow {
+  position: absolute;
+  top: 0;
+  left: 0;
   transform: translate(-50%, -50%);
   font-size: 1.2rem;
   font-weight: bold;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
-  animation: indicator-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.series__indicator--up {
+.series__indicator-value {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 4px;
+  border-radius: 4px;
+  backdrop-filter: blur(2px);
+  color: white;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.series__indicator-unit {
+  font-size: 0.55rem;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+.series__indicator--up .series__indicator-arrow {
   color: white;
 }
 
-.series__indicator--down {
+.series__indicator--down .series__indicator-arrow {
   color: white;
 }
 
 @keyframes indicator-bounce {
-  0% { transform: translate(-50%, -50%) scale(0); }
-  50% { transform: translate(-50%, -50%) scale(1.5); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+  0% { transform: scale(0); }
+  50% { transform: scale(1.5); }
+  100% { transform: scale(1); }
 }
 
 /* Transitions */

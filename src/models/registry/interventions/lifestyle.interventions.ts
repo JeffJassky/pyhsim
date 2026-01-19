@@ -19,6 +19,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
           intrinsicEfficacy: 8.0,
           unit: "µg/dL",
           tau: 30, // CAR duration approximation
+          description: "Initiates the Cortisol Awakening Response (CAR), preparing the body for the day's demands.",
         },
         {
           target: "dopamine",
@@ -26,6 +27,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
           intrinsicEfficacy: 6.0, // 30 * 0.2
           unit: "nM",
           tau: 10,
+          description: "Boosts early-morning motivation and anticipation of the day ahead.",
         },
         {
           target: "melatonin",
@@ -33,6 +35,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
           intrinsicEfficacy: 40.0,
           unit: "pg/mL",
           tau: 20,
+          description: "Rapidly clears remaining 'sleepiness' signals to help shake off sleep inertia.",
         },
         {
           target: "gaba",
@@ -40,6 +43,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
           intrinsicEfficacy: 150.0, // 25 * 6.0
           unit: "nM",
           tau: 45,
+          description: "Reduces inhibitory signaling, allowing cognitive processes to spin up.",
         },
         {
           target: "orexin",
@@ -47,6 +51,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
           intrinsicEfficacy: 20.0,
           unit: "pg/mL",
           tau: 15,
+          description: "Stimulates the brain's primary wakefulness system to increase alertness.",
         },
         {
           target: "acetylcholine",
@@ -54,6 +59,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
           intrinsicEfficacy: 3.75, // 15 * 0.25
           unit: "nM",
           tau: 15,
+          description: "Supports the transition to active attention and memory processing.",
         },
       ],
     },
@@ -448,5 +454,88 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
     group: "Wellness",
     categories: ["wellness"],
     goals: ["calm", "focus", "mood", "longevity"],
+  },
+  {
+    key: "coldExposure",
+    label: "Cold Exposure",
+    icon: "🧊",
+    defaultDurationMin: 5,
+    params: [
+      {
+        key: "temperature",
+        label: "Temperature",
+        type: "slider",
+        min: 0,
+        max: 15,
+        step: 1,
+        default: 10,
+        unit: "°C",
+        hint: "0°C = ice bath, 15°C = cool shower",
+      },
+      {
+        key: "intensity",
+        label: "Intensity",
+        type: "slider",
+        min: 0.5,
+        max: 1.5,
+        step: 0.1,
+        default: 1.0,
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.ColdExposure(
+        Number(params.temperature) ?? 10,
+        Number(params.intensity) ?? 1.0,
+      ),
+    group: "Wellness",
+    categories: ["wellness"],
+    goals: ["energy", "recovery", "mood", "longevity"],
+  },
+  {
+    key: "heatSauna",
+    label: "Sauna / Heat Therapy",
+    icon: "🧖",
+    defaultDurationMin: 20,
+    params: [
+      {
+        key: "type",
+        label: "Type",
+        type: "select",
+        options: [
+          { value: "dry", label: "Dry Sauna (80-100°C)" },
+          { value: "infrared", label: "Infrared (45-65°C)" },
+          { value: "steam", label: "Steam Room (40-50°C)" },
+        ],
+        default: "dry",
+      },
+      {
+        key: "temperature",
+        label: "Temperature",
+        type: "slider",
+        min: 40,
+        max: 100,
+        step: 5,
+        default: 80,
+        unit: "°C",
+      },
+      {
+        key: "intensity",
+        label: "Intensity",
+        type: "slider",
+        min: 0.5,
+        max: 1.5,
+        step: 0.1,
+        default: 1.0,
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.HeatExposure(
+        Number(params.temperature) ?? 80,
+        (params.type as "dry" | "infrared" | "steam") ?? "dry",
+        Number(params.intensity) ?? 1.0,
+      ),
+    group: "Wellness",
+    categories: ["wellness"],
+    goals: ["recovery", "longevity", "calm", "sleep"],
   },
 ];

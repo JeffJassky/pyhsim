@@ -1,10 +1,10 @@
 export type ConcentrationUnit =
   | 'mg/dL'      // Glucose, ethanol
   | 'g/dL'       // High ethanol
-  | 'µg/dL'      // Cortisol
+  | 'µg/dL'      // Cortisol, zinc, copper, iron
   | 'ng/dL'      // Testosterone
-  | 'ng/mL'      // Leptin, BDNF, growth hormone
-  | 'pg/mL'      // Catecholamines, melatonin, orexin
+  | 'ng/mL'      // Leptin, BDNF, growth hormone, folate
+  | 'pg/mL'      // Catecholamines, melatonin, orexin, B12
   | 'µIU/mL'     // Insulin
   | 'pmol/L'     // GLP-1, thyroid
   | 'nmol/L'     // SHBG
@@ -12,7 +12,9 @@ export type ConcentrationUnit =
   | 'µM'         // Glutamate (extracellular)
   | 'IU/L'       // LH, FSH
   | 'U/L'        // Enzymes (ALT, AST)
-  | 'mmol/L';    // Ketones, electrolytes
+  | 'mmol/L'     // Ketones, electrolytes
+  | 'µg/L'       // Selenium
+  | 'µmol/L';    // Choline
 
 export type RateUnit = 'mL/min/1.73m²'; // eGFR
 

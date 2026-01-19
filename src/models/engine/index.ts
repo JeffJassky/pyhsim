@@ -93,6 +93,14 @@ export const SIGNAL_DEFINITIONS: Partial<
   ast: biomarkers.ast,
   egfr: biomarkers.egfr,
   vitaminD3: biomarkers.vitaminD3,
+  zinc: biomarkers.zinc,
+  b12: biomarkers.b12,
+  folate: biomarkers.folate,
+  iron: biomarkers.iron,
+  selenium: biomarkers.selenium,
+  copper: biomarkers.copper,
+  chromium: biomarkers.chromium,
+  choline: biomarkers.choline,
 };
 
 // --- Enzyme and Transporter Defaults ---
@@ -112,35 +120,35 @@ const createStaticAux = (
 
 export const AUXILIARY_DEFINITIONS: Record<string, AuxiliaryDefinition> = {
   // Metabolic
-  insulinAction: metabolic.insulinAction,
-  hepaticGlycogen: metabolic.hepaticGlycogen,
+  insulinAction: { ...metabolic.insulinAction, label: 'Insulin Sensitivity' },
+  hepaticGlycogen: { ...metabolic.hepaticGlycogen, label: 'Liver Glycogen' },
 
   // Hormones
-  crhPool: hormones.crhPool,
-  cortisolIntegral: hormones.cortisolIntegral,
-  ghReserve: hormones.ghReserve,
+  crhPool: { ...hormones.crhPool, label: 'CRH Reservoir' },
+  cortisolIntegral: { ...hormones.cortisolIntegral, label: 'Stress Load (Integral)' },
+  ghReserve: { ...hormones.ghReserve, label: 'GH Reserve' },
 
   // Neuro
-  dopamineVesicles: dopamineVesicles,
-  norepinephrineVesicles: norepinephrineVesicles,
-  serotoninPrecursor: serotoninPrecursor,
-  gabaPool: gabaPool,
-  glutamatePool: glutamatePool,
+  dopamineVesicles: { ...dopamineVesicles, label: 'Dopamine Capacity' },
+  norepinephrineVesicles: { ...norepinephrineVesicles, label: 'Norepi Capacity' },
+  serotoninPrecursor: { ...serotoninPrecursor, label: 'Serotonin Precursor' },
+  gabaPool: { ...gabaPool, label: 'GABA Capacity' },
+  glutamatePool: { ...glutamatePool, label: 'Glutamate Capacity' },
 
   // Circadian
-  adenosinePressure: circadian.adenosinePressure,
+  adenosinePressure: { ...circadian.adenosinePressure, label: 'Sleep Pressure' },
 
   // Derived
-  bdnfExpression: derived.bdnfExpression,
+  bdnfExpression: { ...derived.bdnfExpression, label: 'BDNF Expression' },
 
   // Enzymes & Transporters (generated from pharmacology registry)
   ...Object.fromEntries(
-    getAllTransporterKeys().map((key) => [key, createStaticAux(key)]),
+    getAllTransporterKeys().map((key) => [key, { ...createStaticAux(key), label: `${key} Activity` }]),
   ),
   ...Object.fromEntries(
     getAllEnzymeKeys().map((key) => [
       key,
-      createStaticAux(key, ENZYMES[key].baselineActivity ?? 1.0),
+      { ...createStaticAux(key, ENZYMES[key].baselineActivity ?? 1.0), label: `${key} Activity` },
     ]),
   ),
 };

@@ -103,3 +103,91 @@ export const vitaminD3 = createBiomarker(
   { min: 30, max: 80 },
   "mid",
 );
+
+export const zinc = createBiomarker(
+  "zinc",
+  "Zinc",
+  "µg/dL",
+  90,
+  "#a1a1aa",
+  "Serum zinc - essential for immune function and testosterone.",
+  { min: 70, max: 120 },
+  "mid",
+);
+
+export const b12 = createBiomarker(
+  "b12",
+  "Vitamin B12",
+  "pg/mL",
+  500,
+  "#dc2626",
+  "Serum B12 - methylation and neurological function.",
+  { min: 200, max: 900 },
+  "mid",
+);
+
+export const folate = createBiomarker(
+  "folate",
+  "Folate",
+  "ng/mL",
+  12,
+  "#16a34a",
+  "Serum folate - one-carbon metabolism.",
+  { min: 4, max: 20 },
+  "mid",
+);
+
+export const iron = createBiomarker(
+  "iron",
+  "Serum Iron",
+  "µg/dL",
+  100,
+  "#b91c1c",
+  "Serum iron - oxygen transport capacity.",
+  { min: 60, max: 170 },
+  "mid",
+);
+
+export const selenium = createBiomarker(
+  "selenium",
+  "Selenium",
+  "µg/L",
+  120,
+  "#ca8a04",
+  "Serum selenium - antioxidant and thyroid function.",
+  { min: 70, max: 150 },
+  "mid",
+);
+
+export const copper = createBiomarker(
+  "copper",
+  "Copper",
+  "µg/dL",
+  110,
+  "#ea580c",
+  "Serum copper - enzyme cofactor.",
+  { min: 70, max: 150 },
+  "mid",
+);
+
+export const chromium = createBiomarker(
+  "chromium",
+  "Chromium",
+  "index",
+  1.0,
+  "#6b7280",
+  "Chromium status - insulin sensitivity support.",
+  { min: 0.5, max: 1.5 },
+  "mid",
+);
+
+export const choline = createBiomarker(
+  "choline",
+  "Choline",
+  "µmol/L",
+  10,
+  "#7c3aed",
+  "Plasma choline - acetylcholine precursor pool.",
+  { min: 7, max: 20 },
+  "mid",
+);

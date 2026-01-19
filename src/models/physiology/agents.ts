@@ -799,6 +799,7 @@ export const Agents = {
         Ki: 2400,
         intrinsicEfficacy: mg * 0.4,
         unit: "nM",
+        description: "Blocks adenosine from binding, preventing the 'sleep pressure' signal from reaching neurons.",
       },
       {
         target: "Adenosine_A1",
@@ -806,6 +807,7 @@ export const Agents = {
         Ki: 12000,
         intrinsicEfficacy: mg * 0.2,
         unit: "nM",
+        description: "Inhibits the general slowing of neural activity, maintaining higher cognitive speed.",
       },
       {
         target: "cortisol",
@@ -813,6 +815,7 @@ export const Agents = {
         EC50: 25000,
         intrinsicEfficacy: mg * 0.08,
         unit: "µg/dL",
+        description: "Triggers a modest release of the body's primary stress hormone.",
       },
       {
         target: "adrenaline",
@@ -820,6 +823,7 @@ export const Agents = {
         EC50: 30000,
         intrinsicEfficacy: mg * 0.12,
         unit: "pg/mL",
+        description: "Activates the 'fight or flight' response, increasing physical readiness.",
       },
       {
         target: "norepi",
@@ -827,6 +831,7 @@ export const Agents = {
         EC50: 30000,
         intrinsicEfficacy: mg * 0.9375,
         unit: "pg/mL",
+        description: "Boosts focus and vigilance by increasing norepinephrine levels in the brain.",
       },
     ],
   }),
@@ -848,6 +853,7 @@ export const Agents = {
         Ki: 0.08,
         intrinsicEfficacy: mg * 8.33,
         unit: "pg/mL",
+        description: "Primary sleep-onset receptor. Activates the 'biological night' signal in the brain's master clock.",
       },
       {
         target: "MT2",
@@ -855,6 +861,7 @@ export const Agents = {
         Ki: 0.23,
         intrinsicEfficacy: mg * 6.66,
         unit: "pg/mL",
+        description: "Circadian phase shifter. Helps synchronize the timing of various biological rhythms.",
       },
       {
         target: "orexin",
@@ -862,6 +869,7 @@ export const Agents = {
         EC50: 50,
         intrinsicEfficacy: mg * 3.33,
         unit: "pg/mL",
+        description: "Directly suppresses the 'wakefulness' peptide, reducing arousal and alertness.",
       },
       {
         target: "cortisol",
@@ -869,6 +877,7 @@ export const Agents = {
         EC50: 100,
         intrinsicEfficacy: mg * 1.66,
         unit: "µg/dL",
+        description: "Blunts the stress hormone response, facilitating the transition into deep rest.",
       },
       {
         target: "GABA_A",
@@ -876,6 +885,7 @@ export const Agents = {
         EC50: 200,
         intrinsicEfficacy: mg * 16.0,
         unit: "nM",
+        description: "Enhances the brain's primary inhibitory signal, providing a gentle sedative effect.",
       },
     ],
   }),
@@ -1801,6 +1811,1517 @@ export const Agents = {
           intrinsicEfficacy: Math.min(5, mg * 0.003),
           unit: "nM",
           tau: 180,
+        },
+      ],
+    };
+  },
+
+  // =============================================================================
+  // THERMAL EXPOSURE AGENTS
+  // =============================================================================
+
+  /**
+   * COLD EXPOSURE
+   * Cold water immersion, cold showers, cryotherapy.
+   *
+   * Comprehensive effects:
+   * - Sympathetic activation: norepinephrine ↑↑, adrenaline ↑
+   * - Brown adipose tissue activation: thyroid ↑, energy ↑
+   * - Cold shock proteins: BDNF ↑
+   * - Vagal dive reflex: brief vagal ↑
+   * - Stress response: cortisol ↑ (mild, transient)
+   * - Anti-inflammatory (chronic effect)
+   * - Dopamine: ↑ (post-exposure mood lift)
+   */
+  ColdExposure: (
+    tempCelsius: number,
+    intensity: number = 1.0,
+  ): PharmacologyDef => {
+    // Temperature affects intensity (colder = more intense)
+    // 0°C = ice bath (max), 15°C = cool shower (mild)
+    const tempFactor = Math.max(0.3, (15 - tempCelsius) / 15);
+    const effectiveIntensity = intensity * tempFactor;
+
+    // Norepinephrine can increase 200-500% with cold exposure
+    const norepinephrineEffect = Math.min(400, effectiveIntensity * 300);
+    const adrenalineEffect = Math.min(200, effectiveIntensity * 150);
+    const dopamineEffect = Math.min(30, effectiveIntensity * 25); // Significant mood lift
+    const cortisolEffect = Math.min(8, effectiveIntensity * 6);
+    const bdnfEffect = Math.min(15, effectiveIntensity * 12);
+    const thyroidEffect = Math.min(0.2, effectiveIntensity * 0.15);
+    const vagalEffect = Math.min(0.3, effectiveIntensity * 0.2); // Dive reflex
+    const antiInflammatory = Math.min(0.3, effectiveIntensity * 0.2);
+
+    return {
+      molecule: { name: "Cold Exposure", molarMass: 0 },
+      pk: { model: "activity-dependent" },
+      pd: [
+        // Primary sympathetic activation
+        {
+          target: "norepi",
+          mechanism: "agonist",
+          intrinsicEfficacy: norepinephrineEffect,
+          unit: "pg/mL",
+          tau: 5, // Very fast onset
+        },
+        {
+          target: "adrenaline",
+          mechanism: "agonist",
+          intrinsicEfficacy: adrenalineEffect,
+          unit: "pg/mL",
+          tau: 3,
+        },
+        // Dopamine mood lift (delayed, persists post-exposure)
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: dopamineEffect,
+          unit: "nM",
+          tau: 30,
+        },
+        // Stress response
+        {
+          target: "cortisol",
+          mechanism: "agonist",
+          intrinsicEfficacy: cortisolEffect,
+          unit: "µg/dL",
+          tau: 15,
+        },
+        // Neurotrophic (cold shock proteins)
+        {
+          target: "bdnf",
+          mechanism: "agonist",
+          intrinsicEfficacy: bdnfEffect,
+          unit: "ng/mL",
+          tau: 60,
+        },
+        // Metabolic activation (BAT)
+        {
+          target: "thyroid",
+          mechanism: "agonist",
+          intrinsicEfficacy: thyroidEffect,
+          unit: "pmol/L",
+          tau: 30,
+        },
+        // Vagal dive reflex (brief parasympathetic activation)
+        {
+          target: "vagal",
+          mechanism: "agonist",
+          intrinsicEfficacy: vagalEffect,
+          unit: "index",
+          tau: 10,
+        },
+        // Anti-inflammatory (chronic adaptation)
+        {
+          target: "inflammation",
+          mechanism: "antagonist",
+          intrinsicEfficacy: antiInflammatory,
+          unit: "index",
+          tau: 120,
+        },
+        // Alertness
+        {
+          target: "orexin",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(20, effectiveIntensity * 15),
+          unit: "pg/mL",
+          tau: 10,
+        },
+      ],
+    };
+  },
+
+  /**
+   * HEAT EXPOSURE
+   * Sauna, steam room, hot baths.
+   *
+   * Comprehensive effects:
+   * - Heat shock proteins: BDNF ↑, inflammation ↓
+   * - Growth hormone: ↑↑ (major effect, up to 16x increase)
+   * - Prolactin: ↑
+   * - Relaxation: cortisol ↓, vagal ↑
+   * - Serotonin: ↑
+   * - Vasodilation: blood pressure effects
+   * - Dehydration stress: vasopressin ↑
+   */
+  HeatExposure: (
+    tempCelsius: number,
+    type: "dry" | "infrared" | "steam" = "dry",
+    intensity: number = 1.0,
+  ): PharmacologyDef => {
+    // Temperature affects intensity
+    // Dry sauna: 80-100°C (strongest)
+    // Infrared: 45-65°C (moderate, deeper penetration)
+    // Steam: 40-50°C (humidity compensates for lower temp)
+
+    let tempFactor: number;
+    let ghMultiplier: number;
+
+    switch (type) {
+      case "dry":
+        tempFactor = Math.min(1.5, (tempCelsius - 60) / 40);
+        ghMultiplier = 1.0; // Strongest GH response
+        break;
+      case "infrared":
+        tempFactor = Math.min(1.2, (tempCelsius - 35) / 30);
+        ghMultiplier = 0.7; // Moderate GH
+        break;
+      case "steam":
+        tempFactor = Math.min(1.3, (tempCelsius - 35) / 15);
+        ghMultiplier = 0.8; // Good GH, humidity helps
+        break;
+      default:
+        tempFactor = 1.0;
+        ghMultiplier = 1.0;
+    }
+
+    const effectiveIntensity = Math.max(0.3, intensity * tempFactor);
+
+    // Growth hormone can increase 2-16x with heat exposure
+    const ghEffect = Math.min(25, effectiveIntensity * ghMultiplier * 20);
+    const prolactinEffect = Math.min(15, effectiveIntensity * 10);
+    const bdnfEffect = Math.min(12, effectiveIntensity * 10);
+    const serotoninEffect = Math.min(8, effectiveIntensity * 6);
+    const vagalEffect = Math.min(0.4, effectiveIntensity * 0.3);
+    const cortisolReduction = Math.min(5, effectiveIntensity * 4);
+    const antiInflammatory = Math.min(0.25, effectiveIntensity * 0.2);
+    const vasopressinEffect = Math.min(8, effectiveIntensity * 6); // Dehydration signal
+
+    return {
+      molecule: { name: "Heat Exposure", molarMass: 0 },
+      pk: { model: "activity-dependent" },
+      pd: [
+        // Major growth hormone release
+        {
+          target: "growthHormone",
+          mechanism: "agonist",
+          intrinsicEfficacy: ghEffect,
+          unit: "ng/mL",
+          tau: 20,
+        },
+        // Prolactin increase
+        {
+          target: "prolactin",
+          mechanism: "agonist",
+          intrinsicEfficacy: prolactinEffect,
+          unit: "ng/mL",
+          tau: 30,
+        },
+        // Neurotrophic (heat shock proteins)
+        {
+          target: "bdnf",
+          mechanism: "agonist",
+          intrinsicEfficacy: bdnfEffect,
+          unit: "ng/mL",
+          tau: 45,
+        },
+        // Relaxation and mood
+        {
+          target: "serotonin",
+          mechanism: "agonist",
+          intrinsicEfficacy: serotoninEffect,
+          unit: "nM",
+          tau: 30,
+        },
+        {
+          target: "vagal",
+          mechanism: "agonist",
+          intrinsicEfficacy: vagalEffect,
+          unit: "index",
+          tau: 20,
+        },
+        // Stress reduction
+        {
+          target: "cortisol",
+          mechanism: "antagonist",
+          intrinsicEfficacy: cortisolReduction,
+          unit: "µg/dL",
+          tau: 45,
+        },
+        // Anti-inflammatory
+        {
+          target: "inflammation",
+          mechanism: "antagonist",
+          intrinsicEfficacy: antiInflammatory,
+          unit: "index",
+          tau: 90,
+        },
+        // Dehydration/fluid balance
+        {
+          target: "vasopressin",
+          mechanism: "agonist",
+          intrinsicEfficacy: vasopressinEffect,
+          unit: "pg/mL",
+          tau: 30,
+        },
+        // Mild sedation post-exposure
+        {
+          target: "orexin",
+          mechanism: "antagonist",
+          intrinsicEfficacy: Math.min(8, effectiveIntensity * 6),
+          unit: "pg/mL",
+          tau: 60,
+        },
+        // Endocannabinoid activation (relaxation)
+        {
+          target: "endocannabinoid",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(5, effectiveIntensity * 4),
+          unit: "nM",
+          tau: 30,
+        },
+      ],
+    };
+  },
+
+  // =============================================================================
+  // PRESCRIPTION MEDICATIONS - ADHD
+  // =============================================================================
+
+  /**
+   * AMPHETAMINE (Adderall IR)
+   * Mixed amphetamine salts - DAT/NET releaser.
+   *
+   * More potent than methylphenidate due to releasing mechanism.
+   */
+  Amphetamine: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Amphetamine", molarMass: 135.21, logP: 1.76 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.75,
+      halfLifeMin: 600, // ~10 hours
+      timeToPeakMin: 180,
+      clearance: { hepatic: { baseCL_mL_min: 300, CYP: "CYP2D6" } },
+      volume: { kind: "lbm", base_L_kg: 3.5 },
+    },
+    pd: [
+      // DAT releasing (more potent than reuptake inhibition)
+      {
+        target: "DAT",
+        mechanism: "antagonist",
+        Ki: 25,
+        intrinsicEfficacy: mg * 5.0, // Stronger than MPH
+        unit: "nM",
+      },
+      // NET releasing
+      {
+        target: "NET",
+        mechanism: "antagonist",
+        Ki: 40,
+        intrinsicEfficacy: mg * 4.5,
+        unit: "nM",
+      },
+      // Mild SERT effect
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 1800,
+        intrinsicEfficacy: mg * 0.3,
+        unit: "nM",
+      },
+      // TAAR1 agonism (trace amine receptor)
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 1.5, // Additional DA release via TAAR1
+        unit: "nM",
+        tau: 15,
+      },
+      // Sympathetic activation
+      {
+        target: "cortisol",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.4,
+        unit: "µg/dL",
+        tau: 30,
+      },
+      {
+        target: "adrenaline",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 3.0,
+        unit: "pg/mL",
+        tau: 20,
+      },
+    ],
+  }),
+
+  /**
+   * LISDEXAMFETAMINE (Vyvanse)
+   * Prodrug of amphetamine - slower onset, smoother curve.
+   */
+  Lisdexamfetamine: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Lisdexamfetamine", molarMass: 263.38, logP: -0.73 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.95, // High as prodrug
+      halfLifeMin: 720, // ~12 hours (includes conversion time)
+      timeToPeakMin: 240, // Slower due to enzymatic conversion
+      clearance: { hepatic: { baseCL_mL_min: 250, CYP: "CYP2D6" } },
+      volume: { kind: "lbm", base_L_kg: 3.5 },
+    },
+    pd: [
+      // Same targets as amphetamine but lower per-mg efficacy (prodrug conversion)
+      {
+        target: "DAT",
+        mechanism: "antagonist",
+        Ki: 25,
+        intrinsicEfficacy: mg * 1.5, // ~30% of dose converts
+        unit: "nM",
+      },
+      {
+        target: "NET",
+        mechanism: "antagonist",
+        Ki: 40,
+        intrinsicEfficacy: mg * 1.35,
+        unit: "nM",
+      },
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 1800,
+        intrinsicEfficacy: mg * 0.09,
+        unit: "nM",
+      },
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.45,
+        unit: "nM",
+        tau: 20,
+      },
+      {
+        target: "cortisol",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.12,
+        unit: "µg/dL",
+        tau: 45,
+      },
+    ],
+  }),
+
+  /**
+   * METHYLPHENIDATE XR (Concerta)
+   * Extended release methylphenidate - OROS delivery system.
+   */
+  MethylphenidateXR: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Methylphenidate XR", molarMass: 233.31, logP: 2.15 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.3,
+      halfLifeMin: 420, // Extended due to OROS release
+      timeToPeakMin: 360, // Biphasic: 1-2hr initial, 6-8hr second peak
+      clearance: { hepatic: { baseCL_mL_min: 600, CYP: "CES1" } },
+      volume: { kind: "lbm", base_L_kg: 2.0 },
+    },
+    pd: [
+      {
+        target: "DAT",
+        mechanism: "antagonist",
+        Ki: 34,
+        intrinsicEfficacy: mg * 2.5, // Slightly less peak than IR
+        unit: "nM",
+      },
+      {
+        target: "NET",
+        mechanism: "antagonist",
+        Ki: 300,
+        intrinsicEfficacy: mg * 2.5,
+        unit: "nM",
+      },
+      {
+        target: "cortisol",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.4,
+        unit: "µg/dL",
+        tau: 60,
+      },
+    ],
+  }),
+
+  /**
+   * GUANFACINE (Intuniv)
+   * Alpha-2A adrenergic agonist - non-stimulant ADHD treatment.
+   */
+  Guanfacine: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Guanfacine", molarMass: 246.09, logP: 1.52 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.8,
+      halfLifeMin: 1020, // ~17 hours
+      timeToPeakMin: 300,
+      clearance: { hepatic: { baseCL_mL_min: 150, CYP: "CYP3A4" } },
+      volume: { kind: "weight", base_L_kg: 6.3 },
+    },
+    pd: [
+      // Alpha-2A agonism reduces sympathetic tone
+      {
+        target: "norepi",
+        mechanism: "antagonist", // Reduces NE release
+        intrinsicEfficacy: mg * 80,
+        unit: "pg/mL",
+        tau: 60,
+      },
+      {
+        target: "adrenaline",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 50,
+        unit: "pg/mL",
+        tau: 60,
+      },
+      // Prefrontal cortex enhancement (via alpha-2A)
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 3.0, // Modest PFC DA enhancement
+        unit: "nM",
+        tau: 90,
+      },
+      // Calming effect
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 2.0,
+        unit: "µg/dL",
+        tau: 90,
+      },
+      // Blood pressure lowering
+      {
+        target: "bloodPressure",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 5.0,
+        unit: "mmHg",
+        tau: 60,
+      },
+    ],
+  }),
+
+  // =============================================================================
+  // PRESCRIPTION MEDICATIONS - ANTIDEPRESSANTS
+  // =============================================================================
+
+  /**
+   * SERTRALINE (Zoloft)
+   * SSRI with sigma-1 receptor activity.
+   */
+  Sertraline: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Sertraline", molarMass: 306.23, logP: 5.29 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.44,
+      halfLifeMin: 1560, // ~26 hours
+      timeToPeakMin: 360,
+      clearance: { hepatic: { baseCL_mL_min: 450, CYP: "CYP2D6" } },
+      volume: { kind: "weight", base_L_kg: 20 },
+    },
+    pd: [
+      // Primary SERT inhibition
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 0.29,
+        intrinsicEfficacy: mg * 0.4,
+        unit: "nM",
+      },
+      // Downstream serotonin elevation
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.15,
+        unit: "nM",
+        tau: 240,
+      },
+      // Sigma-1 receptor agonism (anxiolytic)
+      {
+        target: "gaba",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.1,
+        unit: "nM",
+        tau: 180,
+      },
+      // Minor DAT inhibition
+      {
+        target: "DAT",
+        mechanism: "antagonist",
+        Ki: 25,
+        intrinsicEfficacy: mg * 0.05,
+        unit: "nM",
+      },
+    ],
+  }),
+
+  /**
+   * FLUOXETINE (Prozac)
+   * SSRI with long half-life and 5-HT2C antagonism.
+   */
+  Fluoxetine: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Fluoxetine", molarMass: 309.33, logP: 4.05 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.72,
+      halfLifeMin: 2880, // 1-3 days (norfluoxetine: 4-16 days)
+      timeToPeakMin: 480,
+      clearance: { hepatic: { baseCL_mL_min: 600, CYP: "CYP2D6" } },
+      volume: { kind: "weight", base_L_kg: 25 },
+    },
+    pd: [
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 0.81,
+        intrinsicEfficacy: mg * 0.35,
+        unit: "nM",
+      },
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.12,
+        unit: "nM",
+        tau: 360,
+      },
+      // 5-HT2C antagonism (mildly activating)
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.03,
+        unit: "nM",
+        tau: 240,
+      },
+      {
+        target: "norepi",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.8,
+        unit: "pg/mL",
+        tau: 240,
+      },
+    ],
+  }),
+
+  /**
+   * ESCITALOPRAM (Lexapro)
+   * Highly selective SSRI.
+   */
+  Escitalopram: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Escitalopram", molarMass: 324.39, logP: 3.5 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.8,
+      halfLifeMin: 1800, // ~27-32 hours
+      timeToPeakMin: 300,
+      clearance: { hepatic: { baseCL_mL_min: 600, CYP: "CYP2C19" } },
+      volume: { kind: "weight", base_L_kg: 12 },
+    },
+    pd: [
+      // Most selective SERT inhibitor
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 1.1,
+        intrinsicEfficacy: mg * 0.8, // Higher efficacy per mg
+        unit: "nM",
+      },
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.25,
+        unit: "nM",
+        tau: 300,
+      },
+    ],
+  }),
+
+  /**
+   * VENLAFAXINE (Effexor)
+   * SNRI - dose-dependent NET effects.
+   */
+  Venlafaxine: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Venlafaxine", molarMass: 277.40, logP: 2.74 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.45,
+      halfLifeMin: 300, // ~5 hours (XR extends this)
+      timeToPeakMin: 150,
+      clearance: { hepatic: { baseCL_mL_min: 1350, CYP: "CYP2D6" } },
+      volume: { kind: "weight", base_L_kg: 7.5 },
+    },
+    pd: [
+      // SERT at all doses
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 82,
+        intrinsicEfficacy: mg * 0.25,
+        unit: "nM",
+      },
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.1,
+        unit: "nM",
+        tau: 120,
+      },
+      // NET at higher doses (>150mg)
+      {
+        target: "NET",
+        mechanism: "antagonist",
+        Ki: 2480,
+        intrinsicEfficacy: Math.max(0, (mg - 75) * 0.1), // Kicks in >75mg
+        unit: "nM",
+      },
+      {
+        target: "norepi",
+        mechanism: "agonist",
+        intrinsicEfficacy: Math.max(0, (mg - 75) * 0.5),
+        unit: "pg/mL",
+        tau: 120,
+      },
+    ],
+  }),
+
+  /**
+   * DULOXETINE (Cymbalta)
+   * Balanced SNRI.
+   */
+  Duloxetine: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Duloxetine", molarMass: 297.42, logP: 4.72 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.5,
+      halfLifeMin: 720, // ~12 hours
+      timeToPeakMin: 360,
+      clearance: { hepatic: { baseCL_mL_min: 1000, CYP: "CYP1A2" } },
+      volume: { kind: "weight", base_L_kg: 23 },
+    },
+    pd: [
+      // Balanced SERT/NET
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 0.8,
+        intrinsicEfficacy: mg * 0.4,
+        unit: "nM",
+      },
+      {
+        target: "NET",
+        mechanism: "antagonist",
+        Ki: 7.5,
+        intrinsicEfficacy: mg * 0.35,
+        unit: "nM",
+      },
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.12,
+        unit: "nM",
+        tau: 180,
+      },
+      {
+        target: "norepi",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 1.0,
+        unit: "pg/mL",
+        tau: 180,
+      },
+    ],
+  }),
+
+  /**
+   * BUPROPION (Wellbutrin)
+   * NDRI - no serotonin effects.
+   */
+  Bupropion: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Bupropion", molarMass: 239.74, logP: 3.21 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.87,
+      halfLifeMin: 1260, // ~21 hours
+      timeToPeakMin: 180,
+      clearance: { hepatic: { baseCL_mL_min: 200, CYP: "CYP2B6" } },
+      volume: { kind: "weight", base_L_kg: 20 },
+    },
+    pd: [
+      // DAT inhibition (primary)
+      {
+        target: "DAT",
+        mechanism: "antagonist",
+        Ki: 526,
+        intrinsicEfficacy: mg * 0.15,
+        unit: "nM",
+      },
+      // NET inhibition
+      {
+        target: "NET",
+        mechanism: "antagonist",
+        Ki: 2000,
+        intrinsicEfficacy: mg * 0.1,
+        unit: "nM",
+      },
+      // Downstream effects
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.05,
+        unit: "nM",
+        tau: 90,
+      },
+      {
+        target: "norepi",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.3,
+        unit: "pg/mL",
+        tau: 90,
+      },
+      // nAChR antagonism (smoking cessation mechanism)
+      {
+        target: "acetylcholine",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.02,
+        unit: "nM",
+        tau: 120,
+      },
+    ],
+  }),
+
+  // =============================================================================
+  // PRESCRIPTION MEDICATIONS - ANTI-ANXIETY
+  // =============================================================================
+
+  /**
+   * ALPRAZOLAM (Xanax)
+   * Fast-acting, short-duration benzodiazepine.
+   */
+  Alprazolam: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Alprazolam", molarMass: 308.77, logP: 2.12 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.9,
+      halfLifeMin: 660, // ~11 hours
+      timeToPeakMin: 60, // Fast onset
+      clearance: { hepatic: { baseCL_mL_min: 75, CYP: "CYP3A4" } },
+      volume: { kind: "weight", base_L_kg: 1.0 },
+    },
+    pd: [
+      // GABA-A PAM (potent)
+      {
+        target: "GABA_A",
+        mechanism: "PAM",
+        EC50: 20,
+        intrinsicEfficacy: mg * 80,
+        unit: "nM",
+      },
+      {
+        target: "gaba",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 60,
+        unit: "nM",
+        tau: 15,
+      },
+      // Anxiolytic effects
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 8,
+        unit: "µg/dL",
+        tau: 30,
+      },
+      {
+        target: "norepi",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 100,
+        unit: "pg/mL",
+        tau: 20,
+      },
+      // Sedation
+      {
+        target: "orexin",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 20,
+        unit: "pg/mL",
+        tau: 30,
+      },
+      {
+        target: "histamine",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 10,
+        unit: "nM",
+        tau: 30,
+      },
+    ],
+  }),
+
+  /**
+   * LORAZEPAM (Ativan)
+   * Medium-acting benzodiazepine.
+   */
+  Lorazepam: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Lorazepam", molarMass: 321.16, logP: 2.39 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.93,
+      halfLifeMin: 720, // ~12 hours
+      timeToPeakMin: 120,
+      clearance: { hepatic: { baseCL_mL_min: 80 } }, // Glucuronidation, not CYP
+      volume: { kind: "weight", base_L_kg: 1.3 },
+    },
+    pd: [
+      {
+        target: "GABA_A",
+        mechanism: "PAM",
+        EC50: 25,
+        intrinsicEfficacy: mg * 70,
+        unit: "nM",
+      },
+      {
+        target: "gaba",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 50,
+        unit: "nM",
+        tau: 30,
+      },
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 6,
+        unit: "µg/dL",
+        tau: 45,
+      },
+      {
+        target: "norepi",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 80,
+        unit: "pg/mL",
+        tau: 30,
+      },
+      {
+        target: "orexin",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 15,
+        unit: "pg/mL",
+        tau: 45,
+      },
+    ],
+  }),
+
+  /**
+   * CLONAZEPAM (Klonopin)
+   * Long-acting benzodiazepine.
+   */
+  Clonazepam: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Clonazepam", molarMass: 315.71, logP: 2.41 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.9,
+      halfLifeMin: 2160, // ~30-40 hours
+      timeToPeakMin: 180,
+      clearance: { hepatic: { baseCL_mL_min: 90, CYP: "CYP3A4" } },
+      volume: { kind: "weight", base_L_kg: 3.2 },
+    },
+    pd: [
+      {
+        target: "GABA_A",
+        mechanism: "PAM",
+        EC50: 15,
+        intrinsicEfficacy: mg * 100, // Very potent
+        unit: "nM",
+      },
+      {
+        target: "gaba",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 80,
+        unit: "nM",
+        tau: 60,
+      },
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 10,
+        unit: "µg/dL",
+        tau: 90,
+      },
+      {
+        target: "norepi",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 120,
+        unit: "pg/mL",
+        tau: 60,
+      },
+      {
+        target: "orexin",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 25,
+        unit: "pg/mL",
+        tau: 90,
+      },
+    ],
+  }),
+
+  /**
+   * BUSPIRONE (Buspar)
+   * Azapirone anxiolytic - 5-HT1A partial agonist.
+   */
+  Buspirone: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Buspirone", molarMass: 385.50, logP: 1.74 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.04, // Very low (extensive first-pass)
+      halfLifeMin: 150, // ~2-3 hours
+      timeToPeakMin: 60,
+      clearance: { hepatic: { baseCL_mL_min: 1700, CYP: "CYP3A4" } },
+      volume: { kind: "weight", base_L_kg: 5.3 },
+    },
+    pd: [
+      // 5-HT1A partial agonist (anxiolytic without sedation)
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.3,
+        unit: "nM",
+        tau: 30,
+      },
+      // Mild anxiolysis
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.5,
+        unit: "µg/dL",
+        tau: 60,
+      },
+      // Mild D2 antagonism
+      {
+        target: "dopamine",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.1,
+        unit: "nM",
+        tau: 45,
+      },
+      // No significant GABA effect (non-sedating)
+    ],
+  }),
+
+  /**
+   * HYDROXYZINE (Vistaril)
+   * Antihistamine anxiolytic.
+   */
+  Hydroxyzine: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Hydroxyzine", molarMass: 374.91, logP: 2.36 },
+    pk: {
+      model: "1-compartment",
+      bioavailability: 0.8,
+      halfLifeMin: 1200, // ~20 hours
+      timeToPeakMin: 120,
+      clearance: { hepatic: { baseCL_mL_min: 600, CYP: "CYP3A4" } },
+      volume: { kind: "weight", base_L_kg: 16 },
+    },
+    pd: [
+      // H1 antagonism (primary)
+      {
+        target: "histamine",
+        mechanism: "antagonist",
+        Ki: 2,
+        intrinsicEfficacy: mg * 0.8,
+        unit: "nM",
+      },
+      // Sedation via H1
+      {
+        target: "orexin",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.3,
+        unit: "pg/mL",
+        tau: 60,
+      },
+      // mAChR antagonism (anticholinergic)
+      {
+        target: "acetylcholine",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.15,
+        unit: "nM",
+        tau: 60,
+      },
+      // 5-HT2A antagonism (anxiolytic)
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.05,
+        unit: "nM",
+        tau: 90,
+      },
+      // Mild anxiolysis
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.2,
+        unit: "µg/dL",
+        tau: 90,
+      },
+    ],
+  }),
+
+  // =============================================================================
+  // ADDITIONAL SUPPLEMENTS
+  // =============================================================================
+
+  /**
+   * INOSITOL
+   * Second messenger modulator - GABA-A and serotonin receptor effects.
+   */
+  Inositol: (mg: number): PharmacologyDef => {
+    // Typical dose: 500-18000mg (higher for anxiety/OCD)
+    const gabaEffect = Math.min(30, mg * 0.002);
+    const serotoninEffect = Math.min(10, mg * 0.0008);
+    const insulinEffect = Math.min(3, mg * 0.0002);
+
+    return {
+      molecule: { name: "Inositol", molarMass: 180.16 },
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.9,
+        halfLifeMin: 240,
+        timeToPeakMin: 120,
+        volume: { kind: "tbw", fraction: 0.6 },
+      },
+      pd: [
+        // GABA-A modulation
+        {
+          target: "gaba",
+          mechanism: "agonist",
+          intrinsicEfficacy: gabaEffect,
+          unit: "nM",
+          tau: 90,
+        },
+        // Serotonin receptor sensitivity
+        {
+          target: "serotonin",
+          mechanism: "agonist",
+          intrinsicEfficacy: serotoninEffect,
+          unit: "nM",
+          tau: 120,
+        },
+        // Insulin signaling support
+        {
+          target: "insulin",
+          mechanism: "agonist",
+          intrinsicEfficacy: insulinEffect,
+          unit: "µIU/mL",
+          tau: 180,
+        },
+        // Anxiolysis
+        {
+          target: "cortisol",
+          mechanism: "antagonist",
+          intrinsicEfficacy: Math.min(3, mg * 0.0002),
+          unit: "µg/dL",
+          tau: 120,
+        },
+      ],
+    };
+  },
+
+  /**
+   * ZINC
+   * Essential mineral for immune, hormonal, and neurological function.
+   */
+  Zinc: (mg: number): PharmacologyDef => {
+    // Typical dose: 15-50mg elemental zinc
+    const zincSignalEffect = Math.min(25, mg * 0.8);
+    const testosteroneEffect = Math.min(30, mg * 1.0);
+    const nmdaEffect = Math.min(0.2, mg * 0.005);
+
+    return {
+      molecule: { name: "Zinc", molarMass: 65.38 },
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.3, // Varies by form
+        halfLifeMin: 720,
+        timeToPeakMin: 180,
+        volume: { kind: "weight", base_L_kg: 0.5 },
+      },
+      pd: [
+        // Direct zinc signal elevation
+        {
+          target: "zinc",
+          mechanism: "agonist",
+          intrinsicEfficacy: zincSignalEffect,
+          unit: "µg/dL",
+          tau: 120,
+        },
+        // Testosterone support
+        {
+          target: "testosterone",
+          mechanism: "agonist",
+          intrinsicEfficacy: testosteroneEffect,
+          unit: "ng/dL",
+          tau: 480,
+        },
+        // NMDA modulation
+        {
+          target: "NMDA",
+          mechanism: "antagonist",
+          intrinsicEfficacy: nmdaEffect,
+          unit: "µM",
+          tau: 120,
+        },
+        // Immune/inflammation modulation
+        {
+          target: "inflammation",
+          mechanism: "antagonist",
+          intrinsicEfficacy: Math.min(0.15, mg * 0.004),
+          unit: "index",
+          tau: 360,
+        },
+      ],
+    };
+  },
+
+  /**
+   * COPPER
+   * Essential mineral - usually paired with zinc.
+   */
+  Copper: (mg: number): PharmacologyDef => {
+    // Typical dose: 1-2mg (often taken with zinc at 8:1 ratio)
+    return {
+      molecule: { name: "Copper", molarMass: 63.55 },
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.5,
+        halfLifeMin: 1440,
+        timeToPeakMin: 240,
+        volume: { kind: "weight", base_L_kg: 0.1 },
+      },
+      pd: [
+        // Direct copper signal
+        {
+          target: "copper",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(20, mg * 15),
+          unit: "µg/dL",
+          tau: 180,
+        },
+        // Iron metabolism support (ceruloplasmin)
+        {
+          target: "iron",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(10, mg * 5),
+          unit: "µg/dL",
+          tau: 360,
+        },
+      ],
+    };
+  },
+
+  /**
+   * B-COMPLEX (B12 + Folate focus)
+   * Methylation and energy metabolism support.
+   */
+  BComplex: (
+    b12_mcg: number = 500,
+    folate_mcg: number = 400,
+  ): PharmacologyDef => {
+    return {
+      molecule: { name: "B-Complex", molarMass: 1355 }, // B12 MW
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.5, // Sublingual higher
+        halfLifeMin: 1440,
+        timeToPeakMin: 240,
+        volume: { kind: "tbw", fraction: 0.5 },
+      },
+      pd: [
+        // B12 signal elevation
+        {
+          target: "b12",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(200, b12_mcg * 0.2),
+          unit: "pg/mL",
+          tau: 360,
+        },
+        // Folate signal elevation
+        {
+          target: "folate",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(8, folate_mcg * 0.01),
+          unit: "ng/mL",
+          tau: 360,
+        },
+        // Energy metabolism
+        {
+          target: "energy",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(0.1, (b12_mcg + folate_mcg) * 0.00005),
+          unit: "index",
+          tau: 240,
+        },
+        // Homocysteine reduction → inflammation
+        {
+          target: "inflammation",
+          mechanism: "antagonist",
+          intrinsicEfficacy: Math.min(0.1, (b12_mcg + folate_mcg) * 0.00005),
+          unit: "index",
+          tau: 720,
+        },
+      ],
+    };
+  },
+
+  /**
+   * CHROMIUM
+   * Insulin sensitivity support.
+   */
+  Chromium: (mcg: number): PharmacologyDef => {
+    // Typical dose: 200-1000mcg
+    return {
+      molecule: { name: "Chromium Picolinate", molarMass: 418.33 },
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.02, // Very low absorption
+        halfLifeMin: 2880,
+        timeToPeakMin: 120,
+        volume: { kind: "weight", base_L_kg: 0.2 },
+      },
+      pd: [
+        // Chromium status
+        {
+          target: "chromium",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(0.3, mcg * 0.0005),
+          unit: "index",
+          tau: 480,
+        },
+        // Insulin sensitivity
+        {
+          target: "insulin",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(3, mcg * 0.005),
+          unit: "µIU/mL",
+          tau: 360,
+        },
+        // Glucose handling
+        {
+          target: "glucose",
+          mechanism: "antagonist",
+          intrinsicEfficacy: Math.min(10, mcg * 0.015),
+          unit: "mg/dL",
+          tau: 360,
+        },
+      ],
+    };
+  },
+
+  /**
+   * RHODIOLA ROSEA
+   * Adaptogen with MAO inhibition and cortisol modulation.
+   */
+  Rhodiola: (mg: number): PharmacologyDef => {
+    // Typical dose: 200-600mg standardized extract
+    const cortisolModulation = Math.min(6, mg * 0.012);
+    const dopamineSupport = Math.min(8, mg * 0.015);
+    const serotoninSupport = Math.min(5, mg * 0.01);
+
+    return {
+      molecule: { name: "Salidroside", molarMass: 300.3 },
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.3,
+        halfLifeMin: 300,
+        timeToPeakMin: 90,
+        volume: { kind: "weight", base_L_kg: 0.5 },
+      },
+      pd: [
+        // Cortisol modulation (adaptogenic)
+        {
+          target: "cortisol",
+          mechanism: "antagonist",
+          intrinsicEfficacy: cortisolModulation,
+          unit: "µg/dL",
+          tau: 90,
+        },
+        // MAO-B inhibition → dopamine
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: dopamineSupport,
+          unit: "nM",
+          tau: 60,
+        },
+        // Serotonin support
+        {
+          target: "serotonin",
+          mechanism: "agonist",
+          intrinsicEfficacy: serotoninSupport,
+          unit: "nM",
+          tau: 90,
+        },
+        // AMPK activation (metabolic)
+        {
+          target: "ampk",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(0.15, mg * 0.0003),
+          unit: "fold-change",
+          tau: 120,
+        },
+        // Energy/alertness
+        {
+          target: "orexin",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(5, mg * 0.01),
+          unit: "pg/mL",
+          tau: 60,
+        },
+      ],
+    };
+  },
+
+  /**
+   * CDP-CHOLINE (Citicoline)
+   * Choline source and phospholipid precursor.
+   */
+  CDPCholine: (mg: number): PharmacologyDef => {
+    // Typical dose: 250-500mg
+    const cholineEffect = Math.min(8, mg * 0.02);
+    const achEffect = Math.min(20, mg * 0.05);
+    const dopamineSupport = Math.min(5, mg * 0.012);
+
+    return {
+      molecule: { name: "Citicoline", molarMass: 488.32 },
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.9,
+        halfLifeMin: 360,
+        timeToPeakMin: 60,
+        volume: { kind: "tbw", fraction: 0.5 },
+      },
+      pd: [
+        // Choline signal
+        {
+          target: "choline",
+          mechanism: "agonist",
+          intrinsicEfficacy: cholineEffect,
+          unit: "µmol/L",
+          tau: 60,
+        },
+        // Acetylcholine synthesis
+        {
+          target: "acetylcholine",
+          mechanism: "agonist",
+          intrinsicEfficacy: achEffect,
+          unit: "nM",
+          tau: 45,
+        },
+        // Dopamine receptor density support
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: dopamineSupport,
+          unit: "nM",
+          tau: 120,
+        },
+        // Focus/alertness
+        {
+          target: "orexin",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(3, mg * 0.008),
+          unit: "pg/mL",
+          tau: 45,
+        },
+      ],
+    };
+  },
+
+  /**
+   * L-CARNITINE (ALCAR)
+   * Mitochondrial energy transport and cognitive support.
+   */
+  LCarnitine: (mg: number): PharmacologyDef => {
+    // Typical dose: 500-2000mg
+    const energyEffect = Math.min(0.15, mg * 0.0001);
+    const bdnfEffect = Math.min(8, mg * 0.005);
+    const achEffect = Math.min(10, mg * 0.006);
+
+    return {
+      molecule: { name: "Acetyl-L-Carnitine", molarMass: 203.24 },
+      pk: {
+        model: "1-compartment",
+        bioavailability: 0.15, // Low oral bioavailability
+        halfLifeMin: 240,
+        timeToPeakMin: 180,
+        volume: { kind: "weight", base_L_kg: 0.5 },
+      },
+      pd: [
+        // Mitochondrial energy
+        {
+          target: "energy",
+          mechanism: "agonist",
+          intrinsicEfficacy: energyEffect,
+          unit: "index",
+          tau: 120,
+        },
+        // BDNF support
+        {
+          target: "bdnf",
+          mechanism: "agonist",
+          intrinsicEfficacy: bdnfEffect,
+          unit: "ng/mL",
+          tau: 240,
+        },
+        // Acetylcholine enhancement
+        {
+          target: "acetylcholine",
+          mechanism: "agonist",
+          intrinsicEfficacy: achEffect,
+          unit: "nM",
+          tau: 120,
+        },
+        // Mild dopamine support
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: Math.min(3, mg * 0.002),
+          unit: "nM",
+          tau: 180,
+        },
+      ],
+    };
+  },
+
+  /**
+   * DIGESTIVE ENZYMES
+   * Enhanced nutrient absorption and gut support.
+   */
+  DigestiveEnzymes: (units: number = 1): PharmacologyDef => {
+    // units = number of capsules/servings
+    return {
+      molecule: { name: "Digestive Enzymes", molarMass: 0 },
+      pk: { model: "activity-dependent" },
+      pd: [
+        // Enhanced nutrient absorption → GLP-1
+        {
+          target: "glp1",
+          mechanism: "agonist",
+          intrinsicEfficacy: units * 3,
+          unit: "pmol/L",
+          tau: 30,
+        },
+        // Reduced gut inflammation
+        {
+          target: "inflammation",
+          mechanism: "antagonist",
+          intrinsicEfficacy: units * 0.1,
+          unit: "index",
+          tau: 90,
+        },
+        // Vagal tone support (gut-brain axis)
+        {
+          target: "vagal",
+          mechanism: "agonist",
+          intrinsicEfficacy: units * 0.1,
+          unit: "index",
+          tau: 60,
+        },
+        // Better satiety signaling
+        {
+          target: "ghrelin",
+          mechanism: "antagonist",
+          intrinsicEfficacy: units * 15,
+          unit: "pg/mL",
+          tau: 45,
         },
       ],
     };

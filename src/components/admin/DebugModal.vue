@@ -153,18 +153,6 @@ const finalStateJson = computed(() => {
                   </label>
                   <p class="toggle-desc">Metabolic enzyme activity modulation.</p>
                 </div>
-
-                <div class="toggle-item toggle-item--optimized">
-                  <label class="toggle-row">
-                    <span class="toggle-label">Optimized Engine (v2)</span>
-                    <input
-                      type="checkbox"
-                      :checked="engineStore.debug.useOptimizedEngine"
-                      @change="engineStore.updateDebug({ useOptimizedEngine: ($event.target as HTMLInputElement).checked })"
-                    />
-                  </label>
-                  <p class="toggle-desc">Use the new experimental optimized solver path.</p>
-                </div>
               </div>
             </div>
 

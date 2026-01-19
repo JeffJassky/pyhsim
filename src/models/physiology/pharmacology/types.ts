@@ -99,6 +99,7 @@ export type PDMechanism = 'agonist' | 'antagonist' | 'PAM' | 'NAM';
 export interface ReceptorDefinition {
   target: ReceptorTarget;
   category: 'receptor';
+  description: string;
   /** Signals affected by this receptor and their coupling polarity */
   signalCouplings: Array<{
     signal: Signal;
@@ -116,6 +117,7 @@ export interface ReceptorDefinition {
 export interface TransporterDefinition {
   target: TransporterTarget;
   category: 'transporter';
+  description: string;
   /** Primary signal cleared by this transporter */
   primarySignal: Signal;
   /** Adaptation kinetics */
@@ -129,11 +131,23 @@ export interface TransporterDefinition {
 export interface EnzymeDefinition {
   target: EnzymeTarget;
   category: 'enzyme';
+  description: string;
   /** Signals metabolized by this enzyme */
   substrates: Signal[];
   /** Baseline activity level */
   baselineActivity?: number;
 }
 
+/** Auxiliary variable definition (internal pools, etc.) */
+export interface AuxiliaryTargetDefinition {
+  target: AuxiliaryTarget;
+  category: 'auxiliary';
+  description: string;
+}
+
 /** Union of all target definitions */
-export type TargetDefinition = ReceptorDefinition | TransporterDefinition | EnzymeDefinition;
+export type TargetDefinition =
+  | ReceptorDefinition
+  | TransporterDefinition
+  | EnzymeDefinition
+  | AuxiliaryTargetDefinition;

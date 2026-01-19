@@ -23,6 +23,7 @@ import {
 } from './signal-definitions/biomarkers';
 
 export interface SignalUnitDefinition {
+  label: string;
   unit: PhysiologicalUnit;
   referenceRange: { low: number; high: number };
   min: number;
@@ -49,6 +50,7 @@ const ALL_SIGNALS = [
  */
 export const SIGNAL_UNITS: Record<Signal, SignalUnitDefinition> = ALL_SIGNALS.reduce((acc, def) => {
   acc[def.key as Signal] = {
+    label: def.label,
     unit: def.unit,
     referenceRange: { 
       low: def.display.referenceRange?.min ?? 0, 
@@ -56,7 +58,7 @@ export const SIGNAL_UNITS: Record<Signal, SignalUnitDefinition> = ALL_SIGNALS.re
     },
     min: def.min ?? 0,
     max: def.max ?? 1000,
-    description: def.description ?? ''
+    description: def.description
   };
   return acc;
 }, {} as Record<Signal, SignalUnitDefinition>);

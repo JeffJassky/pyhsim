@@ -32,7 +32,6 @@ interface EngineStoreState extends EngineState {
     enableTransporters: boolean;
     enableEnzymes: boolean;
     enableConditions: boolean;
-    useOptimizedEngine: boolean;
   };
   finalHomeostasisState?: HomeostasisStateSnapshot;
   homeostasisSeries?: HomeostasisSeries;
@@ -69,7 +68,6 @@ export const useEngineStore = defineStore("engine", {
       enableTransporters: true,
       enableEnzymes: true,
       enableConditions: true,
-      useOptimizedEngine: false,
     },
     finalHomeostasisState: undefined,
     homeostasisSeries: undefined,
@@ -185,7 +183,6 @@ export const useEngineStore = defineStore("engine", {
       // Build the base worker request which handles time conversion (startMin, durationMin)
       const baseRequest = buildWorkerRequest(gridCopy, items, clonedDefs, {
         options: {
-          useOptimizedEngine: this.debug.useOptimizedEngine,
           wakeOffsetMin,
           sleepMinutes,
           conditionCouplings: conditionAdjustments.couplings,

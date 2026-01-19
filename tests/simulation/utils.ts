@@ -21,6 +21,7 @@ import {
   type ConditionAdjustments,
 } from "@/models/engine";
 import type { SimulationState, DynamicsContext, ActiveIntervention } from '@/types/unified';
+import { runOptimizedV2 } from '@/models/engine/solvers/optimized-v2';
 
 // --- Types ---
 
@@ -215,141 +216,8 @@ async function computeEngineSync(
   request: WorkerComputeRequest,
   includeSignals: readonly Signal[]
 ): Promise<Record<Signal, Float32Array>> {
-  const { gridMins, items, defs, options } = request;
-
-  const enableInterventions = options?.debug?.enableInterventions ?? true;
-  const gridStep = gridMins.length > 1 ? gridMins[1] - gridMins[0] : 5;
-  const minutesPerDay = 24 * 60;
-
-  const series: Record<Signal, Float32Array> = {} as Record<Signal, Float32Array>;
-  for (const signal of includeSignals) {
-    series[signal] = new Float32Array(gridMins.length);
-  }
-
-  const defsMap = new Map(defs.map((def) => [def.key, def]));
-  const unifiedDefinitions = getAllUnifiedDefinitions();
-  
-  // Initialize state
-  let initialState: SimulationState = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
-    subject: options?.subject ?? ({} as any),
-    physiology: options?.physiology ?? ({} as any),
-    isAsleep: false 
-  }, options?.debug);
-
-  // Apply condition adjustments to initial state auxiliary variables (enzymes, transporters)
-  if (options?.debug?.enableConditions !== false) {
-    if (options?.enzymeActivities) {
-      for (const [key, val] of Object.entries(options.enzymeActivities)) {
-        if (initialState.auxiliary[key] !== undefined) {
-          initialState.auxiliary[key] += val;
-        }
-      }
-    }
-    if (options?.transporterActivities) {
-      for (const [key, val] of Object.entries(options.transporterActivities)) {
-        if (initialState.auxiliary[key] !== undefined) {
-          initialState.auxiliary[key] += val;
-        }
-      }
-    }
-
-    // Apply receptor profile adjustments
-    if (options?.receptorDensities) {
-      for (const [key, val] of Object.entries(options.receptorDensities)) {
-        initialState.receptors[`${key}_density`] = 1.0 + val;
-      }
-    }
-  }
-
-  let currentState: SimulationState = initialState;
-
-  // Prepare mechanistic interventions
-  const activeInterventions: ActiveIntervention[] = [];
-  let wakeTimeMin = 480; // Default 8:00 AM
-  let foundWakeTime = false;
-
-  if (enableInterventions) {
-    // Find wake time
-    for (const item of items) {
-      if (foundWakeTime) break;
-      const def = defsMap.get(item.meta.key);
-      if (!def) continue;
-
-      if (def.key === 'wake') {
-        wakeTimeMin = item.startMin % 1440;
-        foundWakeTime = true;
-      } else if (def.key === 'sleep') {
-        wakeTimeMin = (item.startMin + item.durationMin) % 1440;
-        foundWakeTime = true;
-      }
-    }
-
-    const numDays = Math.ceil((gridMins[gridMins.length - 1] + gridStep) / 1440);
-    for (let d = 0; d < numDays; d++) {
-      for (const item of items) {
-        const def = defsMap.get(item.meta.key);
-        if (!def) continue;
-
-        activeInterventions.push({
-          id: item.id,
-          key: def.key,
-          startTime: item.startMin + (d * 1440),
-          duration: item.durationMin,
-          intensity: item.meta.intensity ?? 1.0,
-          params: item.meta.params,
-          pharmacology: def.pharmacology
-        });
-      }
-    }
-  }
-
-  const standardWakeTime = 480;
-  const circadianShift = standardWakeTime - wakeTimeMin;
-
-  const conditionAdjustments: ConditionAdjustments = (options?.debug?.enableConditions !== false) ? {
-    baselines: options?.conditionBaselines,
-    couplings: options?.conditionCouplings,
-  } : {};
-
-  // Simulation Loop
-  gridMins.forEach((minute, idx) => {
-    const adjustedMinute = minute % minutesPerDay;
-    const circadianMinuteOfDay = (adjustedMinute + circadianShift + minutesPerDay) % minutesPerDay;
-    
-    const isAsleep = enableInterventions && items.some(item => {
-      const def = defsMap.get(item.meta.key);
-      if (def?.key !== 'sleep') return false;
-      const inRange = (minute >= item.startMin && minute <= item.startMin + item.durationMin);
-      const inWrappedRange = ((minute + 1440) >= item.startMin && (minute + 1440) <= item.startMin + item.durationMin);
-      return inRange || inWrappedRange;
-    });
-
-    const dynamicsCtx: DynamicsContext = {
-      minuteOfDay: adjustedMinute,
-      circadianMinuteOfDay,
-      dayOfYear: 1, 
-      isAsleep,
-      subject: options?.subject ?? ({} as any),
-      physiology: options?.physiology ?? ({} as any),
-    };
-
-    const dt = idx === 0 ? 0 : gridStep;
-    if (dt > 0) {
-      const subSteps = Math.max(1, Math.ceil(dt / 1.0));
-      const subDt = dt / subSteps;
-      for (let s = 0; s < subSteps; s++) {
-        currentState = integrateStep(currentState, minute - dt + s * subDt, subDt, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
-      }
-    } else {
-      currentState = integrateStep(currentState, minute, 0, dynamicsCtx, unifiedDefinitions, AUXILIARY_DEFINITIONS, activeInterventions, options?.debug, conditionAdjustments);
-    }
-
-    for (const signal of includeSignals) {
-      series[signal][idx] = currentState.signals[signal] ?? 0;
-    }
-  });
-
-  return series;
+  const response = runOptimizedV2(request);
+  return response.series;
 }
 
 // --- Analysis Utilities ---

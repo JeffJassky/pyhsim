@@ -76,7 +76,7 @@ export interface UnifiedSignalDefinition {
   key: Signal;
   label: string;
   unit: PhysiologicalUnit;
-  description?: string;
+  description: string;
   dynamics: SignalDynamics;
   initialValue:
     | number
@@ -98,6 +98,7 @@ export interface UnifiedSignalDefinition {
 
 export interface AuxiliaryDefinition {
   key: string;
+  label?: string;
   dynamics: {
     setpoint: (ctx: DynamicsContext) => number;
     tau: number;

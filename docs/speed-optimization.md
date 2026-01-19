@@ -72,8 +72,8 @@ To ensure optimizations do not compromise mathematical integrity, we will implem
 
 ### A/B Engine Switching
 *   **Strategy Pattern**: Move the core simulation loop into versioned strategy files (`numerical-v1.ts`, `optimized-v2.ts`).
-*   **Debug Toggle**: Add a "Use Optimized Engine" switch in the UI. This sends a flag to the worker to select the solver strategy.
-*   **Divergence Check**: In "Validation Mode," the worker will run *both* solvers on the same input and compare the output buffers. Any difference > 1e-10 will trigger a console warning.
+*   **Debug Toggle**: Provide a "Use Optimized Engine" switch in the UI. The high-performance optimized solver (v2) is now used by default.
+*   **Regression Guard**: The CI pipeline ensures the Optimized engine's output does not deviate from the Numerical engine's output.
 
 ### Performance Telemetry
 *   **Worker Benchmarking**: Measure execution time using `performance.now()` inside the worker and return `computeTimeMs` in the response.

@@ -80,7 +80,15 @@ export type MetabolicProxy =
   | "egfr"
   | "vitaminD3"
   | "mtor"
-  | "ampk";
+  | "ampk"
+  | "zinc"      // Serum zinc
+  | "b12"       // Vitamin B12
+  | "folate"    // Serum folate
+  | "iron"      // Serum iron
+  | "selenium"  // Serum selenium
+  | "copper"    // Serum copper
+  | "chromium"  // Chromium status
+  | "choline";  // Choline availability
 
 export type Signal = NeuroSignal | HormoneSignal | MetabolicProxy;
 
@@ -119,6 +127,7 @@ export const SIGNALS_ALL: readonly Signal[] = [
   "ketone",
   "hrv",
   "bloodPressure",
+  "oxygen",
   "ethanol",
   "acetaldehyde",
   "inflammation",
@@ -134,6 +143,14 @@ export const SIGNALS_ALL: readonly Signal[] = [
   "vitaminD3",
   "mtor",
   "ampk",
+  "zinc",
+  "b12",
+  "folate",
+  "iron",
+  "selenium",
+  "copper",
+  "chromium",
+  "choline",
 ] as const;
 
 /** A point-in-time vector for all (or some) signals */
@@ -334,6 +351,8 @@ export interface PharmacologyDef {
     /** Cooperativity factor for allosteric modulators (PAM/NAM)
      * Default: 3.0 for PAM, 0.3 for NAM */
     alpha?: number;
+    /** Optional educational description (falls back to global target description if omitted) */
+    description?: string;
   }>;
 }
 
@@ -401,7 +420,6 @@ export interface WorkerComputeRequest {
   defs: InterventionDef[]; // library (for kernels)
   baselines?: BaselineMapSerialized;
   options?: {
-    useOptimizedEngine?: boolean;
     clampMin?: number; // e.g., -1
     clampMax?: number; // e.g., 1.5
     includeSignals?: readonly Signal[]; // limit to speed up

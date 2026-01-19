@@ -2,10 +2,12 @@ import type { InterventionDef } from "@/types";
 import { Agents } from "../../physiology/agents";
 
 export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
+  // =============================================================================
+  // ADHD MEDICATIONS
+  // =============================================================================
   {
     key: "ritalinIR10",
     label: "Ritalin IR",
-
     icon: "💊",
     defaultDurationMin: 240,
     params: [
@@ -19,10 +21,359 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
         default: 10,
       },
     ],
-    // DYNAMIC PHARMACOLOGY
     pharmacology: (params) => Agents.Methylphenidate(Number(params.mg) || 10),
     group: "Stimulants",
     categories: ["medications"],
     goals: ["focus", "energy"],
+  },
+  {
+    key: "concerta",
+    label: "Concerta (Methylphenidate XR)",
+    icon: "💊",
+    defaultDurationMin: 720,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 18,
+        max: 72,
+        step: 18,
+        default: 36,
+        hint: "OROS extended release",
+      },
+    ],
+    pharmacology: (params) => Agents.MethylphenidateXR(Number(params.mg) || 36),
+    group: "Stimulants",
+    categories: ["medications"],
+    goals: ["focus", "energy"],
+  },
+  {
+    key: "adderallIR",
+    label: "Adderall IR",
+    icon: "💊",
+    defaultDurationMin: 360,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 5,
+        max: 30,
+        step: 5,
+        default: 10,
+        hint: "Mixed amphetamine salts",
+      },
+    ],
+    pharmacology: (params) => Agents.Amphetamine(Number(params.mg) || 10),
+    group: "Stimulants",
+    categories: ["medications"],
+    goals: ["focus", "energy"],
+  },
+  {
+    key: "vyvanse",
+    label: "Vyvanse",
+    icon: "💊",
+    defaultDurationMin: 840,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 10,
+        max: 70,
+        step: 10,
+        default: 30,
+        hint: "Lisdexamfetamine prodrug",
+      },
+    ],
+    pharmacology: (params) => Agents.Lisdexamfetamine(Number(params.mg) || 30),
+    group: "Stimulants",
+    categories: ["medications"],
+    goals: ["focus", "energy"],
+  },
+  {
+    key: "intuniv",
+    label: "Intuniv (Guanfacine)",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 1,
+        max: 4,
+        step: 1,
+        default: 2,
+        hint: "Non-stimulant alpha-2A agonist",
+      },
+    ],
+    pharmacology: (params) => Agents.Guanfacine(Number(params.mg) || 2),
+    group: "ADHD Non-Stimulants",
+    categories: ["medications"],
+    goals: ["focus", "calm"],
+  },
+
+  // =============================================================================
+  // ANTIDEPRESSANTS - SSRIs
+  // =============================================================================
+  {
+    key: "zoloft",
+    label: "Zoloft (Sertraline)",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 25,
+        max: 200,
+        step: 25,
+        default: 50,
+        hint: "SSRI with sigma-1 activity",
+      },
+    ],
+    pharmacology: (params) => Agents.Sertraline(Number(params.mg) || 50),
+    group: "Antidepressants",
+    categories: ["medications"],
+    goals: ["mood", "calm"],
+  },
+  {
+    key: "prozac",
+    label: "Prozac (Fluoxetine)",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 10,
+        max: 80,
+        step: 10,
+        default: 20,
+        hint: "SSRI with long half-life",
+      },
+    ],
+    pharmacology: (params) => Agents.Fluoxetine(Number(params.mg) || 20),
+    group: "Antidepressants",
+    categories: ["medications"],
+    goals: ["mood"],
+  },
+  {
+    key: "lexapro",
+    label: "Lexapro (Escitalopram)",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 5,
+        max: 20,
+        step: 5,
+        default: 10,
+        hint: "Highly selective SSRI",
+      },
+    ],
+    pharmacology: (params) => Agents.Escitalopram(Number(params.mg) || 10),
+    group: "Antidepressants",
+    categories: ["medications"],
+    goals: ["mood", "calm"],
+  },
+
+  // =============================================================================
+  // ANTIDEPRESSANTS - SNRIs
+  // =============================================================================
+  {
+    key: "effexor",
+    label: "Effexor (Venlafaxine)",
+    icon: "💊",
+    defaultDurationMin: 720,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 37.5,
+        max: 225,
+        step: 37.5,
+        default: 75,
+        hint: "SNRI - dose-dependent NET",
+      },
+    ],
+    pharmacology: (params) => Agents.Venlafaxine(Number(params.mg) || 75),
+    group: "Antidepressants",
+    categories: ["medications"],
+    goals: ["mood", "energy"],
+  },
+  {
+    key: "cymbalta",
+    label: "Cymbalta (Duloxetine)",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 20,
+        max: 120,
+        step: 20,
+        default: 60,
+        hint: "Balanced SNRI",
+      },
+    ],
+    pharmacology: (params) => Agents.Duloxetine(Number(params.mg) || 60),
+    group: "Antidepressants",
+    categories: ["medications"],
+    goals: ["mood", "pain"],
+  },
+
+  // =============================================================================
+  // ANTIDEPRESSANTS - Other
+  // =============================================================================
+  {
+    key: "wellbutrin",
+    label: "Wellbutrin (Bupropion)",
+    icon: "💊",
+    defaultDurationMin: 1440,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 75,
+        max: 450,
+        step: 75,
+        default: 150,
+        hint: "NDRI - no serotonin effects",
+      },
+    ],
+    pharmacology: (params) => Agents.Bupropion(Number(params.mg) || 150),
+    group: "Antidepressants",
+    categories: ["medications"],
+    goals: ["mood", "energy", "focus"],
+  },
+
+  // =============================================================================
+  // ANTI-ANXIETY - Benzodiazepines
+  // =============================================================================
+  {
+    key: "xanax",
+    label: "Xanax (Alprazolam)",
+    icon: "💊",
+    defaultDurationMin: 360,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 0.25,
+        max: 2,
+        step: 0.25,
+        default: 0.5,
+        hint: "Fast-acting benzodiazepine",
+      },
+    ],
+    pharmacology: (params) => Agents.Alprazolam(Number(params.mg) || 0.5),
+    group: "Anti-Anxiety",
+    categories: ["medications"],
+    goals: ["calm"],
+  },
+  {
+    key: "ativan",
+    label: "Ativan (Lorazepam)",
+    icon: "💊",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 0.5,
+        max: 4,
+        step: 0.5,
+        default: 1,
+        hint: "Medium-acting benzodiazepine",
+      },
+    ],
+    pharmacology: (params) => Agents.Lorazepam(Number(params.mg) || 1),
+    group: "Anti-Anxiety",
+    categories: ["medications"],
+    goals: ["calm"],
+  },
+  {
+    key: "klonopin",
+    label: "Klonopin (Clonazepam)",
+    icon: "💊",
+    defaultDurationMin: 720,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 0.25,
+        max: 2,
+        step: 0.25,
+        default: 0.5,
+        hint: "Long-acting benzodiazepine",
+      },
+    ],
+    pharmacology: (params) => Agents.Clonazepam(Number(params.mg) || 0.5),
+    group: "Anti-Anxiety",
+    categories: ["medications"],
+    goals: ["calm"],
+  },
+
+  // =============================================================================
+  // ANTI-ANXIETY - Non-Benzodiazepines
+  // =============================================================================
+  {
+    key: "buspar",
+    label: "Buspar (Buspirone)",
+    icon: "💊",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 5,
+        max: 30,
+        step: 5,
+        default: 10,
+        hint: "5-HT1A partial agonist - non-sedating",
+      },
+    ],
+    pharmacology: (params) => Agents.Buspirone(Number(params.mg) || 10),
+    group: "Anti-Anxiety",
+    categories: ["medications"],
+    goals: ["calm"],
+  },
+  {
+    key: "vistaril",
+    label: "Vistaril (Hydroxyzine)",
+    icon: "💊",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 25,
+        max: 100,
+        step: 25,
+        default: 50,
+        hint: "Antihistamine anxiolytic",
+      },
+    ],
+    pharmacology: (params) => Agents.Hydroxyzine(Number(params.mg) || 50),
+    group: "Anti-Anxiety",
+    categories: ["medications"],
+    goals: ["calm", "sleep"],
   },
 ];

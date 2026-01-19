@@ -5,13 +5,17 @@
   >
     <header class="app-shell__header" v-if="!isOnboarding">
       <div class="header-left">
-        <span class="logo">physim</span>
+        <span class="logo">PhySim</span>
       </div>
       <div class="header-center">
         <slot name="header-center" />
       </div>
       <div class="header-right">
-        <button class="profile-link" @click="debugModalOpen = true" style="margin-right: 1.5rem">
+        <button
+          class="profile-link"
+          @click="debugModalOpen = true"
+          style="margin-right: 1.5rem"
+        >
           Dev Tools
         </button>
         <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
@@ -55,7 +59,10 @@
           <slot name="floating" />
         </div>
       </div>
-      <aside v-if="showRightSidebar && !isMobile" class="app-shell__sidebar app-shell__sidebar--right">
+      <aside
+        v-if="showRightSidebar && !isMobile"
+        class="app-shell__sidebar app-shell__sidebar--right"
+      >
         <slot name="right-sidebar" />
       </aside>
       <div
@@ -153,7 +160,6 @@ onBeforeUnmount(() => {
 
 .logo {
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.2em;
   font-size: 1rem;
   opacity: 0.9;

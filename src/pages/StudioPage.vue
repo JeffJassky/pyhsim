@@ -97,8 +97,6 @@
           @playhead="(val: number) => setMinute(val as Minute)"
         />
       </Panel>
-
-      <BodyStatusPanel />
     </section>
 
     <template #floating>
@@ -163,7 +161,6 @@ import AddItemModal from '@/components/launcher/AddItemModal.vue';
 import UserProfileModal from '@/components/launcher/UserProfileModal.vue';
 import TargetsModal from '@/components/log/TargetsModal.vue';
 import StudioTour from '@/components/onboarding/StudioTour.vue';
-import BodyStatusPanel from '@/components/status/BodyStatusPanel.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
 import { useUserStore } from '@/stores/user';
@@ -189,6 +186,7 @@ import type {
   TimelineItem,
   UUID,
   PharmacologyDef,
+  ParamValues,
 } from '@/types';
 import { minuteToISO } from '@/utils/time';
 import { toMinuteOfDay } from '@/core/serialization';
@@ -333,7 +331,7 @@ const addComprehensiveDay = () => {
     const end = minuteToISO((iv.start + iv.duration) as Minute, date);
     timeline.addItem(start, end, {
       key: iv.key as any,
-      params: iv.params,
+      params: iv.params as ParamValues,
       intensity: 1
     });
   });
@@ -393,6 +391,11 @@ const viewSignalSets = {
     'endocannabinoid',
     'bdnf',
     'sensoryLoad',
+    'dopamineVesicles',
+    'norepinephrineVesicles',
+    'serotoninPrecursor',
+    'gabaPool',
+    'bdnfExpression',
   ],
   endocrine: [
     'cortisol',
@@ -414,14 +417,26 @@ const viewSignalSets = {
     'shbg',
     'dheas',
     'vitaminD3',
+    'ghReserve',
   ],
-  metabolic: ['glucose', 'ketone', 'energy', 'vagal', 'hrv', 'bloodPressure', 'ethanol', 'acetaldehyde'],
-  clock: ['melatonin', 'vasopressin', 'vip', 'orexin', 'histamine', 'serotonin', 'cortisol'],
-  fuel: ['insulin', 'glucagon', 'glp1', 'ghrelin', 'leptin', 'glucose', 'ketone', 'energy', 'mtor', 'ampk', 'ferritin'],
-  recovery: ['gaba', 'melatonin', 'growthHormone', 'prolactin', 'oxytocin', 'vagal', 'hrv', 'cortisol', 'inflammation'],
-  emotional: ['dopamine', 'serotonin', 'endocannabinoid', 'adrenaline', 'cortisol', 'oxytocin', 'sensoryLoad'],
+  metabolic: [
+    'glucose',
+    'ketone',
+    'energy',
+    'vagal',
+    'hrv',
+    'bloodPressure',
+    'ethanol',
+    'acetaldehyde',
+    'hepaticGlycogen',
+    'insulinAction',
+  ],
+  clock: ['melatonin', 'vasopressin', 'vip', 'orexin', 'histamine', 'serotonin', 'cortisol', 'adenosinePressure'],
+  fuel: ['insulin', 'glucagon', 'glp1', 'ghrelin', 'leptin', 'glucose', 'ketone', 'energy', 'mtor', 'ampk', 'ferritin', 'hepaticGlycogen'],
+  recovery: ['gaba', 'melatonin', 'growthHormone', 'prolactin', 'oxytocin', 'vagal', 'hrv', 'cortisol', 'inflammation', 'adenosinePressure'],
+  emotional: ['dopamine', 'serotonin', 'endocannabinoid', 'adrenaline', 'cortisol', 'oxytocin', 'sensoryLoad', 'cortisolIntegral'],
   reproductive: ['testosterone', 'estrogen', 'progesterone', 'lh', 'fsh', 'shbg'],
-  biomarkers: ['inflammation', 'bdnf', 'magnesium', 'vitaminD3', 'ferritin', 'hrv', 'bloodPressure'],
+  biomarkers: ['inflammation', 'bdnf', 'magnesium', 'vitaminD3', 'ferritin', 'hrv', 'bloodPressure', 'cortisolIntegral'],
   liverKidney: ['alt', 'ast', 'egfr', 'ethanol', 'acetaldehyde', 'inflammation'],
 } as const;
 

@@ -592,9 +592,10 @@ function integrateStep(state: SimulationState, t: number, dt: number, ctx: Dynam
     for (const signalKey of Object.keys(defs)) {
       const def = defs[signalKey];
       if (def) {
+        const s = signalKey as Signal;
         const min = def.min ?? 0;
         const max = def.max ?? Infinity;
-        nextState.signals[signalKey] = Math.max(min, Math.min(max, nextState.signals[signalKey]));
+        nextState.signals[s] = Math.max(min, Math.min(max, nextState.signals[s]));
       }
     }
   }

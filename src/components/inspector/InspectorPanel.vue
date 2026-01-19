@@ -50,7 +50,7 @@
       >
         <span
           class="effect-signal"
-          >{{ SIGNAL_UNITS[effect.target as Signal]?.description || effect.target }}</span
+          >{{ getTargetLabel(effect.target as any) }}</span
         >
         <p class="effect-desc">
           {{ effect.mechanism }}
@@ -62,6 +62,9 @@
               {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }})
             </span>
           </template>
+        </p>
+        <p v-if="effect.description || getTargetDescription(effect.target as any)" class="effect-help">
+          {{ effect.description || getTargetDescription(effect.target as any) }}
         </p>
       </div>
     </div>
@@ -75,6 +78,7 @@ import type { InterventionDef, ParamValues, TimelineItem, Signal, PharmacologyDe
 import ParamEditor from './ParamEditor.vue';
 import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/models/physiology/constants/nutrients';
 import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@/models/engine/signal-units';
+import { getTargetDescription, getTargetLabel } from '@/models/physiology/pharmacology/registry';
 
 const props = defineProps<{ item?: TimelineItem; def?: InterventionDef; readonly?: boolean }>();
 const emit = defineEmits<{ change: [TimelineItem] }>();
@@ -240,5 +244,14 @@ h4 {
   font-size: 0.85rem;
   line-height: 1.3;
   opacity: 0.85;
+}
+
+.effect-help {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  opacity: 0.7;
+  color: #d1d5db;
+  font-style: italic;
 }
 </style>
