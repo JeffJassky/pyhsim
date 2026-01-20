@@ -29,73 +29,148 @@
         :macros-enabled="user.nutritionTargets.macrosEnabled"
       />
 
-      <Panel title="Charts" :icon="panelIcon">
-        <nav class="chart-tabs-nav" role="tablist" aria-label="View families">
-          <button
-            v-for="tab in rootTabOptions"
-            :key="tab.key"
-            class="chart-tabs-nav__button"
-            :class="{ 'is-active': activeRootTab === tab.key }"
-            type="button"
-            role="tab"
-            :aria-selected="activeRootTab === tab.key"
-            @click="activeRootTab = tab.key"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-        <p v-if="rootInfoText" class="chart-info-root">
-          {{ rootInfoText }}
-        </p>
+      <Panel>
+        <div class="chart-header-row">
+          <div class="header-controls">
+            <!-- Filter By -->
+            <div class="control-group">
+              <span class="control-label">Filter</span>
+              <div class="toggle-pill">
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartFilter === 'auto' }"
+                  v-tooltip="'Only show charts that are modified by items on the timeline'"
+                  @click="chartFilter = 'auto'"
+                >
+                  Active
+                </button>
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartFilter === 'goals' }"
+                  v-tooltip="'Show charts related to your selected goals'"
+                  @click="chartFilter = 'goals'"
+                >
+                  My Goals
+                </button>
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartFilter === 'all' }"
+                  v-tooltip="'Show all available physiological signals'"
+                  @click="chartFilter = 'all'"
+                >
+                  All
+                </button>
+              </div>
+            </div>
 
-        <nav
-          v-if="activeSubtabOptions.length > 1"
-          class="chart-tabs-nav chart-tabs-nav--sub"
-          role="tablist"
-          aria-label="Detailed chart groups"
-        >
-          <div
-            v-for="group in activeSubtabOptions"
-            :key="group.key"
-            class="chart-tabs-nav__item"
-          >
+            <!-- Group By -->
+            <div class="control-group">
+              <span class="control-label">Group</span>
+              <div class="toggle-pill">
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartGroupBy === 'none' }"
+                  v-tooltip="'Display charts in a flat list without grouping'"
+                  @click="chartGroupBy = 'none'"
+                >
+                  None
+                </button>
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartGroupBy === 'goals' }"
+                  v-tooltip="'Group charts goal'"
+                  @click="chartGroupBy = 'goals'"
+                >
+                  Goals
+                </button>
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartGroupBy === 'system' }"
+                  v-tooltip="'Group charts by physiological system (e.g. Nervous, Endocrine)'"
+                  @click="chartGroupBy = 'system'"
+                >
+                  Biological System
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="layout-toggle">
             <button
-              class="chart-tabs-nav__button"
-              :class="{ 'is-active': activeGroupKey === group.key }"
-              type="button"
-              role="tab"
-              :aria-selected="activeGroupKey === group.key"
-              @click="setActiveGroup(group.key)"
+              class="layout-toggle__btn"
+              :class="{ 'is-active': chartLayout === 'list' }"
+              title="List View"
+              @click="chartLayout = 'list'"
             >
-              {{ group.label }}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+            </button>
+            <button
+              class="layout-toggle__btn"
+              :class="{ 'is-active': chartLayout === 'grid' }"
+              title="Grid View"
+              @click="chartLayout = 'grid'"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
             </button>
           </div>
-        </nav>
-        <div
-          v-if="activeGroupInfo.physiology || activeGroupInfo.application"
-          class="chart-info-card"
-        >
-          <p>
-            <strong>Physiology</strong>
-            {{ activeGroupInfo.physiology }}
-          </p>
-          <p>
-            <strong>Application</strong>
-            {{ activeGroupInfo.application }}
-          </p>
         </div>
 
-        <SignalChart
-          v-if="activeGroup"
-          :grid="gridMins"
-          :series-specs="activeGroupSpecs"
-          :series-data="activeGroupSeriesData"
-          :playhead-min="minute"
-          :interventions="interventionBands"
-          :day-start-min="dayStartMin"
-          :view-minutes="viewMinutes"
-          @playhead="(val: number) => setMinute(val as Minute)"
-        />
+        <div class="grouped-charts">
+          <div
+            v-for="group in groupedSpecs"
+            :key="group.id"
+            class="chart-system-group"
+          >
+            <h3 v-if="chartGroupBy !== 'none'" class="system-group-header">
+              <span class="system-group-icon">{{ group.icon }}</span>
+              {{ group.label }}
+            </h3>
+            <SignalChart
+              :grid="gridMins"
+              :series-specs="group.specs"
+              :series-data="activeChartData"
+              :playhead-min="minute"
+              :interventions="interventionBands"
+              :day-start-min="dayStartMin"
+              :view-minutes="viewMinutes"
+              :loading="busy"
+              :layout="chartLayout"
+              @playhead="(val: number) => setMinute(val as Minute)"
+            />
+          </div>
+        </div>
       </Panel>
     </section>
 
@@ -174,6 +249,10 @@ import { useArousal } from '@/composables/useArousal';
 import { useArousalStore } from '@/stores/arousal';
 import { useHeatmapStore } from '@/stores/heatmap';
 import { useHeatmap } from '@/composables/useHeatmap';
+import { BIOLOGICAL_SYSTEMS } from '@/models/physiology/systems';
+import type { BioSystemDef } from '@/models/physiology/systems';
+import { GOAL_CATEGORIES } from '@/models/domain/goals';
+import type { GoalCategory } from '@/models/domain/goals';
 import type {
   ChartSeriesSpec,
   FoodSearchHit,
@@ -205,6 +284,8 @@ const engineStore = useEngineStore();
 
 const viewMinutes = computed(() => engineStore.durationDays * 1440);
 
+// ... (rest of imports and setup)
+
 // Day view starts at the wake event's time
 const dayStartMin = computed(() => {
   const sleepItem = timeline.items.find((it) => it.meta.key === 'sleep');
@@ -233,7 +314,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 };
 
 const engine = useEngine();
-const { gridMins, series } = engine;
+const { gridMins, series, busy } = engine;
 const { minute, setMinute } = usePlayhead();
 useMeters();
 useHeatmap();
@@ -377,69 +458,6 @@ watch(
   }
 );
 
-const viewSignalSets = {
-  scnCoupling: ['melatonin', 'vasopressin', 'vip'],
-  neuroArousal: [
-    'dopamine',
-    'serotonin',
-    'acetylcholine',
-    'gaba',
-    'norepi',
-    'histamine',
-    'orexin',
-    'glutamate',
-    'endocannabinoid',
-    'bdnf',
-    'sensoryLoad',
-    'dopamineVesicles',
-    'norepinephrineVesicles',
-    'serotoninPrecursor',
-    'gabaPool',
-    'bdnfExpression',
-  ],
-  endocrine: [
-    'cortisol',
-    'adrenaline',
-    'insulin',
-    'glucagon',
-    'ghrelin',
-    'glp1',
-    'leptin',
-    'thyroid',
-    'oxytocin',
-    'prolactin',
-    'growthHormone',
-    'testosterone',
-    'estrogen',
-    'progesterone',
-    'lh',
-    'fsh',
-    'shbg',
-    'dheas',
-    'vitaminD3',
-    'ghReserve',
-  ],
-  metabolic: [
-    'glucose',
-    'ketone',
-    'energy',
-    'vagal',
-    'hrv',
-    'bloodPressure',
-    'ethanol',
-    'acetaldehyde',
-    'hepaticGlycogen',
-    'insulinAction',
-  ],
-  clock: ['melatonin', 'vasopressin', 'vip', 'orexin', 'histamine', 'serotonin', 'cortisol', 'adenosinePressure'],
-  fuel: ['insulin', 'glucagon', 'glp1', 'ghrelin', 'leptin', 'glucose', 'ketone', 'energy', 'mtor', 'ampk', 'ferritin', 'hepaticGlycogen'],
-  recovery: ['gaba', 'melatonin', 'growthHormone', 'prolactin', 'oxytocin', 'vagal', 'hrv', 'cortisol', 'inflammation', 'adenosinePressure'],
-  emotional: ['dopamine', 'serotonin', 'endocannabinoid', 'adrenaline', 'cortisol', 'oxytocin', 'sensoryLoad', 'cortisolIntegral'],
-  reproductive: ['testosterone', 'estrogen', 'progesterone', 'lh', 'fsh', 'shbg'],
-  biomarkers: ['inflammation', 'bdnf', 'magnesium', 'vitaminD3', 'ferritin', 'hrv', 'bloodPressure', 'cortisolIntegral'],
-  liverKidney: ['alt', 'ast', 'egfr', 'ethanol', 'acetaldehyde', 'inflammation'],
-} as const;
-
 const enabledSignals = computed(() => user.enabledSignals);
 const subscriptionTier = computed(() => user.subscriptionTier);
 
@@ -486,17 +504,10 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
     })
     .filter((spec): spec is ChartSeriesSpec => spec !== null);
 
-const scnCouplingSpecs = computed(() => buildSpecs(viewSignalSets.scnCoupling));
-const neurotransmitterSpecs = computed(() => buildSpecs(viewSignalSets.neuroArousal));
-const endocrineSpecs = computed(() => buildSpecs(viewSignalSets.endocrine));
-const metabolicSpecs = computed(() => buildSpecs(viewSignalSets.metabolic));
-const clockSpecs = computed(() => buildSpecs(viewSignalSets.clock));
-const fuelSpecs = computed(() => buildSpecs(viewSignalSets.fuel));
-const recoverySpecs = computed(() => buildSpecs(viewSignalSets.recovery));
-const emotionalSpecs = computed(() => buildSpecs(viewSignalSets.emotional));
-const reproductiveSpecs = computed(() => buildSpecs(viewSignalSets.reproductive));
-const biomarkerSpecs = computed(() => buildSpecs(viewSignalSets.biomarkers));
-const liverKidneySpecs = computed(() => buildSpecs(viewSignalSets.liverKidney));
+const getSpecsForSystem = (systemId: string) => {
+  const system = BIOLOGICAL_SYSTEMS.find(s => s.id === systemId);
+  return buildSpecs(system?.signals ?? []);
+};
 
 const toChartData = (record: Record<string, Float32Array | number[]> | undefined) => {
   const result: Record<string, number[]> = {};
@@ -600,11 +611,14 @@ interface RootTabOption {
   info: string;
 }
 
-const goalSpecs = computed(() => {
-  const relevantKeys = (Object.values(UNIFIED_DEFS) as any[])
-    .map(sig => sig.key as Signal)
-    .filter(key => enabledSignals.value[key] === true);
-  return buildSpecs(relevantKeys, true);
+const chartFilter = ref<'auto' | 'goals' | 'all'>('auto');
+const chartGroupBy = ref<'none' | 'system' | 'goals'>('none');
+const chartLayout = ref<'list' | 'grid'>('list');
+
+const panelIcon = computed(() => {
+  if (chartFilter.value === 'goals') return '✨';
+  if (chartFilter.value === 'all') return '📊';
+  return '🪄';
 });
 
 // Maps PD targets (receptors, transporters) to the signals they affect
@@ -627,379 +641,154 @@ const targetToSignalsMap: Record<string, Signal[]> = {
   'OX2R': ['orexin'],
 };
 
-const autoSpecs = computed(() => {
-  // Use selected item(s) if active, otherwise use all items on timeline
-  const sourceItems = timeline.selectedId
-    ? timeline.items.filter((it) => it.id === timeline.selectedId)
-    : timeline.items;
+const activeSpecs = computed(() => {
+  let keys: string[] = [];
 
-  const activeInterventionKeys = new Set(sourceItems.map((it) => it.meta.key));
-  const directSignals = new Set<Signal>();
+  if (chartFilter.value === 'auto') {
+    // Logic from old autoSpecs
+    const sourceItems = timeline.selectedId
+      ? timeline.items.filter((it) => it.id === timeline.selectedId)
+      : timeline.items;
 
-  sourceItems.forEach((item) => {
-    const def = library.defs.find((d) => d.key === item.meta.key);
-    if (!def) return;
+    const directSignals = new Set<Signal>();
 
-    let pharms: PharmacologyDef[] = [];
-    if (typeof def.pharmacology === 'function') {
-      const result = (def.pharmacology as any)(item.meta.params || {});
-      pharms = Array.isArray(result) ? result : [result];
-    } else {
-      pharms = [def.pharmacology];
-    }
+    sourceItems.forEach((item) => {
+      const def = library.defs.find((d) => d.key === item.meta.key);
+      if (!def) return;
 
-    pharms.forEach((pharm) => {
-      if (pharm.pd) {
-        pharm.pd.forEach((effect) => {
-          // Add the target itself if it's a signal
-          directSignals.add(effect.target as Signal);
-          // Also add signals affected by this target (for transporters/receptors)
-          const affectedSignals = targetToSignalsMap[effect.target];
-          if (affectedSignals) {
-            affectedSignals.forEach((sig) => directSignals.add(sig));
-          }
-        });
+      let pharms: PharmacologyDef[] = [];
+      if (typeof def.pharmacology === 'function') {
+        const result = (def.pharmacology as any)(item.meta.params || {});
+        pharms = Array.isArray(result) ? result : [result];
+      } else {
+        pharms = [def.pharmacology];
+      }
+
+      pharms.forEach((pharm) => {
+        if (pharm.pd) {
+          pharm.pd.forEach((effect) => {
+            // Add the target itself if it's a signal
+            directSignals.add(effect.target as Signal);
+            // Also add signals affected by this target (for transporters/receptors)
+            const affectedSignals = targetToSignalsMap[effect.target];
+            if (affectedSignals) {
+              affectedSignals.forEach((sig) => directSignals.add(sig));
+            }
+          });
+        }
+      });
+    });
+
+    const signalsToShow = new Set(directSignals);
+
+    // Include signals that are coupled to the directly modified signals (downstream effects)
+    Object.values(UNIFIED_DEFS).forEach((def) => {
+      if (!def.dynamics.couplings) return;
+      const isCoupled = def.dynamics.couplings.some((c) => directSignals.has(c.source));
+      if (isCoupled) {
+        signalsToShow.add(def.key);
       }
     });
-  });
+    keys = Array.from(signalsToShow);
+  } else if (chartFilter.value === 'goals') {
+    // Show signals relevant to SELECTED goals
+    const selectedGoalIds = user.selectedGoals;
+    const signalSet = new Set<Signal>();
 
-  const signalsToShow = new Set(directSignals);
+    selectedGoalIds.forEach(goalId => {
+      const category = GOAL_CATEGORIES.find(c => c.id === goalId);
+      if (category) {
+        category.signals.forEach(s => signalSet.add(s));
+      }
+    });
 
-  // Include signals that are coupled to the directly modified signals (downstream effects)
-  Object.values(UNIFIED_DEFS).forEach((def) => {
-    if (!def.dynamics.couplings) return;
-    const isCoupled = def.dynamics.couplings.some((c) => directSignals.has(c.source));
-    if (isCoupled) {
-      signalsToShow.add(def.key);
-    }
-  });
-
-  return buildSpecs(Array.from(signalsToShow));
-});
-
-const chartGroups: Record<ChartGroupKey, ChartGroup> = {
-  auto: {
-    key: 'auto',
-    label: 'Timeline Smart View',
-    icon: '🪄',
-    specs: autoSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Analyzes the interventions currently on your timeline and automatically surfaces all biological pathways they are interacting with.',
-      application:
-        'Add items to your day to see their physiological impact reflected here in real-time.',
-    },
-  },
-  goals: {
-    key: 'goals',
-    label: 'Goal Focus',
-    icon: '✨',
-    specs: goalSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        '',
-      application:
-        '',
-    },
-  },
-  scnCoupling: {
-    key: 'scnCoupling',
-    label: 'SCN Coupling',
-    icon: '🧠',
-    specs: scnCouplingSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Outputs from the suprachiasmatic nucleus and pineal gland (melatonin, AVP, VIP) keep cellular clocks synchronized and set the phase for downstream systems.',
-      application:
-        'Use this chart to see how light, darkness, and melatonin supplements are shifting core Zeitgeber signals before they cascade into behavior.',
-    },
-  },
-  neuroArousal: {
-    key: 'neuroArousal',
-    label: 'Neural Arousal',
-    icon: '⚡',
-    specs: neurotransmitterSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Fast neurotransmitters (dopamine, serotonin, acetylcholine, histamine, orexin, etc.) modulate motivation, attention, and immediate behavioral state.',
-      application:
-        'Check how interventions such as stimulants, food, or light shift arousal chemistry that ultimately changes focus, drive, and subjective meters.',
-    },
-  },
-  endocrine: {
-    key: 'endocrine',
-    label: 'Endocrine Output',
-    icon: '🩸',
-    specs: endocrineSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Hormones from the HPA axis and metabolic organs (cortisol, insulin, GLP-1, leptin, growth hormone, etc.) broadcast instructions to tissues across the body.',
-      application:
-        'Correlate meal timing, stressors, or supplements with endocrine pulses to understand why energy, appetite, or recovery responses change.',
-    },
-  },
-  metabolic: {
-    key: 'metabolic',
-    label: 'Metabolic & Autonomic',
-    icon: '🍽️',
-    specs: metabolicSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Composite metabolic proxies (glucose, ketones, energy availability, vagal tone) integrate hormonal and autonomic control into system-level readiness.',
-      application:
-        'Use this readout to see how a day of interventions shapes substrate availability, autonomic balance, and perceived capacity.',
-    },
-  },
-  autonomic: {
-    key: 'autonomic',
-    label: 'Autonomic Balance',
-    icon: '🌡️',
-    specs: arousalSeriesSpecs,
-    data: arousalSeriesData,
-    info: {
-      physiology:
-        'Sympathetic vs. parasympathetic components summarize autonomic nervous system output that controls heart rate, blood pressure, and organ readiness.',
-      application:
-        'Track whether movement, cold/heat exposure, or relaxation practices are driving the sympathetic load you intended and what rebound you get afterward.',
-    },
-  },
-  organDynamics: {
-    key: 'organDynamics',
-    label: 'Organ Dynamics',
-    icon: '🫁',
-    specs: organSeriesSpecs,
-    data: organSeriesData,
-    info: {
-      physiology:
-        'Heatmap-derived organ signals translate network outputs into estimated stress on the lungs, gut, liver, brain, and more.',
-      application:
-        'Use this to understand which organ systems are bearing the load of your interventions so you can rotate stress or recovery focus.',
-    },
-  },
-  experience: {
-    key: 'experience',
-    label: 'Experience',
-    icon: '🧠',
-    specs: meterSeriesSpecs,
-    data: meterSeriesData,
-    info: {
-      physiology:
-        'Subjective meters blend neurotransmitter, endocrine, and autonomic signals into felt states like focus, mood, calm, and overwhelm.',
-      application:
-        'Correlate interventions with the metrics you care about most—helpful for planning routines around how you actually feel.',
-    },
-  },
-  clock: {
-    key: 'clock',
-    label: 'Clock Alignment',
-    icon: '⏰',
-    specs: clockSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Combines master clock messengers (melatonin, AVP, VIP) with orexin, histamine, and cortisol to show the full circadian wave.',
-      application:
-        'Quickly see whether light, sleep, and melatonin timing are lining up with your target schedule before layering additional behaviors.',
-    },
-  },
-  fuel: {
-    key: 'fuel',
-    label: 'Fuel & Appetite',
-    icon: '🍽️',
-    specs: fuelSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Insulin, glucagon, incretins, ghrelin, and leptin create the push-pull between feeding, satiety, and substrate selection.',
-      application:
-        'Use this to plan meals, fasts, or GLP-1-based strategies and to understand concurrent changes in glucose, ketones, and perceived energy.',
-    },
-  },
-  recovery: {
-    key: 'recovery',
-    label: 'Recovery & Growth',
-    icon: '🛌',
-    specs: recoverySpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Sleep-promoting transmitters (GABA, melatonin) and anabolic hormones (growth hormone, prolactin, oxytocin) coordinate repair alongside vagal tone.',
-      application:
-        'Audit sleep hygiene, heat/sauna, or breathwork sessions by seeing whether you generated the restorative chemistry you were targeting.',
-    },
-  },
-  reproductive: {
-    key: 'reproductive',
-    label: 'Reproductive Health',
-    icon: '🧬',
-    specs: reproductiveSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Sex hormones (testosterone, estrogen, progesterone) and regulatory hormones (LH, FSH) control reproductive cycles and secondary characteristics.',
-      application:
-        'Use this to track hormone cycles across the month (for females) or diurnal testosterone rhythms (for males).',
-    },
-  },
-  emotional: {
-    key: 'emotional',
-    label: 'Emotional Regulation',
-    icon: '💞',
-    specs: emotionalSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Mood-relevant neuromodulators (dopamine, serotonin, endocannabinoids) interact with arousal hormones (adrenaline, cortisol, oxytocin).',
-      application:
-        'Use this perspective to understand why certain routines calm or energize you emotionally and to plan deliberate mood adjustments.',
-    },
-  },
-  biomarkers: {
-    key: 'biomarkers',
-    label: 'Biomarkers',
-    icon: '🧪',
-    specs: biomarkerSpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Key blood and tissue markers (inflammation, BDNF, magnesium, ferritin) that provide a window into systemic health and cognitive potential.',
-      application:
-        'Monitor long-term health markers and ensure your interventions are supporting brain health and lowering systemic inflammation.',
-    },
-  },
-  liverKidney: {
-    key: 'liverKidney',
-    label: 'Liver & Kidney',
-    icon: '🧪',
-    specs: liverKidneySpecs,
-    data: signalSeriesData,
-    info: {
-      physiology:
-        'Proxies for hepatic and renal stress (ALT, AST, eGFR) along with ethanol metabolism signals.',
-      application:
-        'Track the impact of supplements, toxins, and high metabolic demand on your core filtration and detox organs.',
-    },
-  },
-};
-
-const rootTabOptions: RootTabOption[] = [
-  {
-    key: 'goals',
-    label: 'My Goals',
-    icon: '✨',
-    groupKeys: ['goals'],
-    info: '',
-  },
-  {
-    key: 'auto',
-    label: 'Auto',
-    icon: '🪄',
-    groupKeys: ['auto'],
-    info: 'Intelligent view that surfaces all signals affected by items currently on your timeline.',
-  },
-  {
-    key: 'physiology',
-    label: 'Physiology',
-    icon: '🧬',
-    groupKeys: [
-      'scnCoupling',
-      'neuroArousal',
-      'endocrine',
-      'metabolic',
-      'autonomic',
-      'organDynamics',
-      'biomarkers',
-      'liverKidney',
-    ],
-    info:
-      'Explore biologically-accurate groupings that trace the flow from the master clock, through neurotransmitters and hormones, into organ-level outputs.',
-  },
-  {
-    key: 'application',
-    label: 'Application',
-    icon: '🧭',
-    groupKeys: ['clock', 'fuel', 'recovery', 'emotional', 'reproductive', 'experience'],
-    info:
-      'Cut the system into pragmatic views—clock alignment, fueling, recovery, emotional regulation, and reproductive health—to plan real-world routines.',
-  },
-];
-
-const activeRootTab = ref<RootTabKey>('goals');
-const activeGroupByRoot = ref<Record<RootTabKey, ChartGroupKey>>({
-  goals: 'goals',
-  auto: 'auto',
-  physiology: 'scnCoupling',
-  application: 'clock',
-});
-
-const rootTabMap = new Map(rootTabOptions.map((tab) => [tab.key, tab]));
-
-const getGroupKeysForRoot = (rootKey: RootTabKey) => rootTabMap.get(rootKey)?.groupKeys ?? [];
-
-const ensureGroupForRoot = (rootKey: RootTabKey) => {
-  const tab = rootTabMap.get(rootKey);
-  if (!tab) return;
-  const [firstKey] = tab.groupKeys;
-  if (!firstKey) return;
-  const current = activeGroupByRoot.value[rootKey];
-  if (!current || !tab.groupKeys.includes(current)) {
-    activeGroupByRoot.value = { ...activeGroupByRoot.value, [rootKey]: firstKey };
+    keys = Array.from(signalSet);
+  } else {
+    // 'all' - Show all enabled signals
+    keys = (Object.values(UNIFIED_DEFS) as any[]).map((sig) => sig.key as Signal);
   }
-};
 
-rootTabOptions.forEach((tab) => ensureGroupForRoot(tab.key));
-
-watch(
-  activeRootTab,
-  (newRoot) => {
-    ensureGroupForRoot(newRoot);
-  },
-  { immediate: true }
-);
-
-const activeRootTabMeta = computed(() => rootTabMap.get(activeRootTab.value) ?? rootTabOptions[0]);
-
-const activeGroupKey = computed<ChartGroupKey>(() => {
-  const assigned = activeGroupByRoot.value[activeRootTab.value];
-  if (assigned && chartGroups[assigned]) return assigned;
-  const fallback = getGroupKeysForRoot(activeRootTab.value)[0];
-  return (fallback ?? 'scnCoupling') as ChartGroupKey;
-});
-
-const activeSubtabOptions = computed(() =>
-  getGroupKeysForRoot(activeRootTab.value).map((key) => chartGroups[key])
-);
-
-const activeGroup = computed(() => chartGroups[activeGroupKey.value]);
-
-const resolveSpecs = (specsSource: ChartGroup['specs']) =>
-  Array.isArray(specsSource) ? specsSource : specsSource.value;
-
-const activeGroupSpecs = computed(() => {
-  const specs = resolveSpecs(activeGroup.value.specs);
+  const specs = buildSpecs(keys, true);
   const orderMap = new Map(user.signalOrder.map((key, idx) => [key, idx]));
 
-  return [...specs].sort((a, b) => {
+  return specs.sort((a, b) => {
     const aPremium = !!a.isPremium;
     const bPremium = !!b.isPremium;
     if (aPremium && !bPremium) return 1;
     if (!aPremium && bPremium) return -1;
-
     // Fall back to custom order
     const aIdx = orderMap.get(a.key as Signal) ?? 999;
     const bIdx = orderMap.get(b.key as Signal) ?? 999;
     return aIdx - bIdx;
   });
 });
-const activeGroupSeriesData = computed(() => {
-  const data = activeGroup.value.data.value;
-  const specs = activeGroupSpecs.value;
+
+const groupedSpecs = computed(() => {
+  const specs = activeSpecs.value;
+  const result: Array<{ id: string; label: string; icon: string; specs: ChartSeriesSpec[] }> = [];
+  const usedKeys = new Set<string>();
+
+  if (chartGroupBy.value === 'system') {
+    BIOLOGICAL_SYSTEMS.forEach((system) => {
+      const systemSpecs = specs.filter((s) => system.signals.includes(s.key as Signal));
+      if (systemSpecs.length > 0) {
+        result.push({
+          id: system.id,
+          label: system.label,
+          icon: system.icon,
+          specs: systemSpecs,
+        });
+        systemSpecs.forEach((s) => usedKeys.add(s.key));
+      }
+    });
+  } else if (chartGroupBy.value === 'goals') {
+    const categories = chartFilter.value === 'goals'
+      ? GOAL_CATEGORIES.filter(g => user.selectedGoals.includes(g.id))
+      : GOAL_CATEGORIES;
+
+    categories.forEach((goalCat) => {
+       // Find specs that are in this goal category
+       const goalSpecs = specs.filter(s => {
+          return goalCat.signals.includes(s.key as Signal);
+       });
+
+       if (goalSpecs.length > 0) {
+         result.push({
+           id: goalCat.id,
+           label: goalCat.label,
+           icon: goalCat.icon,
+           specs: goalSpecs
+         });
+         goalSpecs.forEach(s => usedKeys.add(s.key));
+       }
+    });
+  } else {
+    // None: just one big group
+    return [{
+      id: 'all',
+      label: 'All Signals',
+      icon: '📈',
+      specs: specs
+    }];
+  }
+
+  // Any remaining specs
+  const remaining = specs.filter((s) => !usedKeys.has(s.key));
+  if (remaining.length > 0) {
+    result.push({
+      id: 'other',
+      label: 'Other',
+      icon: '⚙️',
+      specs: remaining,
+    });
+  }
+
+  return result;
+});
+
+const activeChartData = computed(() => {
+  const data = signalSeriesData.value;
+  const specs = activeSpecs.value;
   const redacted: Record<string, number[]> = {};
   const isPremiumUser = subscriptionTier.value === 'premium';
 
@@ -1013,15 +802,6 @@ const activeGroupSeriesData = computed(() => {
   }
   return redacted;
 });
-const activeGroupInfo = computed(() => activeGroup.value.info);
-
-const setActiveGroup = (groupKey: ChartGroupKey) => {
-  activeGroupByRoot.value = { ...activeGroupByRoot.value, [activeRootTab.value]: groupKey };
-};
-
-const panelTitle = computed(() => `${activeRootTabMeta.value.label}: ${activeGroup.value.label}`);
-const panelIcon = computed(() => activeGroup.value.icon);
-const rootInfoText = computed(() => activeRootTabMeta.value.info);
 
 const interventionBands = computed(() => {
   const bands: any[] = [];
@@ -1183,7 +963,98 @@ const interventionBands = computed(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.chart-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.control-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+  opacity: 0.4;
+  margin-right: 0.5rem;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toggle-pill {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.toggle-pill__btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.toggle-pill__btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.toggle-pill__btn.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #8fbf5f;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.layout-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.layout-toggle__btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.layout-toggle__btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.layout-toggle__btn.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #8fbf5f;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .chart-tabs-nav--sub {
@@ -1236,6 +1107,34 @@ const interventionBands = computed(() => {
 
 .chart-info-card p:last-child {
   margin-bottom: 0;
+}
+
+.grouped-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.chart-system-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.system-group-header {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.system-group-icon {
+  font-size: 1rem;
 }
 
 .toolbar-content {

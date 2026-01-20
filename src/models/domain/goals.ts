@@ -1,4 +1,4 @@
-import type { Goal, InterventionKey } from '@/types/neurostate';
+import type { Goal, InterventionKey, Signal } from '@/types';
 
 export interface RecommendedIntervention {
   key: InterventionKey;
@@ -13,6 +13,7 @@ export interface GoalCategory {
   label: string;
   icon: string;
   recommendedInterventions?: RecommendedIntervention[];
+  signals: Signal[];
 }
 
 export const GOAL_CATEGORIES: GoalCategory[] = [
@@ -20,6 +21,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'energy', 
     label: 'Energy', 
     icon: '⚡',
+    signals: ['energy', 'glucose', 'cortisol', 'adrenaline', 'orexin', 'thyroid', 'ampk'],
     recommendedInterventions: [
       {
         key: 'caffeine',
@@ -48,6 +50,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'productivity', 
     label: 'Productivity', 
     icon: '🚀',
+    signals: ['dopamine', 'norepi', 'acetylcholine', 'glutamate'],
     recommendedInterventions: [
       {
         key: 'ritalinIR10',
@@ -76,6 +79,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'weightLoss', 
     label: 'Weight Loss', 
     icon: '⚖️',
+    signals: ['insulin', 'glucagon', 'leptin', 'ghrelin', 'glp1', 'ketone'],
     recommendedInterventions: [
       {
         key: 'exercise_hiit',
@@ -97,6 +101,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'mood', 
     label: 'Mood', 
     icon: '🎭',
+    signals: ['serotonin', 'dopamine', 'oxytocin', 'endocannabinoid', 'bdnf'],
     recommendedInterventions: [
       {
         key: 'exercise_cardio',
@@ -125,6 +130,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'focus', 
     label: 'Focus', 
     icon: '🧠',
+    signals: ['acetylcholine', 'norepi', 'dopamine', 'histamine'],
     recommendedInterventions: [
       {
         key: 'caffeine',
@@ -146,6 +152,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'recovery', 
     label: 'Recovery', 
     icon: '💪',
+    signals: ['growthHormone', 'testosterone', 'mtor', 'inflammation', 'cortisol'],
     recommendedInterventions: [
       {
         key: 'sleep',
@@ -174,6 +181,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'sleep', 
     label: 'Sleep', 
     icon: '😴',
+    signals: ['melatonin', 'gaba', 'cortisol'],
     recommendedInterventions: [
       {
         key: 'melatonin',
@@ -202,6 +210,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'digestion', 
     label: 'Digestion', 
     icon: '🦠',
+    signals: ['glp1', 'insulin', 'glucagon'],
     recommendedInterventions: [
       {
         key: 'food',
@@ -223,6 +232,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'pain', 
     label: 'Pain', 
     icon: '❤️‍🩹',
+    signals: ['inflammation', 'endocannabinoid'],
     recommendedInterventions: [
       {
         key: 'meditation',
@@ -244,6 +254,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'cycle', 
     label: 'Cycle Syncing', 
     icon: '🌝',
+    signals: ['estrogen', 'progesterone', 'lh', 'fsh', 'testosterone'],
     recommendedInterventions: [
       {
         key: 'exercise_cardio',
@@ -265,6 +276,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'calm', 
     label: 'Calm', 
     icon: '😌',
+    signals: ['gaba', 'serotonin', 'oxytocin', 'cortisol', 'adrenaline'],
     recommendedInterventions: [
       {
         key: 'meditation',
@@ -293,6 +305,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: 'longevity', 
     label: 'Longevity', 
     icon: '🏃',
+    signals: ['mtor', 'ampk', 'insulin', 'inflammation'],
     recommendedInterventions: [
       {
         key: 'exercise_cardio',

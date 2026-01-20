@@ -1,5 +1,5 @@
 <template>
-  <div ref="chartContainer" class="chart">
+  <div ref="chartContainer" class="chart" :class="{ 'is-grid': layout === 'grid' }">
     <div
       v-for="spec in seriesSpecs"
       :key="spec.key"
@@ -63,16 +63,16 @@
           :class="{ 'series--premium': isLocked(spec.key) }"
           @click="onChartClick"
         >
-          <div
-            class="series__canvas"
-            :class="{ 'is-flashing': flashStates[spec.key] }"
-            :style="{
-              '--line-color': lineColor(spec),
-              '--fill-color': fillColor(spec),
-            }"
-          >
-            <div class="series__overlay series__overlay--value">
-              <template v-if="!isLocked(spec.key)">
+                      <div
+                        class="series__canvas"
+                        :class="{ 'is-flashing': flashStates[spec.key] }"
+                        :style="{
+                          '--line-color': lineColor(spec),
+                          '--fill-color': fillColor(spec),
+                        }"
+                      >
+                        <div class="loading-spinner" :class="{ 'is-active': loading }" />
+                        <div class="series__overlay series__overlay--value">              <template v-if="!isLocked(spec.key)">
                 {{ latestValue(spec.key).toFixed(latestValue(spec.key) < 1 ? 2 : 1) }}
                 <span class="unit">{{ getUnit(spec.key) }}</span>
               </template>
@@ -301,9 +301,13 @@ interface Props {
   }>;
   dayStartMin: number;
   viewMinutes: number;
+  loading?: boolean;
+  layout?: 'list' | 'grid';
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  layout: 'list',
+});
 const emit = defineEmits<{ (e: 'playhead', min: number): void }>();
 
 const userStore = useUserStore();
@@ -784,6 +788,49 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  position: relative;
+}
+
+.chart.is-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  align-items: flex-start;
+}
+
+.chart.is-grid .series-container {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.series-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.loading-spinner {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 0.75em;
+  height: 0.75em;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.loading-spinner.is-active {
+  opacity: 1;
+  transition: none;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .series-container {

@@ -3,6 +3,7 @@ import type { ConditionKey, ConditionStateSnapshot } from '@/models/registry/con
 import { CONDITION_LIBRARY } from '@/models';
 import { getAllUnifiedDefinitions } from '@/models/engine';
 import { DEFAULT_SUBJECT, DEFAULT_NUTRITION_TARGETS, type Subject, type NutritionTargets } from '@/models/domain/subject';
+import { GOAL_CATEGORIES } from '@/models/domain/goals';
 import { SIGNALS_ALL, type Signal, type Goal } from '@/types';
 
 const STORAGE_KEY = 'physim:user';
@@ -99,17 +100,27 @@ export const useUserStore = defineStore('user', {
 
       // Sync signals: enable if goal added, disable if goal removed (and not needed elsewhere)
       const nextEnabled = { ...this.enabledSignals };
-      Object.values(UNIFIED_DEFS).forEach((sig) => {
-        // Cast goalId to string as goals are strings in UnifiedSignalDefinition
-        if (!sig.goals?.includes(goalId)) return;
+      
+      const goalCategory = GOAL_CATEGORIES.find(g => g.id === goalId);
+      const signalsToToggle = goalCategory?.signals || [];
 
+      signalsToToggle.forEach((sig) => {
         if (!isRemoving) {
-          nextEnabled[sig.key] = true;
+          nextEnabled[sig] = true;
         } else {
-          const stillNeeded = this.selectedGoals.some((g) =>
-            sig.goals?.includes(g)
-          );
-          if (!stillNeeded) nextEnabled[sig.key] = false;
+          // Check if this signal is needed by ANY other selected goal
+          const neededByOther = this.selectedGoals.some(otherGoalId => {
+            const otherCat = GOAL_CATEGORIES.find(g => g.id === otherGoalId);
+            return otherCat?.signals.includes(sig);
+          });
+          
+          if (!neededByOther) {
+            // Also check if it's "manually" enabled? 
+            // For now, we assume if it was only enabled by this goal, we disable it.
+            // A smarter system might track "manual override" vs "goal implied".
+            // But preserving previous behavior:
+            nextEnabled[sig] = false;
+          }
         }
       });
 

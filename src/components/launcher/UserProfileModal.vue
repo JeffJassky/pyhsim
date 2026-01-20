@@ -422,7 +422,12 @@ const handleSetTier = (tier: 'free' | 'premium') => {
 };
 
 const getSignalsByGoal = (goalId: Goal) => {
-  const filtered = Object.values(UNIFIED_DEFS).filter(sig => (sig.goals as Goal[])?.includes(goalId));
+  const goalCategory = GOAL_CATEGORIES.find(g => g.id === goalId);
+  if (!goalCategory) return [];
+
+  const filtered = goalCategory.signals
+    .map(key => UNIFIED_DEFS[key])
+    .filter(Boolean); // Filter out any undefineds if a key is missing in definitions
   
   // Create a map for quick lookup of current signal order
   const orderMap = new Map(signalOrder.value.map((key, idx) => [key, idx]));
