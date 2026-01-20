@@ -1,5 +1,5 @@
 <template>
-  <Panel title="Bio-Pilot" icon="🤖" class="ai-chat-panel">
+  <Panel class="ai-chat-panel">
     <div class="chat-messages" ref="messagesContainer">
       <div
         v-for="msg in aiStore.messages"
@@ -107,8 +107,8 @@ onMounted(scrollToBottom);
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: rgba(18, 22, 32, 0.95);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-subtle);
+  border-left: 1px solid var(--color-border-default);
   padding: 1rem 1.5rem;
 }
 
@@ -116,7 +116,7 @@ onMounted(scrollToBottom);
 :deep(.panel__header) {
   padding-bottom: 0.75rem;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 :deep(.panel__title h3) {
@@ -125,7 +125,7 @@ onMounted(scrollToBottom);
   letter-spacing: 0.02em;
   text-transform: none;
   opacity: 1;
-  color: #f0f0f5;
+  color: var(--color-text-primary);
 }
 
 /* Override Panel's body to fill height */
@@ -169,18 +169,19 @@ onMounted(scrollToBottom);
   padding: 0.75rem;
   border-radius: 12px;
   line-height: 1.4;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-base);
   word-wrap: break-word;
 }
 
 .message--user .message__content {
-  background: rgba(50, 101, 219, 0.2);
-  border: 1px solid rgba(50, 101, 219, 0.3);
+  background: var(--color-bg-base);
+  color: var(--color-text-inverted);
+  border: 1px solid var(--color-border-subtle);
   border-bottom-right-radius: 2px;
 }
 
 .message--assistant .message__content {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-base);
   border-bottom-left-radius: 2px;
 }
 
@@ -197,7 +198,7 @@ onMounted(scrollToBottom);
 }
 
 :deep(.markdown-body a) {
-  color: #60a5fa;
+  color: var(--color-accent);
   text-decoration: underline;
 }
 
@@ -220,7 +221,7 @@ onMounted(scrollToBottom);
 }
 
 :deep(.markdown-body code) {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-subtle);
   padding: 0.1em 0.3em;
   border-radius: 4px;
   font-family: monospace;
@@ -228,7 +229,7 @@ onMounted(scrollToBottom);
 }
 
 :deep(.markdown-body pre) {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-subtle);
   padding: 0.75rem;
   border-radius: 8px;
   overflow-x: auto;
@@ -256,10 +257,10 @@ onMounted(scrollToBottom);
 :deep(.markdown-body h4) { font-size: 1em; }
 
 :deep(.markdown-body blockquote) {
-  border-left: 3px solid rgba(255, 255, 255, 0.2);
+  border-left: 3px solid var(--color-border-strong);
   padding-left: 0.75rem;
   margin-left: 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--color-text-secondary);
 }
 
 :deep(.markdown-body table) {
@@ -271,13 +272,13 @@ onMounted(scrollToBottom);
 
 :deep(.markdown-body th),
 :deep(.markdown-body td) {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-subtle);
   padding: 0.4rem 0.6rem;
   text-align: left;
 }
 
 :deep(.markdown-body th) {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-subtle);
   font-weight: 600;
 }
 
@@ -297,33 +298,33 @@ onMounted(scrollToBottom);
   display: flex;
   gap: 0.5rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--color-border-subtle);
   margin-top: auto;
 }
 
 .chat-input input {
   flex: 1;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 999px;
   padding: 0.625rem 1rem;
-  color: #f0f0f5;
+  color: var(--color-text-primary);
   font-size: 0.875rem;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .chat-input input::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
 }
 
 .chat-input input:focus {
   outline: none;
-  border-color: rgba(0, 212, 255, 0.4);
-  background: rgba(0, 0, 0, 0.35);
+  border-color: var(--color-accent);
+  background: var(--color-bg-elevated);
 }
 
 .chat-input button {
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: var(--color-accent);
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -331,10 +332,21 @@ onMounted(scrollToBottom);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #050509;
+  color: var(--color-text-inverted);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.25);
+}
+
+.chat-input button:hover:not(:disabled) {
+  transform: scale(1.05);
+  background: var(--color-accent-hover);
+}
+
+.chat-input button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .chat-input button:hover:not(:disabled) {

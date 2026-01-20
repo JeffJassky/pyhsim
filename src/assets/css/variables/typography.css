@@ -1,0 +1,27 @@
+:root {
+  /* Font Family - macOS System Font Stack */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", monospace;
+
+  /* Font Sizes */
+  --size-xs: 0.75rem;     /* 12px */
+  --size-s: 0.875rem;     /* 14px */
+  --size-m: 1rem;         /* 16px */
+  --size-l: 1.125rem;     /* 18px */
+  --size-xl: 1.25rem;     /* 20px */
+  --size-2xl: 1.5rem;     /* 24px */
+  --size-3xl: 1.875rem;   /* 30px */
+  --size-4xl: 2.25rem;    /* 36px */
+
+  /* Font Weights */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+}

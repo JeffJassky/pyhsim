@@ -4,16 +4,28 @@ export const TENDENCY_COLORS: Record<
   IdealTendency,
   { line: string; fill: string }
 > = {
-  higher: { line: "#38bdf8", fill: "rgba(56, 189, 248, 0.12)" },
-  lower: { line: "#f97316", fill: "rgba(249, 115, 22, 0.12)" },
-  mid: { line: "#94a3b8", fill: "rgba(148, 163, 184, 0.12)" },
-  none: { line: "#94a3b8", fill: "rgba(148, 163, 184, 0.12)" },
+  higher: { 
+    line: "var(--color-macro-carbs)", 
+    fill: "color-mix(in srgb, var(--color-macro-carbs), transparent 88%)" 
+  },
+  lower: { 
+    line: "var(--color-warning)", 
+    fill: "color-mix(in srgb, var(--color-warning), transparent 88%)" 
+  },
+  mid: { 
+    line: "var(--neutral-400)", 
+    fill: "color-mix(in srgb, var(--neutral-400), transparent 88%)" 
+  },
+  none: { 
+    line: "var(--neutral-400)", 
+    fill: "color-mix(in srgb, var(--neutral-400), transparent 88%)" 
+  },
 };
 
 export const TENDENCY_LINE_GRADIENTS: Record<IdealTendency, [string, string]> =
   {
-    higher: ["#67e8f9", "#0ea5e9"],
-    lower: ["#fb923c", "#dc2626"],
-    mid: ["#e5e7eb", "#94a3b8"],
-    none: ["#e5e7eb", "#94a3b8"],
+    higher: ["var(--sky-400)", "var(--sky-600)"],
+    lower: ["var(--amber-400)", "var(--rose-600)"],
+    mid: ["var(--neutral-200)", "var(--neutral-500)"],
+    none: ["var(--neutral-200)", "var(--neutral-500)"],
   };

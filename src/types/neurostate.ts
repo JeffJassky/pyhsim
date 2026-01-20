@@ -331,12 +331,12 @@ export interface PharmacologyDef {
     // Dynamic physiology-dependent parameters
     clearance?: ClearanceSpec;
     volume?: VolumeSpec;
-    /** Delivery mode: 
+    /** Delivery mode:
      * - 'bolus': Fixed dose injected at startTime (pill, injection)
      * - 'infusion': Fixed dose spread over the duration (sipping coffee, IV drip)
-     * - 'continuous': Intensity-based rate active for the duration (exercise, sleep signals) 
+     * - 'continuous': Intensity-based rate active for the duration (exercise, sleep signals)
      * Defaults to 'bolus' if mg/dose params exist, otherwise 'continuous'. */
-    delivery?: "bolus" | "infusion" | "continuous";
+    delivery: "bolus" | "infusion" | "continuous";
     /** If true, the solver will not calculate derivatives for this agent's PK,
      * assuming the concentration is injected externally. */
     isAnalytical?: boolean;
@@ -393,6 +393,7 @@ export interface TimelineItemMeta {
   intensity: number; // 0..1
   locked?: boolean; // allow drag?
   labelOverride?: string; // custom text on bar
+  notes?: string; // user notes for the item
 }
 
 export interface TimelineItem {
@@ -691,7 +692,7 @@ export interface UIState {
   playheadMin: Minute;
   isScrubbing: boolean;
   zoomHours: number; // time zoom for timeline/charts
-  theme: "light" | "dark";
+  theme: "light" | "dark" | "system";
   compareScenarioId?: UUID; // for A/B
   profileModalOpen: boolean;
   targetsModalOpen: boolean;

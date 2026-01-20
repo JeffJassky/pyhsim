@@ -1,0 +1,40 @@
+:root {
+  /* Strictly Monochromatic (Pure Grayscale) */
+  --neutral-0: #ffffff;
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+
+  /* Functional Colors (Exceptions - Only for signals/charts) */
+
+  /* Success / Protein / Bio-Positive */
+  --emerald-50: #ecfdf5;
+  --emerald-400: #34d399;
+  --emerald-500: #10b981;
+  --emerald-600: #059669;
+
+  /* Info / Carbs / Chart Tendency */
+  --sky-50: #f0f9ff;
+  --sky-400: #38bdf8;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+
+  /* Warning / Fat */
+  --amber-50: #fffbeb;
+  --amber-400: #fbbf24;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+
+  /* Error / Danger */
+  --rose-50: #fff1f2;
+  --rose-400: #fb7185;
+  --rose-500: #f43f5e;
+  --rose-600: #e11d48;
+}

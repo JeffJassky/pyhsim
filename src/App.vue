@@ -10,6 +10,17 @@
 
 <script setup lang="ts">
 import { RouterView } from 'vue-router';
+import { useUIStore } from '@/stores/ui';
+import { watchEffect } from 'vue';
+
+const uiStore = useUIStore();
+
+// Apply theme class to root element
+watchEffect(() => {
+  const root = document.documentElement;
+  root.classList.remove('theme-light', 'theme-dark');
+  root.classList.add(`theme-${uiStore.resolvedTheme}`);
+});
 </script>
 
 <style scoped>

@@ -100,7 +100,7 @@ const tourSteps: TourStep[] = [
     id: 'ai',
     onboardingState: OnboardingState.AI_INTRODUCTION,
     target: '.app-shell__sidebar--right', // AI Chat Panel
-    title: 'Bio-Pilot AI',
+    title: 'Bio-Pilot',
     text: 'Stuck? Ask your AI co-pilot to explain your data or optimize your schedule.',
     btnText: 'Got it',
     position: 'left',

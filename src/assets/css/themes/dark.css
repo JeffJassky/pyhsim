@@ -1,0 +1,33 @@
+.theme-dark {
+  color-scheme: dark;
+
+  /* Backgrounds */
+  --color-bg-base: var(--neutral-900);
+  --color-bg-subtle: var(--neutral-800);
+  --color-bg-surface: var(--neutral-700);
+  --color-bg-elevated: var(--neutral-700);
+  --color-bg-overlay: rgba(0, 0, 0, 0.85);
+  --color-bg-active: var(--neutral-700);
+
+  /* Text */
+  --color-text-primary: var(--neutral-100);
+  --color-text-secondary: var(--neutral-400);
+  --color-text-muted: var(--neutral-600);
+  --color-text-inverted: var(--neutral-900);
+  --color-text-active: var(--sky-600);
+
+  /* Borders / Dividers */
+  --color-border-subtle: var(--neutral-800);
+  --color-border-default: var(--neutral-700);
+  --color-border-strong: var(--neutral-600);
+  --color-active: var(--sky-600);
+
+  /* Semantic / Functional (Grayscale) */
+  --color-accent: var(--neutral-0);
+  --color-accent-hover: var(--neutral-200);
+
+  /* Biological Exceptions (Only for signals) */
+  --color-success: var(--emerald-500);
+  --color-warning: var(--amber-500);
+  --color-danger: var(--rose-500);
+}

@@ -16,7 +16,6 @@
           @playhead="setMinute"
           @trigger-add="handlePlayheadAdd"
         />
-        <PlayheadBar :minute="minute" />
       </Panel>
 
       <NutritionCarousel
@@ -223,7 +222,7 @@
           type="button"
           @click="addComprehensiveDay"
         >
-          📅 Comprehensive Day
+          + Comprehensive Day
         </button>
         <button
           class="studio-fab"
@@ -235,10 +234,10 @@
         <button
           class="studio-fab studio-fab--secondary"
           type="button"
-          title="Toggle Bio-Pilot AI"
+          title="Toggle Chat"
           @click="showChat = !showChat"
         >
-          🤖 Bio-Pilot AI
+          AI Icon here
         </button>
       </div>
     </template>
@@ -246,6 +245,7 @@
     <AddItemModal
       v-model="addItemModalOpen"
       :recents="recentFoods"
+      :initial-group="addItemInitialGroup"
       @select="handleCreate"
       @select-food="handleFoodSelect"
     />
@@ -260,7 +260,6 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { ComponentPublicInstance, ComputedRef } from 'vue';
 import AppShell from '@/components/layout/AppShell.vue';
 import Panel from '@/components/core/Panel.vue';
-import PlayheadBar from '@/components/core/PlayheadBar.vue';
 import ProfilePalette from '@/components/palette/ProfilePalette.vue';
 import TimelineView from '@/components/timeline/TimelineView.vue';
 import SignalChart from '@/components/charts/SignalChart.vue';
@@ -337,9 +336,9 @@ const macroTotals = computed(() => ({
 
 // Macro target editing
 const macroFields = [
-  { key: 'protein' as const, label: 'Protein', color: '#22c55e' },
-  { key: 'carbs' as const, label: 'Carbs', color: '#38bdf8' },
-  { key: 'fat' as const, label: 'Fat', color: '#fbbf24' },
+  { key: 'protein' as const, label: 'Protein', color: 'var(--color-macro-protein)' },
+  { key: 'carbs' as const, label: 'Carbs', color: 'var(--color-macro-carbs)' },
+  { key: 'fat' as const, label: 'Fat', color: 'var(--color-macro-fat)' },
 ];
 
 const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
@@ -362,6 +361,7 @@ const selectedDef = computed(() => library.defs.find((def) => def.key === select
 const inspectorVisible = ref(false);
 const showChat = ref(true);
 const addItemModalOpen = ref(false);
+const addItemInitialGroup = ref<string | number | undefined>(undefined);
 const profileModalOpen = computed({
   get: () => uiStore.profileModalOpen,
   set: (val: boolean) => uiStore.setProfileModalOpen(val),
@@ -400,8 +400,9 @@ const handleCreate = (def: InterventionDef) => {
   scrollTimelineIntoView();
 };
 
-const handlePlayheadAdd = (m: Minute) => {
+const handlePlayheadAdd = (m: Minute, group?: string | number) => {
   setMinute(m);
+  addItemInitialGroup.value = group;
   addItemModalOpen.value = true;
 };
 
@@ -878,8 +879,8 @@ const toggleGroupDescription = (id: string) => {
 .studio-fab {
   padding: 0.75rem 1.25rem;
   border-radius: 999px;
-  background: linear-gradient(120deg, #8fbf5f, #6aa32f);
-  color: black;
+  background: var(--color-accent);
+  color: var(--color-text-inverted);
   border: none;
   cursor: pointer;
   font-weight: 700;
@@ -890,15 +891,15 @@ const toggleGroupDescription = (id: string) => {
 }
 
 .studio-fab--comprehensive {
-  background: linear-gradient(120deg, #38bdf8, #0ea5e9);
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-text-inverted);
 }
 
 .studio-fab--secondary {
-  background: rgba(30, 41, 59, 0.7);
-  color: white;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .studio-fab:hover {
@@ -1027,17 +1028,17 @@ const toggleGroupDescription = (id: string) => {
 .toggle-pill {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-subtle);
   white-space: nowrap;
 }
 
 .toggle-pill__btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
   padding: 4px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -1048,27 +1049,27 @@ const toggleGroupDescription = (id: string) => {
 }
 
 .toggle-pill__btn:hover {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
 }
 
 .toggle-pill__btn.is-active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #8fbf5f;
+  background: var(--color-bg-elevated);
+  color: var(--color-accent);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .layout-toggle {
   display: flex;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .layout-toggle__btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;
@@ -1079,12 +1080,12 @@ const toggleGroupDescription = (id: string) => {
 }
 
 .layout-toggle__btn:hover {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
 }
 
 .layout-toggle__btn.is-active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #8fbf5f;
+  background: var(--color-bg-elevated);
+  color: var(--color-accent);
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -1104,7 +1105,7 @@ const toggleGroupDescription = (id: string) => {
 .chart-tabs-nav__button {
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border-subtle);
   background: transparent;
   color: inherit;
   font-size: 0.85rem;
@@ -1113,8 +1114,8 @@ const toggleGroupDescription = (id: string) => {
 }
 
 .chart-tabs-nav__button.is-active {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.35);
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-strong);
 }
 
 .chart-info-root {
@@ -1124,11 +1125,11 @@ const toggleGroupDescription = (id: string) => {
 }
 
 .chart-info-card {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 0.75rem;
   padding: 0.75rem;
   margin-bottom: 0.5rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-bg-subtle);
   font-size: 0.85rem;
 }
 
@@ -1172,22 +1173,22 @@ const toggleGroupDescription = (id: string) => {
 }
 
 .group-info-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
 }
 
 .group-info-btn.is-active {
-  color: #8fbf5f;
-  background: rgba(143, 191, 95, 0.1);
+  color: var(--color-accent);
+  background: var(--color-bg-elevated);
 }
 
 .system-group-description {
   font-size: 0.8rem;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-secondary);
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-left: 2px solid #8fbf5f;
+  background: var(--color-bg-subtle);
+  border-left: 2px solid var(--color-success);
   border-radius: 4px;
   margin-bottom: 0.5rem;
 }
@@ -1217,7 +1218,7 @@ const toggleGroupDescription = (id: string) => {
 }
 
 .profile-link {
-  color: white !important;
+  color: var(--color-text-primary) !important;
   font-weight: 500;
   opacity: 0.7;
   padding: 0 !important;

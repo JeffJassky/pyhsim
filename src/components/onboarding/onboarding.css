@@ -1,38 +1,32 @@
-/* Onboarding Design System
-   A unified, sophisticated aesthetic for the onboarding flow.
-   Dark, cinematic, with subtle gradients and refined typography.
-*/
+/* Onboarding Design System - Strictly Monochromatic */
 
 :root {
-  /* Core palette - deep, rich darks with cyan/violet accents */
-  --ob-bg-deep: #050509;
-  --ob-bg-surface: #0c0c14;
-  --ob-bg-elevated: #14141f;
-  --ob-bg-card: rgba(20, 20, 35, 0.7);
+  /* Core palette - Pure Grayscale */
+  --ob-bg-deep: var(--neutral-900);
+  --ob-bg-surface: var(--neutral-900);
+  --ob-bg-elevated: var(--neutral-900);
+  --ob-bg-card: rgba(23, 23, 23, 0.7);
 
   /* Text hierarchy */
-  --ob-text-primary: #f0f0f5;
-  --ob-text-secondary: #8888a0;
-  --ob-text-muted: #555570;
+  --ob-text-primary: var(--neutral-100);
+  --ob-text-secondary: var(--neutral-400);
+  --ob-text-muted: var(--neutral-600);
 
-  /* Accent colors */
-  --ob-accent: #00d4ff;
-  --ob-accent-soft: rgba(0, 212, 255, 0.15);
-  --ob-accent-glow: rgba(0, 212, 255, 0.4);
-  --ob-violet: #8b5cf6;
-  --ob-violet-soft: rgba(139, 92, 246, 0.15);
+  /* Accent colors - Monochromatic high contrast */
+  --ob-accent: var(--neutral-0);
+  --ob-accent-soft: rgba(255, 255, 255, 0.1);
+  --ob-accent-glow: rgba(255, 255, 255, 0.15);
 
   /* Borders */
-  --ob-border: rgba(255, 255, 255, 0.06);
-  --ob-border-accent: rgba(0, 212, 255, 0.3);
+  --ob-border: var(--neutral-800);
+  --ob-border-accent: var(--neutral-600);
 
-  /* Shadows & Glows */
-  --ob-shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-  --ob-glow-accent: 0 0 40px rgba(0, 212, 255, 0.2);
+  /* Shadows */
+  --ob-shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
 
   /* Typography */
-  --ob-font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --ob-font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ob-font-display: var(--font-sans);
+  --ob-font-body: var(--font-sans);
 
   /* Spacing scale */
   --ob-space-xs: 0.25rem;
@@ -41,19 +35,16 @@
   --ob-space-lg: 1.5rem;
   --ob-space-xl: 2rem;
   --ob-space-2xl: 3rem;
-  --ob-space-3xl: 4rem;
 
   /* Timing */
   --ob-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ob-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ob-duration-fast: 200ms;
   --ob-duration-normal: 400ms;
-  --ob-duration-slow: 800ms;
 
   /* Radius */
   --ob-radius-sm: 8px;
   --ob-radius-md: 12px;
-  --ob-radius-lg: 20px;
+  --ob-radius-lg: 16px;
   --ob-radius-full: 9999px;
 }
 
@@ -73,7 +64,7 @@
   position: relative;
 }
 
-/* Ambient background effects */
+/* Ambient background effects - Grayscale glow */
 .ob-ambient {
   position: absolute;
   inset: 0;
@@ -82,28 +73,17 @@
 }
 
 .ob-ambient::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50%;
   left: -50%;
   width: 200%;
   height: 200%;
   background: radial-gradient(
-    ellipse at 30% 20%,
-    rgba(0, 212, 255, 0.08) 0%,
-    transparent 50%
-  ),
-  radial-gradient(
-    ellipse at 70% 80%,
-    rgba(139, 92, 246, 0.06) 0%,
-    transparent 50%
+    ellipse at 50% 50%,
+    rgba(255, 255, 255, 0.03) 0%,
+    transparent 60%
   );
-  animation: ambientShift 20s ease-in-out infinite alternate;
-}
-
-@keyframes ambientShift {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(-5%, 5%) rotate(3deg); }
 }
 
 /* Content wrapper */
@@ -134,18 +114,6 @@
   margin: 0;
 }
 
-.ob-headline--gradient {
-  background: linear-gradient(
-    135deg,
-    var(--ob-text-primary) 0%,
-    var(--ob-accent) 50%,
-    var(--ob-violet) 100%
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
 .ob-subhead {
   font-size: 1.125rem;
   font-weight: 400;
@@ -157,7 +125,7 @@
 
 .ob-label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ob-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -179,7 +147,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--ob-radius-sm);
-  background: linear-gradient(135deg, var(--ob-accent), var(--ob-violet));
+  background: var(--neutral-100);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,7 +157,7 @@
 .ob-ai-avatar svg {
   width: 18px;
   height: 18px;
-  color: white;
+  color: var(--neutral-900);
 }
 
 .ob-ai-text {
@@ -210,14 +178,13 @@
 
 .ob-card:hover {
   border-color: var(--ob-border-accent);
-  background: rgba(0, 212, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
   transform: translateY(-2px);
 }
 
 .ob-card--selected {
   border-color: var(--ob-accent);
   background: var(--ob-accent-soft);
-  box-shadow: var(--ob-glow-accent);
 }
 
 /* Buttons */
@@ -236,18 +203,13 @@
 }
 
 .ob-btn--primary {
-  background: linear-gradient(135deg, var(--ob-accent), #0099cc);
-  color: var(--ob-bg-deep);
-  box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+  background: var(--ob-accent);
+  color: var(--neutral-900);
 }
 
 .ob-btn--primary:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 30px rgba(0, 212, 255, 0.4);
-}
-
-.ob-btn--primary:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(-2px);
+  background: var(--neutral-200);
 }
 
 .ob-btn--ghost {
@@ -271,26 +233,12 @@
 
 .ob-progress__bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--ob-accent), var(--ob-violet));
+  background: var(--ob-accent);
   border-radius: var(--ob-radius-full);
   transition: width var(--ob-duration-normal) var(--ob-ease-out);
 }
 
-/* Option grid */
-.ob-options {
-  display: grid;
-  gap: var(--ob-space-md);
-  width: 100%;
-}
-
-.ob-options--2col {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.ob-options--3col {
-  grid-template-columns: repeat(3, 1fr);
-}
-
+/* Options */
 .ob-option {
   display: flex;
   align-items: center;
@@ -305,7 +253,6 @@
 
 .ob-option:hover {
   border-color: var(--ob-border-accent);
-  background: rgba(0, 212, 255, 0.03);
 }
 
 .ob-option--selected {
@@ -319,7 +266,6 @@
   border-radius: 50%;
   border: 2px solid var(--ob-text-muted);
   transition: all var(--ob-duration-fast) var(--ob-ease-out);
-  position: relative;
 }
 
 .ob-option--selected .ob-option__indicator {
@@ -327,85 +273,7 @@
   background: var(--ob-accent);
 }
 
-.ob-option--selected .ob-option__indicator::after {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  background: var(--ob-bg-deep);
-  border-radius: 50%;
-}
-
-.ob-option__content {
-  flex: 1;
-}
-
-.ob-option__label {
-  font-weight: 500;
-  color: var(--ob-text-primary);
-}
-
-.ob-option__desc {
-  font-size: 0.875rem;
-  color: var(--ob-text-secondary);
-  margin-top: var(--ob-space-xs);
-}
-
-/* Transitions */
-.ob-fade-enter-active,
-.ob-fade-leave-active {
-  transition: opacity var(--ob-duration-normal) var(--ob-ease-out);
-}
-
-.ob-fade-enter-from,
-.ob-fade-leave-to {
-  opacity: 0;
-}
-
-.ob-slide-enter-active,
-.ob-slide-leave-active {
-  transition: all var(--ob-duration-normal) var(--ob-ease-out);
-}
-
-.ob-slide-enter-from {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.ob-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
-/* Skip/Back controls */
-.ob-skip {
-  position: absolute;
-  top: var(--ob-space-xl);
-  right: var(--ob-space-xl);
-  z-index: 10;
-}
-
-.ob-back {
-  position: absolute;
-  top: var(--ob-space-xl);
-  left: var(--ob-space-xl);
-  z-index: 10;
-}
-
-/* Stats display */
-.ob-stats {
-  display: flex;
-  gap: var(--ob-space-lg);
-}
-
-.ob-stat {
-  text-align: center;
-  padding: var(--ob-space-lg);
-  background: var(--ob-bg-card);
-  border: 1px solid var(--ob-border);
-  border-radius: var(--ob-radius-md);
-  min-width: 120px;
-}
-
+/* Stats */
 .ob-stat__value {
   font-size: 1.75rem;
   font-weight: 700;
@@ -419,43 +287,4 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: var(--ob-space-xs);
-}
-
-/* Loading spinner */
-.ob-spinner {
-  width: 32px;
-  height: 32px;
-  border: 2px solid var(--ob-border);
-  border-top-color: var(--ob-accent);
-  border-radius: 50%;
-  animation: obSpin 0.8s linear infinite;
-}
-
-@keyframes obSpin {
-  to { transform: rotate(360deg); }
-}
-
-/* Mobile adjustments */
-@media (max-width: 640px) {
-  .ob-content {
-    padding: var(--ob-space-lg);
-  }
-
-  .ob-headline {
-    font-size: 1.5rem;
-  }
-
-  .ob-options--2col,
-  .ob-options--3col {
-    grid-template-columns: 1fr;
-  }
-
-  .ob-stats {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .ob-stat {
-    width: 100%;
-  }
 }

@@ -132,13 +132,13 @@ onBeforeUnmount(() => {
 <style scoped>
 
 .app-shell__header {
-  height: 56px;
+  height: 46px;
   display: flex;
   align-items: center;
   gap: 1.5rem;
   padding: 0 1.5rem;
-  background: rgba(13, 17, 23, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-subtle);
+  border-bottom: 1px solid var(--color-border-default);
   backdrop-filter: blur(12px);
   z-index: 100;
 }
@@ -160,13 +160,13 @@ onBeforeUnmount(() => {
 
 .logo {
   font-weight: 700;
-  letter-spacing: 0.2em;
   font-size: 1rem;
   opacity: 0.9;
+  color: var(--color-text-primary);
 }
 
 .profile-link {
-  color: white;
+  color: var(--color-text-primary);
   font-weight: 500;
   opacity: 0.7;
   font-size: 0.9rem;
@@ -186,7 +186,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  color: #e8ecf1;
+  color: var(--color-text-primary);
+  background: var(--color-bg-base);
 }
 
 .app-shell__body {
@@ -259,7 +260,7 @@ onBeforeUnmount(() => {
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
-  padding: 1rem 2rem 6rem 2rem;
+  padding:0;
 }
 
 .app-shell__mobile-toggle {
@@ -267,9 +268,8 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.5rem;
   border: none;
-  background: rgb(50, 101, 219);
-  color: black;
-  color: inherit;
+  background: var(--color-accent);
+  color: var(--color-text-inverted);
   padding: 0.75rem 1rem;
   border-radius: 999px;
   cursor: pointer;
@@ -315,10 +315,6 @@ onBeforeUnmount(() => {
     padding: 0;
   }
 
-  .app-shell__main {
-    padding: 0 1rem 1rem 1rem;
-  }
-
   .app-shell__mobile-toggle {
     display: inline-flex;
     position: sticky;
@@ -334,10 +330,10 @@ onBeforeUnmount(() => {
     width: min(320px, 80vw);
     max-width: calc(100vw - 3rem);
     padding: 1.25rem;
-    background: rgba(18, 28, 51, 0.96);
+    background: var(--color-bg-base);
     backdrop-filter: blur(12px);
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 40px rgba(2, 6, 23, 0.6);
+    border-right: 1px solid var(--color-border-subtle);
+    box-shadow: var(--ob-shadow-lg);
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 40;
@@ -354,7 +350,7 @@ onBeforeUnmount(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(2, 6, 23, 0.65);
+    background: var(--color-bg-overlay);
     z-index: 30;
   }
 }

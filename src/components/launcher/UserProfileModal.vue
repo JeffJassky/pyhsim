@@ -36,9 +36,9 @@
                 <span class="card-icon">🎯</span>
                 <span class="card-label">Nutrient Targets</span>
               </button>
-              <button class="launcher-card" @click="view = 'charts'">
-                <span class="card-icon">📈</span>
-                <span class="card-label">Charts</span>
+              <button class="launcher-card" @click="view = 'display'">
+                <span class="card-icon">🌗</span>
+                <span class="card-label">Display</span>
               </button>
               <button class="launcher-card" @click="view = 'subscription'">
                 <span class="card-icon">⭐</span>
@@ -101,8 +101,37 @@
             </div>
           </div>
 
-          <!-- Charts View -->
-          <div v-else-if="view === 'charts'" class="view-items">
+          <!-- Display View -->
+          <div v-else-if="view === 'display'" class="view-items">
+            <div class="settings-grid">
+              <div class="setting-group">
+                <label>Appearance</label>
+                <div class="tier-toggle">
+                  <button
+                    class="tier-toggle__btn"
+                    :class="{ 'is-active': uiStore.theme === 'system' }"
+                    @click="uiStore.setTheme('system')"
+                  >
+                    System
+                  </button>
+                  <button
+                    class="tier-toggle__btn"
+                    :class="{ 'is-active': uiStore.theme === 'light' }"
+                    @click="uiStore.setTheme('light')"
+                  >
+                    Light
+                  </button>
+                  <button
+                    class="tier-toggle__btn"
+                    :class="{ 'is-active': uiStore.theme === 'dark' }"
+                    @click="uiStore.setTheme('dark')"
+                  >
+                    Dark
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div class="items-grid">
               <div
                 v-for="goal in goalCategories"
@@ -121,7 +150,10 @@
                     <div class="signal-toggle-item__info">
                       <div class="signal-toggle-item__label">
                         {{ sig.label }}
-                        <span v-if="sig.isPremium && subscriptionTier !== 'premium'" class="premium-tag">
+                        <span
+                          v-if="sig.isPremium && subscriptionTier !== 'premium'"
+                          class="premium-tag"
+                        >
                           <span class="premium-tag__icon">🔒</span>
                           PREMIUM
                         </span>
@@ -378,6 +410,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
+import { useUIStore } from '@/stores/ui';
 import { CONDITION_LIBRARY } from '@/models';
 import { getAllUnifiedDefinitions } from '@/models/engine';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
@@ -395,7 +428,8 @@ const emit = defineEmits<{
 }>();
 
 const userStore = useUserStore();
-const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'charts' | 'subscription'>('categories');
+const uiStore = useUIStore();
+const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'display' | 'subscription'>('categories');
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
 const subject = computed(() => userStore.subject);
@@ -412,7 +446,7 @@ const selectedViewLabel = computed(() => {
   if (view.value === 'conditions') return 'My Conditions';
   if (view.value === 'nutrition') return 'Nutrient Targets';
   if (view.value === 'goals') return 'My Goals';
-  if (view.value === 'charts') return 'Charts';
+  if (view.value === 'display') return 'Display';
   if (view.value === 'subscription') return 'Subscription';
   return '';
 });
@@ -428,7 +462,7 @@ const getSignalsByGoal = (goalId: Goal) => {
   const filtered = goalCategory.signals
     .map(key => UNIFIED_DEFS[key])
     .filter(Boolean); // Filter out any undefineds if a key is missing in definitions
-  
+
   // Create a map for quick lookup of current signal order
   const orderMap = new Map(signalOrder.value.map((key, idx) => [key, idx]));
 
@@ -436,7 +470,7 @@ const getSignalsByGoal = (goalId: Goal) => {
     // Primary: Free first (per user requirement)
     if (a.isPremium && !b.isPremium) return 1;
     if (!a.isPremium && b.isPremium) return -1;
-    
+
     // Secondary: User custom order from signalOrder
     const aIdx = orderMap.get(a.key) ?? 999;
     const bIdx = orderMap.get(b.key) ?? 999;
@@ -496,7 +530,7 @@ const initSortables = () => {
 };
 
 watch(view, (newView) => {
-  if (newView === 'charts') {
+  if (newView === 'display') {
     nextTick(() => {
       initSortables();
     });
@@ -532,10 +566,11 @@ const updateNutritionTargets = (patch: any) => {
   userStore.updateNutritionTargets(patch);
 };
 
+// Macro fields configuration
 const macroFields = [
-  { key: 'protein' as const, label: 'Protein', color: '#22c55e' },
-  { key: 'carbs' as const, label: 'Carbs', color: '#38bdf8' },
-  { key: 'fat' as const, label: 'Fat', color: '#fbbf24' },
+  { key: 'protein' as const, label: 'Protein', color: 'var(--color-text-primary)' },
+  { key: 'carbs' as const, label: 'Carbs', color: 'var(--color-text-primary)' },
+  { key: 'fat' as const, label: 'Fat', color: 'var(--color-text-primary)' },
 ];
 
 const goalCategories = GOAL_CATEGORIES;
@@ -552,7 +587,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgba(10, 10, 15, 0.6);
+  background: var(--color-bg-overlay);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;
@@ -564,10 +599,10 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 .launcher-content {
   width: 100%;
   max-width: 800px;
-  background: rgba(30, 30, 35, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--ob-shadow-lg);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -598,7 +633,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
   right: 1.5rem;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.5rem;
@@ -613,8 +648,8 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--color-bg-subtle);
+  color: var(--color-text-primary);
 }
 
 .view-categories, .view-items {
@@ -644,14 +679,14 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 .view-items::-webkit-scrollbar-thumb,
 .settings-grid::-webkit-scrollbar-thumb,
 .items-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-border-subtle);
   border-radius: 10px;
 }
 
 .section-title {
   font-size: 2rem;
   font-weight: 700;
-  color: white;
+  color: var(--color-text-primary);
   margin: 0;
   text-align: left;
   letter-spacing: -0.02em;
@@ -670,25 +705,25 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 24px;
   aspect-ratio: 1;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  color: white;
+  color: var(--color-text-primary);
 }
 
 .launcher-card:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-elevated);
   transform: translateY(-4px) scale(1.02);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--color-border-default);
 }
 
 .launcher-card.is-selected {
-  background: rgba(143, 191, 95, 0.15);
-  border-color: rgba(143, 191, 95, 0.6);
-  box-shadow: 0 0 20px rgba(143, 191, 95, 0.2);
+  background: var(--color-bg-elevated);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 .checkmark {
@@ -697,8 +732,8 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
   right: 0.75rem;
   width: 24px;
   height: 24px;
-  background: #8fbf5f;
-  color: black;
+  background: var(--color-success);
+  color: var(--neutral-900);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -725,7 +760,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 .back-btn {
   background: transparent;
   border: none;
-  color: #8fbf5f;
+  color: var(--color-accent);
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -766,7 +801,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 }
 
 .setting-value {
-  color: #8fbf5f;
+  color: var(--color-accent);
   font-weight: 700;
   font-family: monospace;
   font-size: 1.1rem;
@@ -775,16 +810,16 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 .select-wrapper select {
   width: 100%;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
-  color: white;
+  color: var(--color-text-primary);
   font-size: 1rem;
 }
 
 input[type="range"] {
   width: 100%;
-  accent-color: #8fbf5f;
+  accent-color: var(--color-accent);
 }
 
 /* Macro Grid */
@@ -800,8 +835,8 @@ input[type="range"] {
 }
 
 .macro-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 1rem;
 }
@@ -829,11 +864,11 @@ input[type="range"] {
 }
 
 .macro-input input {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 8px;
   padding: 0.5rem;
-  color: white;
+  color: var(--color-text-primary);
   width: 100%;
 }
 
@@ -939,8 +974,8 @@ input[type="range"] {
 
 .sortable-ghost {
   opacity: 0.3;
-  background: rgba(143, 191, 95, 0.1);
-  border-color: #8fbf5f;
+  background: var(--color-bg-subtle);
+  border-color: var(--color-accent);
 }
 
 .signal-toggle-item__label {
@@ -957,8 +992,8 @@ input[type="range"] {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  background: linear-gradient(120deg, #fcd34d, #f59e0b);
-  color: #111;
+  background: linear-gradient(120deg, var(--amber-400), var(--amber-600));
+  color: var(--neutral-900);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   font-size: 0.6rem;
@@ -975,8 +1010,8 @@ input[type="range"] {
 
 /* Subscription View Styles */
 .subscription-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 24px;
   padding: 2rem;
   display: flex;
@@ -1008,7 +1043,7 @@ input[type="range"] {
 .tier-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--color-bg-base);
   border-radius: 12px;
   padding: 0.25rem;
   width: 100%;
@@ -1019,7 +1054,7 @@ input[type="range"] {
   padding: 0.75rem;
   border: none;
   background: transparent;
-  color: white;
+  color: var(--color-text-primary);
   font-weight: 600;
   border-radius: 9px;
   cursor: pointer;
@@ -1027,13 +1062,13 @@ input[type="range"] {
 }
 
 .tier-toggle__btn.is-active {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-elevated);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .tier-toggle__btn--premium.is-active {
-  background: linear-gradient(120deg, #fcd34d, #f59e0b);
-  color: #111;
+  background: linear-gradient(120deg, var(--amber-400), var(--amber-600));
+  color: var(--neutral-900);
 }
 
 .benefit-list {
@@ -1077,7 +1112,7 @@ input[type="range"] {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--color-bg-elevated);
   transition: 0.2s;
   border-radius: 34px;
 }
@@ -1095,7 +1130,7 @@ input[type="range"] {
 }
 
 input:checked + .slider {
-  background-color: #8fbf5f;
+  background-color: var(--color-success);
 }
 
 input:checked + .slider:before {

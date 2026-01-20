@@ -728,7 +728,7 @@ export const Agents = {
     // Intensity 0..1..2 (1.0 = heavy exercise)
     return {
       molecule: { name: "Sympathetic Drive", molarMass: 0 },
-      pk: { model: "activity-dependent" },
+      pk: { model: "activity-dependent", delivery: "continuous" },
       pd: [
         {
           target: "norepi",
@@ -768,7 +768,7 @@ export const Agents = {
   MetabolicLoad: (intensity: number): PharmacologyDef => {
     return {
       molecule: { name: "Metabolic Load", molarMass: 0 },
-      pk: { model: "activity-dependent" },
+      pk: { model: "activity-dependent", delivery: "continuous" },
       pd: [
         {
           target: "ampk",
@@ -808,7 +808,7 @@ export const Agents = {
   MechanicalLoad: (intensity: number): PharmacologyDef => {
     return {
       molecule: { name: "Mechanical Load", molarMass: 0 },
-      pk: { model: "activity-dependent" },
+      pk: { model: "activity-dependent", delivery: "continuous" },
       pd: [
         {
           target: "mtor",
@@ -858,6 +858,7 @@ export const Agents = {
     molecule: { name: "Methylphenidate", molarMass: 233.31, logP: 2.15 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.3,
       halfLifeMin: 180,
       clearance: { hepatic: { baseCL_mL_min: 600, CYP: "CES1" } },
@@ -907,6 +908,7 @@ export const Agents = {
     molecule: { name: "Caffeine", molarMass: 194.19, logP: -0.07 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.99,
       halfLifeMin: 300,
       clearance: { hepatic: { baseCL_mL_min: 155, CYP: "CYP1A2" } },
@@ -967,6 +969,7 @@ export const Agents = {
     molecule: { name: "Melatonin", molarMass: 232.28 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.15,
       halfLifeMin: 45,
       clearance: { hepatic: { baseCL_mL_min: 1200, CYP: "CYP1A2" } },
@@ -1026,6 +1029,7 @@ export const Agents = {
     molecule: { name: "L-Theanine", molarMass: 174.2 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.95,
       halfLifeMin: 75,
       clearance: {
@@ -1187,6 +1191,7 @@ export const Agents = {
       molecule: { name: "L-Tyrosine", molarMass: 181.19 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.8,
         halfLifeMin: 150,
         timeToPeakMin: 60,
@@ -1269,6 +1274,7 @@ export const Agents = {
       molecule: { name: "L-DOPA", molarMass: 197.19 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.4, // Variable, affected by amino acid competition
         halfLifeMin: 90, // Relatively short
         timeToPeakMin: 45,
@@ -1353,6 +1359,7 @@ export const Agents = {
       molecule: { name: "Pyridoxal-5-Phosphate", molarMass: 247.14 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.75,
         halfLifeMin: 300, // Long tissue retention
         timeToPeakMin: 120,
@@ -1428,6 +1435,7 @@ export const Agents = {
       molecule: { name: "Magnesium", molarMass: 24.31 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.4, // Varies greatly by form
         halfLifeMin: 720, // Long tissue half-life
         timeToPeakMin: 180,
@@ -1510,6 +1518,7 @@ export const Agents = {
       molecule: { name: "EPA/DHA", molarMass: 330 }, // Average of EPA/DHA
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.7, // With fat-containing meal
         halfLifeMin: 2880, // Days (membrane incorporation)
         timeToPeakMin: 360,
@@ -1581,6 +1590,7 @@ export const Agents = {
       molecule: { name: "Alpha-GPC", molarMass: 257.22 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.88, // Excellent
         halfLifeMin: 240,
         timeToPeakMin: 60,
@@ -1647,6 +1657,7 @@ export const Agents = {
       molecule: { name: "5-Hydroxytryptophan", molarMass: 220.22 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.7,
         halfLifeMin: 120,
         timeToPeakMin: 45,
@@ -1722,6 +1733,7 @@ export const Agents = {
       molecule: { name: "Withaferin A", molarMass: 470.6 }, // Primary withanolide
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.5,
         halfLifeMin: 360,
         timeToPeakMin: 120,
@@ -1804,6 +1816,7 @@ export const Agents = {
       molecule: { name: "Cholecalciferol", molarMass: 384.64 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.8, // With fat
         halfLifeMin: 20160, // ~2 weeks
         timeToPeakMin: 720,
@@ -1876,6 +1889,7 @@ export const Agents = {
       molecule: { name: "Creatine", molarMass: 131.13 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.95,
         halfLifeMin: 180, // Plasma; tissue is much longer
         timeToPeakMin: 90,
@@ -1942,6 +1956,7 @@ export const Agents = {
       molecule: { name: "Hericenone", molarMass: 440 }, // Approximate
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.3, // Variable
         halfLifeMin: 480,
         timeToPeakMin: 180,
@@ -2030,7 +2045,7 @@ export const Agents = {
 
     return {
       molecule: { name: "Cold Exposure", molarMass: 0 },
-      pk: { model: "activity-dependent" },
+      pk: { model: "activity-dependent", delivery: "continuous" },
           pd: [
               // Primary sympathetic activation
               {
@@ -2174,7 +2189,7 @@ export const Agents = {
       
           return {
             molecule: { name: "Heat Exposure", molarMass: 0 },
-            pk: { model: "activity-dependent" },
+            pk: { model: "activity-dependent", delivery: "continuous" },
             pd: [
               // Major growth hormone release
               {
@@ -2282,6 +2297,7 @@ export const Agents = {
     molecule: { name: "Amphetamine", molarMass: 135.21, logP: 1.76 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.75,
       halfLifeMin: 600, // ~10 hours
       timeToPeakMin: 180,
@@ -2347,6 +2363,7 @@ export const Agents = {
     molecule: { name: "Lisdexamfetamine", molarMass: 263.38, logP: -0.73 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.95, // High as prodrug
       halfLifeMin: 720, // ~12 hours (includes conversion time)
       timeToPeakMin: 240, // Slower due to enzymatic conversion
@@ -2401,6 +2418,7 @@ export const Agents = {
     molecule: { name: "Methylphenidate XR", molarMass: 233.31, logP: 2.15 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.3,
       halfLifeMin: 420, // Extended due to OROS release
       timeToPeakMin: 360, // Biphasic: 1-2hr initial, 6-8hr second peak
@@ -2440,6 +2458,7 @@ export const Agents = {
     molecule: { name: "Guanfacine", molarMass: 246.09, logP: 1.52 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.8,
       halfLifeMin: 1020, // ~17 hours
       timeToPeakMin: 300,
@@ -2501,6 +2520,7 @@ export const Agents = {
     molecule: { name: "Sertraline", molarMass: 306.23, logP: 5.29 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.44,
       halfLifeMin: 1560, // ~26 hours
       timeToPeakMin: 360,
@@ -2551,6 +2571,7 @@ export const Agents = {
     molecule: { name: "Fluoxetine", molarMass: 309.33, logP: 4.05 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.72,
       halfLifeMin: 2880, // 1-3 days (norfluoxetine: 4-16 days)
       timeToPeakMin: 480,
@@ -2598,6 +2619,7 @@ export const Agents = {
     molecule: { name: "Escitalopram", molarMass: 324.39, logP: 3.5 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.8,
       halfLifeMin: 1800, // ~27-32 hours
       timeToPeakMin: 300,
@@ -2631,6 +2653,7 @@ export const Agents = {
     molecule: { name: "Venlafaxine", molarMass: 277.4, logP: 2.74 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.45,
       halfLifeMin: 300, // ~5 hours (XR extends this)
       timeToPeakMin: 150,
@@ -2679,6 +2702,7 @@ export const Agents = {
     molecule: { name: "Duloxetine", molarMass: 297.42, logP: 4.72 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.5,
       halfLifeMin: 720, // ~12 hours
       timeToPeakMin: 360,
@@ -2726,6 +2750,7 @@ export const Agents = {
     molecule: { name: "Bupropion", molarMass: 239.74, logP: 3.21 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.87,
       halfLifeMin: 1260, // ~21 hours
       timeToPeakMin: 180,
@@ -2787,6 +2812,7 @@ export const Agents = {
     molecule: { name: "Alprazolam", molarMass: 308.77, logP: 2.12 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.9,
       halfLifeMin: 660, // ~11 hours
       timeToPeakMin: 60, // Fast onset
@@ -2850,6 +2876,7 @@ export const Agents = {
     molecule: { name: "Lorazepam", molarMass: 321.16, logP: 2.39 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.93,
       halfLifeMin: 720, // ~12 hours
       timeToPeakMin: 120,
@@ -2903,6 +2930,7 @@ export const Agents = {
     molecule: { name: "Clonazepam", molarMass: 315.71, logP: 2.41 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.9,
       halfLifeMin: 2160, // ~30-40 hours
       timeToPeakMin: 180,
@@ -2956,6 +2984,7 @@ export const Agents = {
     molecule: { name: "Buspirone", molarMass: 385.5, logP: 1.74 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.04, // Very low (extensive first-pass)
       halfLifeMin: 150, // ~2-3 hours
       timeToPeakMin: 60,
@@ -2999,6 +3028,7 @@ export const Agents = {
     molecule: { name: "Hydroxyzine", molarMass: 374.91, logP: 2.36 },
     pk: {
       model: "1-compartment",
+      delivery: "bolus",
       bioavailability: 0.8,
       halfLifeMin: 1200, // ~20 hours
       timeToPeakMin: 120,
@@ -3072,6 +3102,7 @@ export const Agents = {
       molecule: { name: "Inositol", molarMass: 180.16 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.9,
         halfLifeMin: 240,
         timeToPeakMin: 120,
@@ -3132,6 +3163,7 @@ export const Agents = {
       molecule: { name: "Zinc", molarMass: 65.38 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.3, // Varies by form
         halfLifeMin: 720,
         timeToPeakMin: 180,
@@ -3188,6 +3220,7 @@ export const Agents = {
       molecule: { name: "Copper", molarMass: 63.55 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.5,
         halfLifeMin: 1440,
         timeToPeakMin: 240,
@@ -3228,6 +3261,7 @@ export const Agents = {
       molecule: { name: "B-Complex", molarMass: 1355 }, // B12 MW
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.5, // Sublingual higher
         halfLifeMin: 1440,
         timeToPeakMin: 240,
@@ -3284,6 +3318,7 @@ export const Agents = {
       molecule: { name: "Chromium Picolinate", molarMass: 418.33 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.02, // Very low absorption
         halfLifeMin: 2880,
         timeToPeakMin: 120,
@@ -3335,6 +3370,7 @@ export const Agents = {
       molecule: { name: "Salidroside", molarMass: 300.3 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.3,
         halfLifeMin: 300,
         timeToPeakMin: 90,
@@ -3404,6 +3440,7 @@ export const Agents = {
       molecule: { name: "Citicoline", molarMass: 488.32 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.9,
         halfLifeMin: 360,
         timeToPeakMin: 60,
@@ -3464,6 +3501,7 @@ export const Agents = {
       molecule: { name: "Acetyl-L-Carnitine", molarMass: 203.24 },
       pk: {
         model: "1-compartment",
+        delivery: "bolus",
         bioavailability: 0.15, // Low oral bioavailability
         halfLifeMin: 240,
         timeToPeakMin: 180,
@@ -3518,7 +3556,7 @@ export const Agents = {
     // units = number of capsules/servings
     return {
       molecule: { name: "Digestive Enzymes", molarMass: 0 },
-      pk: { model: "activity-dependent" },
+      pk: { model: "activity-dependent", delivery: "continuous" },
       pd: [
         // Enhanced nutrient absorption → GLP-1
         {

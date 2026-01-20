@@ -175,6 +175,7 @@ import { GOAL_CATEGORIES } from '@/models/domain/goals';
 const props = defineProps<{
   modelValue: boolean;
   recents: FoodSearchHit[];
+  initialGroup?: string | number;
 }>();
 
 const emit = defineEmits<{
@@ -322,7 +323,28 @@ const handleFoodSelect = (food: FoodSearchHit) => {
 };
 
 watch(() => props.modelValue, (val) => {
-  if (!val) {
+  if (val) {
+    if (props.initialGroup) {
+      const groupStr = String(props.initialGroup);
+      const typeCat = typeCategories.find(c => c.id === groupStr);
+      if (typeCat) {
+        selectCategory(typeCat, 'type');
+        return;
+      }
+      const goalCat = goalCategories.find(c => c.id === groupStr);
+      if (goalCat) {
+        selectCategory(goalCat, 'goal');
+        return;
+      }
+    }
+    // Default reset if no group matched or no group provided
+    view.value = 'categories';
+    search.value = '';
+    selectedCategory.value = null;
+    categoryType.value = null;
+    foodResults.value = [];
+  } else {
+    // Cleanup on close
     view.value = 'categories';
     search.value = '';
     foodResults.value = [];

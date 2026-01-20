@@ -1,5 +1,9 @@
 <template>
-  <div ref="chartContainer" class="chart" :class="{ 'is-grid': layout === 'grid' }">
+  <div
+    ref="chartContainer"
+    class="chart"
+    :class="{ 'is-grid': layout === 'grid' }"
+  >
     <div
       v-for="spec in seriesSpecs"
       :key="spec.key"
@@ -63,16 +67,17 @@
           :class="{ 'series--premium': isLocked(spec.key) }"
           @click="onChartClick"
         >
-                      <div
-                        class="series__canvas"
-                        :class="{ 'is-flashing': flashStates[spec.key] }"
-                        :style="{
+          <div
+            class="series__canvas"
+            :class="{ 'is-flashing': flashStates[spec.key] }"
+            :style="{
                           '--line-color': lineColor(spec),
                           '--fill-color': fillColor(spec),
                         }"
-                      >
-                        <div class="loading-spinner" :class="{ 'is-active': loading }" />
-                        <div class="series__overlay series__overlay--value">              <template v-if="!isLocked(spec.key)">
+          >
+            <div class="loading-spinner" :class="{ 'is-active': loading }" />
+            <div class="series__overlay series__overlay--value">
+              <template v-if="!isLocked(spec.key)">
                 {{ latestValue(spec.key).toFixed(latestValue(spec.key) < 1 ? 2 : 1) }}
                 <span class="unit">{{ getUnit(spec.key) }}</span>
               </template>
@@ -188,6 +193,8 @@
 
 
 
+
+
                       }}{{ (cond.value * 100).toFixed(0) }}%)
                     </span>
                   </div>
@@ -220,6 +227,8 @@
                     <span class="contributor-mech">{{ item.mechanism }}</span>
                     <span class="contributor-value">
                       ({{ item.value > 0 ? '+' : ''
+
+
 
 
 
@@ -882,11 +891,11 @@ watch(
   align-items: flex-start;
   gap: 4px;
   padding: 0 10px;
-  background: rgba(32, 53, 95, 0.6);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-surface);
+  border-right: 1px solid var(--color-border-subtle);
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
-  color: rgba(248, 250, 252, 0.65);
+  color: var(--color-text-secondary);
   transition: all 0.2s ease;
 }
 
@@ -1228,7 +1237,7 @@ watch(
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(255, 255, 255, 0.6);
+  background: var(  --color-active);
   z-index: 2;
 }
 

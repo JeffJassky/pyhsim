@@ -2,7 +2,7 @@
   <div
     class="timeline-container"
     @mousemove="handleMouseMove"
-    @mouseleave="hoverMinute = null"
+    @mouseleave="handleMouseLeave"
   >
     <div class="timeline-controls">
       <div class="segment-picker">
@@ -25,21 +25,30 @@
       v-if="hoverMinute !== null"
       class="playhead-line hover-line"
       :style="{ left: `${getMinutePercent(hoverMinute)}%` }"
-    >
-      <button
-        class="playhead-add-btn hover-add-btn"
-        @click="handlePlayheadAdd(hoverMinute)"
-      >
-        <span class="btn-icon">+</span>
-        <span class="btn-label">Add Item</span>
-      </button>
-    </div>
+    ></div>
 
     <!-- Active Playhead -->
     <div
       class="playhead-line active-line"
       :style="{ left: `${getMinutePercent(playheadMin)}%` }"
-    ></div>
+    >
+      <div class="playhead-time-label">
+        {{ minuteToLabel(playheadMin) }}
+      </div>
+      <Transition name="playhead-btn">
+        <button
+          v-show="hoverMinute !== null && (isUserMoving || isButtonHovered)"
+          class="playhead-add-btn"
+          :style="{ top: `${mouseY}px` }"
+          @click="handlePlayheadAdd(playheadMin, hoverGroup ?? undefined)"
+          @mouseenter="isButtonHovered = true"
+          @mouseleave="isButtonHovered = false"
+        >
+          <span class="btn-icon">+</span>
+          <span class="btn-label">{{ addButtonLabel }}</span>
+        </button>
+      </Transition>
+    </div>
   </div>
 </template>
 
@@ -50,6 +59,7 @@ import { Timeline as VisTimeline, type TimelineOptions } from 'vis-timeline/stan
 import { VTooltip } from 'floating-vue';
 import '@/assets/vis-timeline.css';
 import type { Minute, TimelineItem, UUID } from '@/types';
+import { minuteToLabel } from '@/utils/time';
 import { useLibraryStore } from '@/stores/library';
 import { useEngineStore } from '@/stores/engine';
 import { INTERVENTION_CATEGORIES } from '@/models/ui/categories';
@@ -72,11 +82,16 @@ const emit = defineEmits<{
   remove: [UUID];
   update: [{ id: UUID; start: string; end: string; group?: string | number }];
   playhead: [Minute];
-  triggerAdd: [Minute];
+  triggerAdd: [Minute, (string | number | undefined)?];
 }>();
 
 const container = ref<HTMLDivElement | null>(null);
 const hoverMinute = ref<number | null>(null);
+const hoverGroup = ref<string | number | null>(null);
+const mouseY = ref<number>(0);
+const isUserMoving = ref(false);
+const isButtonHovered = ref(false);
+let hideTimeout: number | null = null;
 let timeline: VisTimeline | null = null;
 let dataset: DataSet<any> | null = null;
 let groupDataset: DataSet<any> | null = null;
@@ -85,6 +100,15 @@ const engineStore = useEngineStore();
 
 const durationDays = computed(() => engineStore.durationDays);
 const MINUTES_IN_DAY = 24 * 60;
+
+const addButtonLabel = computed(() => {
+  if (hoverGroup.value) {
+    const cat = INTERVENTION_CATEGORIES.find(c => c.id === hoverGroup.value);
+    const label = cat ? cat.label : hoverGroup.value.toString();
+    return label
+  }
+  return 'Add Item';
+});
 
 const getMinutePercent = (minute: number) => {
   if (!timeline) return 0;
@@ -138,24 +162,84 @@ const getMinutePercent = (minute: number) => {
 
 const handleMouseMove = (event: MouseEvent) => {
   if (!timeline || !container.value) return;
-  const props = timeline.getEventProperties(event);
-  if (props.time) {
+
+  isUserMoving.value = true;
+  if (hideTimeout) clearTimeout(hideTimeout);
+  hideTimeout = window.setTimeout(() => {
+    isUserMoving.value = false;
+  }, 3000);
+
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  mouseY.value = event.clientY - rect.top;
+
+  const visProps = timeline.getEventProperties(event);
+  hoverGroup.value = visProps.group ?? null;
+
+  if (visProps.time) {
     // This gives absolute time. We need to map back to minute-of-day (0-1440)
     // regardless of which day we hovered on, if we treat schedule as cyclic.
     // Or if we treat it as linear, we return absolute minute.
-    const m = props.time.getHours() * 60 + props.time.getMinutes();
+    let m = visProps.time.getHours() * 60 + visProps.time.getMinutes();
+    m = Math.round(m / 5) * 5;
     hoverMinute.value = m;
   }
 };
 
-const handlePlayheadAdd = (m: number) => {
-  emit('triggerAdd', m as Minute);
+const handleMouseLeave = () => {
+  hoverMinute.value = null;
+  hoverGroup.value = null;
+  isUserMoving.value = false;
+  if (hideTimeout) clearTimeout(hideTimeout);
+};
+
+const handlePlayheadAdd = (m: number, group?: string | number) => {
+  emit('triggerAdd', m as Minute, group);
 };
 
 const getItemGroup = (item: TimelineItem) => {
   if (item.group) return item.group;
   const def = library.defs.find((d) => d.key === item.meta.key);
   return def?.categories?.[0] || 'general';
+};
+
+// Helper to get delivery type from intervention definition
+const getDeliveryType = (def: any): 'bolus' | 'infusion' | 'continuous' | null => {
+  if (!def?.pharmacology) return null;
+
+  // Handle dynamic pharmacology functions
+  let pharms: any[] = [];
+  if (typeof def.pharmacology === 'function') {
+    try {
+      const result = def.pharmacology({});
+      pharms = Array.isArray(result) ? result : [result];
+    } catch {
+      return null;
+    }
+  } else {
+    pharms = [def.pharmacology];
+  }
+
+  // Get delivery type from first pharmacology def that has pk
+  for (const pharm of pharms) {
+    if (pharm.pk?.delivery) {
+      return pharm.pk.delivery;
+    }
+  }
+  return null;
+};
+
+// Helper to format duration string
+const formatDuration = (startDate: Date, endDate: Date): string => {
+  let diffMs = endDate.getTime() - startDate.getTime();
+  if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const mins = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (hours > 0) {
+    return `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
+  }
+  return `${mins}m`;
 };
 
 const toVisItems = (items: TimelineItem[]) => {
@@ -169,35 +253,42 @@ const toVisItems = (items: TimelineItem[]) => {
   const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
 
   for (let d = 0; d < days; d++) {
-    const dayOffset = d * 24 * 60 * 60 * 1000;
-
     items.forEach(item => {
       const def = library.defs.find((d) => d.key === item.meta.key);
       const icon = def?.icon ? `${def.icon} ` : '';
       let label = item.content ?? item.meta.labelOverride ?? def?.label ?? item.meta.key;
       let content = `${icon}${label}`;
+      let className = item.meta.locked ? 'timeline-item--locked' : '';
 
+      const deliveryType = getDeliveryType(def);
+      const start = new Date(item.start);
+      const end = new Date(item.end);
+      const durationStr = formatDuration(start, end);
+
+      // Special handling for sleep - show wake label at end
       if (item.meta.key === 'sleep') {
-        const start = new Date(item.start);
-        const end = new Date(item.end);
-        let diffMs = end.getTime() - start.getTime();
-        if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000;
-
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        const mins = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        const durationStr = `${hours}h${mins > 0 ? ` ${mins}m` : ''}`;
-
         content = `
           <div class="timeline-item-sleep">
-            <span class="sleep-label">${icon}Sleep <span style="opacity:0.7; font-weight:400; font-size:0.8em; margin-left:4px;">${durationStr}</span></span>
+            <span class="sleep-label">${icon}Sleep <span class="item-duration">${durationStr}</span></span>
             <span class="wake-label">Wake ☀️</span>
           </div>
         `;
       }
-
-      // Shift item time by 'd' days
-      const itemStart = new Date(item.start).getTime();
-      const itemEnd = new Date(item.end).getTime();
+      // Continuous delivery - show duration (like sleep)
+      else if (deliveryType === 'continuous') {
+        content = `${icon}${label} <span class="item-duration">${durationStr}</span>`;
+        className += ' timeline-item--continuous';
+      }
+      // Infusion delivery - show duration
+      else if (deliveryType === 'infusion') {
+        content = `${icon}${label} <span class="item-duration">${durationStr}</span>`;
+        className += ' timeline-item--infusion';
+      }
+      // Bolus delivery - fixed width, point-like
+      else if (deliveryType === 'bolus') {
+        content = `${icon}${label}`;
+        className += ' timeline-item--bolus';
+      }
 
       // We need to preserve the time-of-day but shift the date
       // The store items usually have a dummy date (e.g. 2022-01-01)
@@ -219,16 +310,25 @@ const toVisItems = (items: TimelineItem[]) => {
         endMapped = new Date(endMapped.getTime() + 24 * 60 * 60 * 1000);
       }
 
+      // Build tooltip content
+      const startTimeStr = minuteToLabel((start.getHours() * 60 + start.getMinutes()) as Minute);
+      let tooltipContent = content;
+
+      // Add time span for continuous/infusion items
+      if (deliveryType === 'continuous' || deliveryType === 'infusion') {
+        tooltipContent = `${content}<span class="tooltip-time">${startTimeStr}</span>`;
+      }
+
       visItems.push({
         id: `${item.id}_${d}`, // Unique ID for each day's instance
         _originalId: item.id,
         content,
         start: startMapped,
-        end: endMapped,
-        type: item.type,
+        end: deliveryType === 'bolus' ? undefined : endMapped, // Bolus items are points
+        type: deliveryType === 'bolus' ? 'box' : item.type,
         group: getItemGroup(item),
-        _tooltip: label,
-        className: item.meta.locked ? 'timeline-item--locked' : undefined,
+        title: tooltipContent, // Tooltip with time for continuous/infusion
+        className: className.trim() || undefined,
         editable: d === 0, // Only allow editing on day 1 for now to avoid sync hell
       });
     });
@@ -295,6 +395,11 @@ const options = (): TimelineOptions => {
     min: start,
     max: end,
     showCurrentTime: false,
+    tooltip: {
+      followMouse: false,
+      overflowMethod: 'flip',
+      delay: 500,
+    },
     format: {
       minorLabels: {
         minute: 'h:mm A',
@@ -393,7 +498,8 @@ const initTimeline = () => {
 
   timeline.on('click', (event: any) => {
     if (!event.time || !shouldHandlePlayheadClick(event)) return;
-    const minute = (event.time.getHours() * 60 + event.time.getMinutes()) as Minute;
+    let minute = (event.time.getHours() * 60 + event.time.getMinutes()) as Minute;
+    minute = Math.round(minute / 5) * 5 as Minute;
     emit('playhead', minute);
   });
   if (props.selectedId) setSelection(props.selectedId);
@@ -404,6 +510,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  if (hideTimeout) clearTimeout(hideTimeout);
   timeline?.destroy();
   timeline = null;
   dataset = null;
@@ -461,23 +568,24 @@ watch(durationDays, () => {
 .timeline-controls {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   z-index: 20;
 }
 
 .segment-picker {
   display: flex;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 2px;
   gap: 2px;
   backdrop-filter: blur(4px);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .segment-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-muted);
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.75rem;
@@ -487,13 +595,13 @@ watch(durationDays, () => {
 }
 
 .segment-btn:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-primary);
+  background: var(--color-bg-elevated);
 }
 
 .segment-btn.active {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+  background: var(--color-bg-elevated);
+  color: var(--color-text-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
@@ -504,14 +612,14 @@ watch(durationDays, () => {
 
 .timeline-vis :deep(.vis-timeline) {
   border: none;
-  background: rgba(32, 53, 95, 0.85);
+  background: var(--color-bg-surface);
   border-radius: 14px;
 }
 
 .timeline-vis :deep(.vis-panel.vis-left) {
   display: block;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  width: 120px !important;
+  border-top: 1px solid var(--color-border-subtle) !important;
+  width: 130px !important;
 }
 
 .timeline-vis :deep(.vis-panel.vis-right) {
@@ -519,12 +627,12 @@ watch(durationDays, () => {
 }
 
 .timeline-vis :deep(.vis-label) {
-  color: rgba(248, 250, 252, 0.65);
+  color: var(--color-text-muted);
   font-weight: 600;
   font-size: 0.8rem;
-  padding: 0 8px;
+  padding: 13px 8px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .timeline-vis :deep(.vis-item) {
@@ -532,9 +640,9 @@ watch(durationDays, () => {
   border-radius: 12px;
   padding: 6px;
   font-weight: 600;
-  color: #f8fafc;
-  background: rgba(96, 165, 250, 0.2);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-subtle);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   min-width: 50px;
   overflow: hidden;
   transition: left 0.2s ease, right 0.2s ease, width 0.2s ease, top 0.2s ease;
@@ -550,20 +658,21 @@ watch(durationDays, () => {
 
 .timeline-vis :deep(.vis-item.timeline-item--locked) {
   opacity: 0.65;
-  background: rgba(226, 232, 240, 0.18);
+  background: var(--color-bg-subtle);
 }
 
 .timeline-vis :deep(.vis-item.vis-selected) {
-  box-shadow: 0 0 0 2px rgba(125, 211, 252, 0.7), 0 10px 25px rgba(14, 165, 233, 0.4);
+	color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-border-strong), 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .timeline-vis :deep(.vis-time-axis .vis-grid),
 .timeline-vis :deep(.vis-grid.vis-horizontal) {
-  border-color: rgba(248, 250, 252, 0.05);
+  border-color: var(--color-border-subtle);
 }
 
 .timeline-vis :deep(.vis-time-axis .vis-text) {
-  color: rgba(248, 250, 252, 0.65);
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -578,26 +687,41 @@ watch(durationDays, () => {
 }
 
 .active-line {
-  background: linear-gradient(180deg, #f8fafc 0%, rgba(248, 250, 252, 0.4) 100%);
-  box-shadow: 0 0 12px rgba(248, 250, 252, 0.35);
+  background: var(--color-active);
+  box-shadow: 0 0 12px var(--color-active);
 }
 
 .hover-line {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--color-border-strong);
   width: 1px;
+}
+
+.playhead-time-label {
+  position: absolute;
+  bottom: calc(100% - 2em);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-active);
+  color: var(--color-text-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .playhead-add-btn {
   position: absolute;
-  top: 20%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 24px;
   height: 24px;
   border-radius: 20px;
-  background: #8fbf5f;
-  color: black;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--color-bg-active);
+  color: var(--color-text-active);
+  border: 2px solid var(--color-border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -611,6 +735,19 @@ watch(durationDays, () => {
   pointer-events: auto;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.playhead-btn-enter-active {
+  transition: opacity 0.15s ease-out, width 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.playhead-btn-leave-active {
+  transition: opacity 0.5s ease-out, width 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.playhead-btn-enter-from,
+.playhead-btn-leave-to {
+  opacity: 0;
 }
 
 .btn-icon {
@@ -628,13 +765,17 @@ watch(durationDays, () => {
 }
 
 .playhead-add-btn:hover {
-  width: 90px;
-  background: #a3d977;
-  box-shadow: 0 0 15px rgba(143, 191, 95, 0.6);
+  width: auto;
+  min-width: 90px;
+  padding: 0 12px;
+  filter: brightness(1.1);
+  color: white;
+  background: var(--color-bg-subtle);
+  border-color: var(--color-border-strong);
 }
 
 .playhead-add-btn:hover .btn-label {
-  max-width: 60px;
+  max-width: 200px;
   opacity: 1;
   margin-left: 4px;
 }
@@ -661,5 +802,64 @@ watch(durationDays, () => {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+}
+
+/* Continuous & Infusion Item Styling - show duration inline */
+:deep(.item-duration) {
+  opacity: 0.6;
+  font-weight: 400;
+  font-size: 0.85em;
+  margin-left: 6px;
+}
+
+/* Bolus Item Styling - fixed width, point-like */
+.timeline-vis :deep(.vis-item.timeline-item--bolus) {
+  min-width: auto !important;
+  width: auto !important;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.timeline-vis :deep(.vis-item.timeline-item--bolus .vis-item-content) {
+  width: auto !important;
+  max-width: none !important;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+/* Hide the vertical line and dot for box-type items */
+.timeline-vis :deep(.vis-item.vis-line),
+.timeline-vis :deep(.vis-item.vis-dot) {
+  display: none !important;
+}
+
+/* Tooltip styling */
+.timeline-vis :deep(.vis-tooltip) {
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  max-width: 280px;
+  z-index: 100;
+}
+
+.timeline-vis :deep(.vis-tooltip .item-duration) {
+  margin-left: 6px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-time) {
+  display: block;
+  margin-top: 4px;
+  font-weight: 500;
+  color: var(--color-text-muted);
 }
 </style>

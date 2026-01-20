@@ -246,24 +246,21 @@ onUnmounted(() => {
 }
 
 .hook__headline {
-  font-size: clamp(1.75rem, 6vw, 2.75rem);
-  font-weight: 600;
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.03em;
-  color: #f0f0f5;
+  color: var(--ob-text-primary);
   margin: 0 0 1rem;
 }
 
 .hook__headline-accent {
-  background: linear-gradient(135deg, #00d4ff 0%, #8b5cf6 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--ob-accent);
 }
 
 .hook__subline {
   font-size: 1.125rem;
-  color: #8888a0;
+  color: var(--ob-text-secondary);
   margin: 0;
   font-weight: 400;
 }
@@ -275,7 +272,7 @@ onUnmounted(() => {
   right: 1.5rem;
   background: transparent;
   border: none;
-  color: #555570;
+  color: var(--ob-text-muted);
   font-size: 0.875rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -286,7 +283,7 @@ onUnmounted(() => {
 }
 
 .hook__skip:hover {
-  color: #f0f0f5;
+  color: var(--ob-text-primary);
 }
 
 /* Tap hint */
@@ -296,7 +293,7 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   font-size: 0.8125rem;
-  color: #555570;
+  color: var(--ob-text-muted);
   animation: tapPulse 2s ease-in-out infinite;
 }
 

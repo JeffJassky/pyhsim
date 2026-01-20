@@ -4,7 +4,7 @@ import FloatingVue from 'floating-vue';
 import 'floating-vue/dist/style.css';
 import App from './App.vue';
 import router from './router';
-import '@/assets/base.css';
+import '@/assets/css/main.css';
 import { INTERVENTIONS } from '@/models/registry/interventions';
 import { validateInterventionLibrary } from '@/models/physiology/pharmacology/validation';
 

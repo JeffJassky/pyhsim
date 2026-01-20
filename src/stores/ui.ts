@@ -9,13 +9,20 @@ export const useUIStore = defineStore('ui', {
     playheadMin: toMinute(8),
     isScrubbing: false,
     zoomHours: 6,
-    theme: 'dark',
+    theme: 'system' as 'system' | 'light' | 'dark',
     compareScenarioId: undefined,
     profileModalOpen: false,
     targetsModalOpen: false,
     tourActive: false,
     tourStep: 0,
   }),
+  getters: {
+    resolvedTheme(state) {
+      if (state.theme !== 'system') return state.theme;
+      if (typeof window === 'undefined') return 'dark';
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+  },
   actions: {
     setProfileModalOpen(open: boolean) {
       this.profileModalOpen = open;

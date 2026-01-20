@@ -1,0 +1,33 @@
+@import "./variables/colors.css";
+@import "./variables/typography.css";
+@import "./themes/light.css";
+@import "./themes/dark.css";
+
+/* Global Base Styles */
+:root {
+  /* Default to dark theme if no class is present, or just use variables directly */
+  /* For now, we expect .theme-dark or .theme-light on the root element */
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
