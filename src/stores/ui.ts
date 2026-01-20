@@ -1,6 +1,41 @@
 import { defineStore } from 'pinia';
-import type { Minute, UIState, UUID } from '@/types';
+import type { Minute, PanelSizes, UIState, UUID } from '@/types';
 import { toMinute } from '@/utils/time';
+
+const PANEL_LAYOUT_KEY = 'physim-panel-layout';
+
+const DEFAULT_PANEL_SIZES: PanelSizes = {
+  timeline: 35,
+  charts: 65,
+  chatWidth: 25,
+};
+
+function loadPanelSizes(): PanelSizes {
+  if (typeof window === 'undefined') return { ...DEFAULT_PANEL_SIZES };
+  try {
+    const stored = localStorage.getItem(PANEL_LAYOUT_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        timeline: parsed.timeline ?? DEFAULT_PANEL_SIZES.timeline,
+        charts: parsed.charts ?? DEFAULT_PANEL_SIZES.charts,
+        chatWidth: parsed.chatWidth ?? DEFAULT_PANEL_SIZES.chatWidth,
+      };
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return { ...DEFAULT_PANEL_SIZES };
+}
+
+function savePanelSizes(sizes: PanelSizes): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PANEL_LAYOUT_KEY, JSON.stringify(sizes));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 interface UIStoreState extends UIState {}
 
@@ -15,6 +50,7 @@ export const useUIStore = defineStore('ui', {
     targetsModalOpen: false,
     tourActive: false,
     tourStep: 0,
+    panelSizes: loadPanelSizes(),
   }),
   getters: {
     resolvedTheme(state) {
@@ -50,6 +86,10 @@ export const useUIStore = defineStore('ui', {
     },
     setCompareScenario(id?: UUID) {
       this.compareScenarioId = id;
+    },
+    setPanelSizes(sizes: Partial<PanelSizes>) {
+      this.panelSizes = { ...this.panelSizes, ...sizes };
+      savePanelSizes(this.panelSizes);
     },
   },
 });

@@ -211,6 +211,55 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       }}{{ (cond.value * 100).toFixed(0) }}%)
                     </span>
                   </div>
@@ -243,6 +292,55 @@
                     <span class="contributor-mech">{{ item.mechanism }}</span>
                     <span class="contributor-value">
                       ({{ item.value > 0 ? '+' : ''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -744,7 +842,7 @@ const normalizedBands = computed(() => {
       key: band.key,
       left: `${left}%`,
       width: `${width}%`,
-      color: band.color || 'rgba(255,255,255,0.07)',
+      color: band.color ?? 'rgba(255,255,255,0.1)'
     };
   });
 });
@@ -884,12 +982,7 @@ watch(
   display: flex;
   gap: 0;
   align-items: stretch;
-  transition: background 0.2s ease;
   border-radius: 8px;
-}
-
-.series-wrapper:hover {
-  background: rgba(255, 255, 255, 0.02);
 }
 
 .series-sidebar__drag {
@@ -961,7 +1054,7 @@ watch(
 }
 
 .series-sidebar__btn.is-active {
-  color: #8fbf5f;
+  color: var(--color-text-active);
   opacity: 1;
 }
 
@@ -1073,7 +1166,6 @@ watch(
 
 /* Expanded Info Section */
 .series-info-expanded {
-  background: rgba(15, 23, 42, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-top: none;
   border-bottom-left-radius: 8px;
@@ -1100,7 +1192,7 @@ watch(
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #8fbf5f;
+  color: var(--color-text-active);
   margin: 0 0 0.5rem 0;
 }
 
@@ -1182,7 +1274,7 @@ watch(
 }
 
 .contributor-mech {
-  color: #8fbf5f;
+  color: var(--color-text-active);
   text-transform: capitalize;
 }
 
@@ -1226,7 +1318,7 @@ watch(
 .series__coupling-mapping {
   font-size: 0.7rem;
   font-family: monospace;
-  color: #8fbf5f;
+  color: var(--color-text-active);
 }
 
 .series__coupling-desc {
@@ -1258,10 +1350,12 @@ watch(
 
 .series__band {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: 6px;
+  top: 1px;
+  bottom: 1px;
+  height: auto;
   opacity: 0.35;
+  border-radius: 6px;
+  background: var(--color-bg-elevated);
 }
 
 .series__playhead {

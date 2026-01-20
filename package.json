@@ -23,6 +23,7 @@
     "pinia": "^2.1.7",
     "propagating-hammerjs": "^3.0.0",
     "sortablejs": "^1.15.6",
+    "splitpanes": "^4.0.4",
     "uplot": "^1.6.29",
     "uuid": "^9.0.1",
     "vis-data": "^8.0.3",

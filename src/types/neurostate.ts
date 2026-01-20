@@ -688,6 +688,12 @@ export interface MeterState {
   series: Record<MeterKey, Float32Array>;
 }
 
+export interface PanelSizes {
+  timeline: number; // percentage 0-100
+  charts: number; // percentage 0-100
+  chatWidth: number; // percentage 0-100
+}
+
 export interface UIState {
   playheadMin: Minute;
   isScrubbing: boolean;
@@ -698,6 +704,7 @@ export interface UIState {
   targetsModalOpen: boolean;
   tourActive: boolean;
   tourStep: number;
+  panelSizes: PanelSizes;
 }
 
 export interface AppState {

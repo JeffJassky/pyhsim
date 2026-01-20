@@ -53,6 +53,8 @@ const toggle = () => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  height: 100%;
+  min-height: 0;
 }
 
 .panel--collapsible .panel__header {
@@ -87,6 +89,9 @@ const toggle = () => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .panel__toggle {

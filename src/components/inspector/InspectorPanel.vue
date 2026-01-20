@@ -122,12 +122,17 @@
               <span class="gain-value">
                 ({{ effect.intrinsicEfficacy > 0 ? '+' : ''
 
+
+
                 }}{{ (effect.intrinsicEfficacy * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1) }}
                 {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }})
               </span>
             </template>
           </p>
-          <p v-if="effect.description || getTargetDescription(effect.target as any)" class="effect-help">
+          <p
+            v-if="effect.description || getTargetDescription(effect.target as any)"
+            class="effect-help"
+          >
             {{ effect.description || getTargetDescription(effect.target as any) }}
           </p>
         </div>
@@ -373,7 +378,7 @@ const updateDuration = (minutes: number) => {
 
 .total-kcal {
   font-weight: 700;
-  color: #8fbf5f;
+  color: var(--color-text-active);
   font-size: 1.1rem;
 }
 

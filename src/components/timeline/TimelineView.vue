@@ -566,7 +566,7 @@ watch(durationDays, () => {
 <style scoped>
 .timeline-container {
   position: relative;
-  border-radius: 16px;
+  box-shadow: inset 5px 5px 20px rgba(0, 0, 0, 0.2);
 }
 
 .timeline-controls {
@@ -610,14 +610,11 @@ watch(durationDays, () => {
 }
 
 .timeline-vis {
-  border-radius: 14px;
   overflow: hidden;
 }
 
 .timeline-vis :deep(.vis-timeline) {
   border: none;
-  background: var(--color-bg-elevated);
-  border-radius: 14px;
 }
 
 .timeline-vis :deep(.vis-panel.vis-left) {
@@ -645,7 +642,7 @@ watch(durationDays, () => {
   padding: 6px;
   font-weight: 600;
   color: var(--color-text-secondary);
-  background: var(--color-bg-subtle);
+  background: var(--color-bg-elevated);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   min-width: 50px;
   overflow: hidden;
@@ -845,7 +842,6 @@ color: var(--color-text-primary);
 
 /* Tooltip styling */
 .timeline-vis :deep(.vis-tooltip) {
-  background: var(--color-bg-base);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-subtle);
   font-family: inherit;

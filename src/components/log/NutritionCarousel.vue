@@ -64,9 +64,6 @@ defineProps<{
 <style scoped>
 .nutri {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
   padding: 1rem;
   display: flex;
   flex-direction: column;

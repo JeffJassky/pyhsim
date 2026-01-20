@@ -107,7 +107,6 @@ onMounted(scrollToBottom);
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-subtle);
   border-left: 1px solid var(--color-border-default);
   padding: 1rem 1.5rem;
 }

@@ -126,7 +126,11 @@
                   <div class="item-card__desc">
                     {{ Math.round(hit.nutrients.calories) }} cal • P{{ Math.round(hit.nutrients.protein)
 
+
+
                     }}g • C{{ Math.round(hit.nutrients.carbs) }}g • F{{ Math.round(hit.nutrients.fat)
+
+
 
                     }}g
                   </div>
@@ -513,7 +517,7 @@ watch(() => props.modelValue, (val) => {
 .back-btn {
   background: transparent;
   border: none;
-  color: #8fbf5f;
+  color: var(--color-text-active);
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -558,7 +562,7 @@ watch(() => props.modelValue, (val) => {
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #8fbf5f;
+  border-top-color: var(--color-text-active);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -631,7 +635,7 @@ watch(() => props.modelValue, (val) => {
 
 .item-card__action {
   font-size: 1.25rem;
-  color: #8fbf5f;
+  color: var(--color-text-active);
   opacity: 0.8;
 }
 
@@ -672,7 +676,7 @@ watch(() => props.modelValue, (val) => {
 }
 
 .log-btn {
-  background: #8fbf5f;
+  background: var(--color-text-active);
   color: black;
   border: none;
   padding: 0.5rem 1rem;

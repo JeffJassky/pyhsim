@@ -51,20 +51,43 @@
       >
         <slot name="sidebar">Sidebar</slot>
       </aside>
-      <div class="app-shell__main-area">
-        <main class="app-shell__main">
-          <slot />
-        </main>
-        <div class="app-shell__floating">
-          <slot name="floating" />
-        </div>
-      </div>
-      <aside
+      <!-- Splitpanes layout when right sidebar is visible on desktop -->
+      <Splitpanes
         v-if="showRightSidebar && !isMobile"
-        class="app-shell__sidebar app-shell__sidebar--right"
+        class="app-shell__splitpanes"
+        @resized="handlePaneResize"
       >
-        <slot name="right-sidebar" />
-      </aside>
+        <Pane :size="mainPaneSize" :min-size="50">
+          <div class="app-shell__main-area">
+            <main class="app-shell__main">
+              <slot />
+            </main>
+            <div class="app-shell__floating">
+              <slot name="floating" />
+            </div>
+          </div>
+        </Pane>
+        <Pane :size="chatPaneSize" :min-size="15" :max-size="40">
+          <div class="app-shell__chat-pane">
+            <div class="app-shell__chat-handle"></div>
+            <aside class="app-shell__sidebar app-shell__sidebar--right">
+              <slot name="right-sidebar" />
+            </aside>
+          </div>
+        </Pane>
+      </Splitpanes>
+
+      <!-- Standard layout without splitpanes -->
+      <template v-else>
+        <div class="app-shell__main-area">
+          <main class="app-shell__main">
+            <slot />
+          </main>
+          <div class="app-shell__floating">
+            <slot name="floating" />
+          </div>
+        </div>
+      </template>
       <div
         v-if="isMobile && isSidebarOpen"
         class="app-shell__overlay"
@@ -78,6 +101,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
+import { Splitpanes, Pane } from 'splitpanes';
+import 'splitpanes/dist/splitpanes.css';
 import { useUIStore } from '@/stores/ui';
 import DebugModal from '@/components/admin/DebugModal.vue';
 
@@ -127,6 +152,15 @@ onBeforeUnmount(() => {
   if (typeof window === 'undefined') return;
   window.removeEventListener('resize', updateViewportMode);
 });
+
+const chatPaneSize = computed(() => uiStore.panelSizes.chatWidth);
+const mainPaneSize = computed(() => 100 - uiStore.panelSizes.chatWidth);
+
+const handlePaneResize = (panes: { size: number }[]) => {
+  if (panes.length === 2) {
+    uiStore.setPanelSizes({ chatWidth: panes[1].size });
+  }
+};
 </script>
 
 <style scoped>
@@ -137,7 +171,6 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 1.5rem;
   padding: 0 1.5rem;
-  background: var(--color-bg-subtle);
   border-bottom: 1px solid var(--color-border-default);
   backdrop-filter: blur(12px);
   z-index: 100;
@@ -187,7 +220,6 @@ onBeforeUnmount(() => {
   height: 100%;
   min-height: 0;
   color: var(--color-text-primary);
-  background: var(--color-bg-base);
 }
 
 .app-shell__body {
@@ -208,11 +240,48 @@ onBeforeUnmount(() => {
 }
 
 .app-shell__body.has-sidebar.has-right-sidebar {
-  grid-template-columns: 280px minmax(0, 1fr) 300px;
+  grid-template-columns: 280px minmax(0, 1fr);
 }
 
 .app-shell__body.has-right-sidebar:not(.has-sidebar) {
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-shell__splitpanes {
+  height: 100%;
+  min-height: 0;
+}
+
+.app-shell__splitpanes :deep(.splitpanes__pane) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Hide the default splitter visually - we use chat-handle instead */
+.app-shell__splitpanes :deep(.splitpanes__splitter) {
+  background: transparent;
+  width: 0 !important;
+  min-width: 0 !important;
+}
+
+/* Chat pane wrapper with internal handle */
+.app-shell__chat-pane {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+}
+
+.app-shell__chat-handle {
+  width: 6px;
+  flex-shrink: 0;
+  background: var(--color-bg-subtle);
+  cursor: col-resize;
+  transition: background 0.15s ease;
+}
+
+.app-shell__chat-handle:hover {
+  background: var(--color-border-default);
 }
 
 
@@ -223,9 +292,14 @@ onBeforeUnmount(() => {
 
 .app-shell__sidebar--right {
   padding: 0;
+  flex: 1;
+  height: 100%;
+  min-width: 0;
+  overflow: auto;
 }
 
 .app-shell__main-area {
+  height: 100%;
   min-height: 0;
   position: relative;
   display: flex;
@@ -257,10 +331,10 @@ onBeforeUnmount(() => {
 
 .app-shell__main {
   flex: 1;
+  height: 100%;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
-  padding:0;
+  overflow: hidden;
+  padding: 0;
 }
 
 .app-shell__mobile-toggle {

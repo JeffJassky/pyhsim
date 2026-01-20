@@ -11,7 +11,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-bg-base);
+  background-color: var(--color-bg-subtle);
   color: var(--color-text-primary);
   margin: 0;
   -webkit-font-smoothing: antialiased;
@@ -30,4 +30,45 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Floating Vue Tooltip Overrides */
+.v-popper--theme-tooltip .v-popper__inner {
+  background: var(--color-bg-base) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-subtle) !important;
+  font-family: inherit !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(8px) !important;
+  max-width: 240px !important;
+}
+
+.v-popper--theme-tooltip .v-popper__arrow-outer,
+.v-popper--theme-tooltip .v-popper__arrow-inner {
+  visibility: hidden !important;
+}
+
+/* Splitpanes theme overrides */
+.splitpanes__splitter {
+  background: var(--color-bg-subtle);
+  transition: background 0.15s ease;
+}
+
+.splitpanes__splitter:hover {
+  background: var(--color-border-default);
+}
+
+.splitpanes--horizontal > .splitpanes__splitter {
+  height: 6px;
+  cursor: row-resize;
+}
+
+.splitpanes--vertical > .splitpanes__splitter {
+  width: 6px;
+  cursor: col-resize;
 }

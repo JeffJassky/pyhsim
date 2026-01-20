@@ -67,7 +67,9 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableBaselines: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">Circadian and ultradian setpoint drivers.</p>
+                  <p class="toggle-desc">
+                    Circadian and ultradian setpoint drivers.
+                  </p>
                 </div>
 
                 <div class="toggle-item">
@@ -79,7 +81,9 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableInterventions: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">External forcing functions (food, drugs, exercise).</p>
+                  <p class="toggle-desc">
+                    External forcing functions (food, drugs, exercise).
+                  </p>
                 </div>
 
                 <div class="toggle-item">
@@ -91,7 +95,10 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableConditions: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">Receptor, transporter, and enzyme modifications (e.g. ADHD, PCOS).</p>
+                  <p class="toggle-desc">
+                    Receptor, transporter, and enzyme modifications (e.g. ADHD,
+                    PCOS).
+                  </p>
                 </div>
 
                 <div class="toggle-item">
@@ -103,7 +110,9 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableCouplings: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">Signal-to-signal interactions and feedback loops.</p>
+                  <p class="toggle-desc">
+                    Signal-to-signal interactions and feedback loops.
+                  </p>
                 </div>
 
                 <div class="toggle-item">
@@ -115,7 +124,9 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableHomeostasis: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">Internal state pools (vesicles, sleep pressure, glycogen).</p>
+                  <p class="toggle-desc">
+                    Internal state pools (vesicles, sleep pressure, glycogen).
+                  </p>
                 </div>
 
                 <div class="toggle-item">
@@ -127,7 +138,9 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableReceptors: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">Dynamic receptor sensitivity and density adaptation.</p>
+                  <p class="toggle-desc">
+                    Dynamic receptor sensitivity and density adaptation.
+                  </p>
                 </div>
 
                 <div class="toggle-item">
@@ -139,7 +152,9 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableTransporters: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">Reuptake transporter activity modulation.</p>
+                  <p class="toggle-desc">
+                    Reuptake transporter activity modulation.
+                  </p>
                 </div>
 
                 <div class="toggle-item">
@@ -151,7 +166,9 @@ const finalStateJson = computed(() => {
                       @change="engineStore.updateDebug({ enableEnzymes: ($event.target as HTMLInputElement).checked })"
                     />
                   </label>
-                  <p class="toggle-desc">Metabolic enzyme activity modulation.</p>
+                  <p class="toggle-desc">
+                    Metabolic enzyme activity modulation.
+                  </p>
                 </div>
               </div>
             </div>
@@ -346,7 +363,7 @@ const finalStateJson = computed(() => {
 }
 
 .toggle-item--optimized .toggle-label {
-  color: #8fbf5f;
+  color: var(--color-text-active);
 }
 
 .toggle-label {
