@@ -10,7 +10,9 @@
       "mcp__ide__getDiagnostics",
       "Bash(npm run typecheck:*)",
       "Bash(npx vitest:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(echo:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

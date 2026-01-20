@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { computeDerivatives } from '@/models/engine/ode-solver';
+import { computeDerivatives } from '@/models/engine';
 import { initializeZeroState } from '@/models/engine/state';
 import { dopamine } from '@/models/engine/signal-definitions/neurotransmitters';
 import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
-import type { ActiveIntervention, DynamicsContext } from '@/types/unified';
+import type { ActiveIntervention, DynamicsContext } from '@/types';
 
-describe('Intervention Toggle', () => {
+describe('Intervention Toggle (Optimized V2)', () => {
   const subject = DEFAULT_SUBJECT;
   const physiology = derivePhysiology(subject);
   const ctx: DynamicsContext = {
@@ -39,14 +39,9 @@ describe('Intervention Toggle', () => {
       { dopamine },
       {},
       [intervention],
-      { enableInterventions: true }
+      { debug: { enableInterventions: true } }
     );
     
-    // Base dynamics (return to 0) + Production + Intervention
-    // Dopamine setpoint at 8AM is ~65. Current 0.
-    // Base d = (65 - 0)/120 = 0.54.
-    // Intervention adds 100.
-    // Result should be > 100.
     expect(derivs.signals.dopamine).toBeGreaterThan(50);
   });
 
@@ -59,7 +54,7 @@ describe('Intervention Toggle', () => {
       { dopamine },
       {},
       [intervention],
-      { enableInterventions: false }
+      { debug: { enableInterventions: false } }
     );
     
     // Should only have base dynamics

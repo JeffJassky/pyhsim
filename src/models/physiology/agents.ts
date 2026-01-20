@@ -84,6 +84,7 @@ export const Agents = {
       molecule: { name: "Glucose", molarMass: 180.16 },
       pk: {
         model: "1-compartment",
+        delivery: "infusion",
         bioavailability: 1.0,
         halfLifeMin: halfLife,
         timeToPeakMin: halfLife * 0.6,
@@ -266,6 +267,7 @@ export const Agents = {
       molecule: { name: "Lipids", molarMass: 282 }, // Oleic acid approx
       pk: {
         model: "1-compartment",
+        delivery: "infusion",
         halfLifeMin: 120, // Slow digestion
         timeToPeakMin: 180, // Fat absorption is slow (chylomicron formation)
         volume: { kind: "weight", base_L_kg: 0.3 },
@@ -460,6 +462,7 @@ export const Agents = {
       molecule: { name: "Amino Acids", molarMass: 110 }, // Average AA
       pk: {
         model: "1-compartment",
+        delivery: "infusion",
         halfLifeMin: 60,
         timeToPeakMin: 90, // Protein digestion is moderate speed
         volume: { kind: "weight", base_L_kg: 0.5 },
@@ -636,6 +639,7 @@ export const Agents = {
       molecule: { name: "Dietary Fiber", molarMass: 162 }, // Cellulose unit approx
       pk: {
         model: "1-compartment",
+        delivery: "infusion",
         halfLifeMin: 240, // Very slow: fermentation in colon
         timeToPeakMin: 180, // Effects peak hours after eating
         volume: { kind: "weight", base_L_kg: 0.1 }, // Stays in gut mostly
@@ -1086,6 +1090,7 @@ export const Agents = {
       molecule: { name: "Ethanol", molarMass: 46.07 },
       pk: {
         model: "michaelis-menten",
+        delivery: "infusion",
         bioavailability: 1.0,
         Vmax: 0.2, // g/L per minute approx
         Km: 0.1, // g/L (10mg/dL)

@@ -174,6 +174,6 @@ export function getAllUnifiedDefinitions(): Record<
   return all;
 }
 
-export * from "./ode-solver";
+export * from "./solvers/optimized-v2";
 export * from "./state";
 export * from "./utils";

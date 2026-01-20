@@ -331,6 +331,12 @@ export interface PharmacologyDef {
     // Dynamic physiology-dependent parameters
     clearance?: ClearanceSpec;
     volume?: VolumeSpec;
+    /** Delivery mode: 
+     * - 'bolus': Fixed dose injected at startTime (pill, injection)
+     * - 'infusion': Fixed dose spread over the duration (sipping coffee, IV drip)
+     * - 'continuous': Intensity-based rate active for the duration (exercise, sleep signals) 
+     * Defaults to 'bolus' if mg/dose params exist, otherwise 'continuous'. */
+    delivery?: "bolus" | "infusion" | "continuous";
     /** If true, the solver will not calculate derivatives for this agent's PK,
      * assuming the concentration is injected externally. */
     isAnalytical?: boolean;

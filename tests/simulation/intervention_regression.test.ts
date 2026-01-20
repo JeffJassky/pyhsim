@@ -638,12 +638,13 @@ describe("Intervention Processing Regressions", () => {
       ];
 
       let state = initialState;
+      // Run at night (midnight = minute 0) with consistent circadian time
       for (let i = 0; i < 60; i++) {
         state = integrateStep(
           state,
           i,
           1.0,
-          { ...ctx, minuteOfDay: i, isAsleep: true },
+          { ...ctx, minuteOfDay: i, circadianMinuteOfDay: i, isAsleep: true },
           SIGNAL_DEFINITIONS,
           AUXILIARY_DEFINITIONS,
           sleepIntervention,
@@ -739,6 +740,7 @@ describe("Intervention Processing Regressions", () => {
             molecule: { name: "Caffeine", molarMass: 194.19 },
             pk: {
               model: "1-compartment",
+              delivery: "bolus",
               bioavailability: 0.99,
               halfLifeMin: 300,
               volume: { kind: "tbw", fraction: 0.6 },

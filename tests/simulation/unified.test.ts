@@ -162,6 +162,7 @@ describe("Unified ODE Architecture", () => {
         magnitude: 5.0,
         startTime: 600,
         duration: 20,
+        pharmacology: { pk: { delivery: 'continuous' } }
       },
     ];
 
@@ -367,6 +368,7 @@ describe("Unified ODE Architecture", () => {
         pharmacology: {
           pk: {
             model: "1-compartment",
+            delivery: "bolus",
             bioavailability: 0.99,
             halfLifeMin: 300,
             volume: { kind: "tbw", fraction: 0.6 },
@@ -392,6 +394,7 @@ describe("Unified ODE Architecture", () => {
 
     let nextState = state;
     // Step for 60 minutes
+    // IMPORTANT: must start AT 420 to catch the bolus injection
     for (let i = 0; i < 60; i++) {
       nextState = integrateStep(
         nextState,
@@ -451,6 +454,7 @@ describe("Unified ODE Architecture", () => {
         pharmacology: {
           pk: {
             model: "1-compartment",
+            delivery: "bolus",
             halfLifeMin: 180,
             bioavailability: 0.3,
             volume: { kind: "lbm", base_L_kg: 2.0 },
@@ -522,6 +526,7 @@ describe("Unified ODE Architecture", () => {
         pharmacology: {
           pk: {
             model: "1-compartment",
+            delivery: "bolus",
             halfLifeMin: 300,
             bioavailability: 0.99,
             volume: { kind: "tbw", fraction: 0.6 },
