@@ -38,19 +38,19 @@
               <div class="toggle-pill">
                 <button
                   class="toggle-pill__btn"
+                  :class="{ 'is-active': chartFilter === 'goals' }"
+                  v-tooltip="'Show charts related to your goals'"
+                  @click="chartFilter = 'goals'"
+                >
+                  My Goals
+                </button>
+                <button
+                  class="toggle-pill__btn"
                   :class="{ 'is-active': chartFilter === 'auto' }"
                   v-tooltip="'Only show charts that are modified by items on the timeline'"
                   @click="chartFilter = 'auto'"
                 >
                   Active
-                </button>
-                <button
-                  class="toggle-pill__btn"
-                  :class="{ 'is-active': chartFilter === 'goals' }"
-                  v-tooltip="'Show charts related to your selected goals'"
-                  @click="chartFilter = 'goals'"
-                >
-                  My Goals
                 </button>
                 <button
                   class="toggle-pill__btn"
@@ -69,27 +69,27 @@
               <div class="toggle-pill">
                 <button
                   class="toggle-pill__btn"
-                  :class="{ 'is-active': chartGroupBy === 'none' }"
-                  v-tooltip="'Display charts in a flat list without grouping'"
-                  @click="chartGroupBy = 'none'"
-                >
-                  None
-                </button>
-                <button
-                  class="toggle-pill__btn"
-                  :class="{ 'is-active': chartGroupBy === 'goals' }"
-                  v-tooltip="'Group charts goal'"
-                  @click="chartGroupBy = 'goals'"
-                >
-                  Goals
-                </button>
-                <button
-                  class="toggle-pill__btn"
                   :class="{ 'is-active': chartGroupBy === 'system' }"
                   v-tooltip="'Group charts by physiological system (e.g. Nervous, Endocrine)'"
                   @click="chartGroupBy = 'system'"
                 >
                   Biological System
+                </button>
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartGroupBy === 'goals' }"
+                  v-tooltip="'Group charts by Goal'"
+                  @click="chartGroupBy = 'goals'"
+                >
+                  Goal
+                </button>
+                <button
+                  class="toggle-pill__btn"
+                  :class="{ 'is-active': chartGroupBy === 'none' }"
+                  v-tooltip="'Display charts in a flat list without grouping'"
+                  @click="chartGroupBy = 'none'"
+                >
+                  None
                 </button>
               </div>
             </div>
@@ -100,6 +100,7 @@
               class="layout-toggle__btn"
               :class="{ 'is-active': chartLayout === 'list' }"
               title="List View"
+              v-tooltip="'View charts as a list'"
               @click="chartLayout = 'list'"
             >
               <svg
@@ -125,6 +126,7 @@
               class="layout-toggle__btn"
               :class="{ 'is-active': chartLayout === 'grid' }"
               title="Grid View"
+              v-tooltip="'View charts as grid'"
               @click="chartLayout = 'grid'"
             >
               <svg
@@ -153,10 +155,43 @@
             :key="group.id"
             class="chart-system-group"
           >
-            <h3 v-if="chartGroupBy !== 'none'" class="system-group-header">
-              <span class="system-group-icon">{{ group.icon }}</span>
-              {{ group.label }}
-            </h3>
+            <div v-if="chartGroupBy !== 'none'" class="system-group-header-row">
+              <h3 class="system-group-header">
+                {{ group.label }}
+              </h3>
+              <button
+                v-if="group.description"
+                class="group-info-btn"
+                :class="{ 'is-active': openGroupIds.includes(group.id) }"
+                @click="toggleGroupDescription(group.id)"
+                v-tooltip="'What is this system?'"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </button>
+            </div>
+
+            <Transition name="expand">
+              <div
+                v-if="group.description && openGroupIds.includes(group.id)"
+                class="system-group-description"
+              >
+                {{ group.description }}
+              </div>
+            </Transition>
+
             <SignalChart
               :grid="gridMins"
               :series-specs="group.specs"
@@ -611,35 +646,17 @@ interface RootTabOption {
   info: string;
 }
 
-const chartFilter = ref<'auto' | 'goals' | 'all'>('auto');
-const chartGroupBy = ref<'none' | 'system' | 'goals'>('none');
-const chartLayout = ref<'list' | 'grid'>('list');
+import { getReceptorSignals } from '@/models/physiology/pharmacology';
+
+const chartFilter = ref<'auto' | 'goals' | 'all'>('goals');
+const chartGroupBy = ref<'none' | 'system' | 'goals'>('system');
+const chartLayout = ref<'list' | 'grid'>('grid');
 
 const panelIcon = computed(() => {
   if (chartFilter.value === 'goals') return '✨';
   if (chartFilter.value === 'all') return '📊';
   return '🪄';
 });
-
-// Maps PD targets (receptors, transporters) to the signals they affect
-const targetToSignalsMap: Record<string, Signal[]> = {
-  // Transporters (reuptake inhibitors affect these signals)
-  'DAT': ['dopamine'],
-  'NET': ['norepi'],
-  'SERT': ['serotonin'],
-  // Adenosine receptors (antagonism disinhibits these)
-  'Adenosine_A2a': ['dopamine'],
-  'Adenosine_A1': ['dopamine', 'acetylcholine'],
-  // Other receptors
-  'GABA_A': ['gaba'],
-  'NMDA': ['glutamate'],
-  'Beta_Adrenergic': ['norepi', 'adrenaline'],
-  'MT1': ['melatonin'],
-  'MT2': ['melatonin'],
-  'H1': ['histamine'],
-  'OX1R': ['orexin'],
-  'OX2R': ['orexin'],
-};
 
 const activeSpecs = computed(() => {
   let keys: string[] = [];
@@ -670,10 +687,8 @@ const activeSpecs = computed(() => {
             // Add the target itself if it's a signal
             directSignals.add(effect.target as Signal);
             // Also add signals affected by this target (for transporters/receptors)
-            const affectedSignals = targetToSignalsMap[effect.target];
-            if (affectedSignals) {
-              affectedSignals.forEach((sig) => directSignals.add(sig));
-            }
+            const affected = getReceptorSignals(effect.target);
+            affected.forEach(mapping => directSignals.add(mapping.signal));
           });
         }
       });
@@ -725,7 +740,7 @@ const activeSpecs = computed(() => {
 
 const groupedSpecs = computed(() => {
   const specs = activeSpecs.value;
-  const result: Array<{ id: string; label: string; icon: string; specs: ChartSeriesSpec[] }> = [];
+	const result: Array<{ id: string; label: string; description?: string; icon: string; specs: ChartSeriesSpec[] }> = [];
   const usedKeys = new Set<string>();
 
   if (chartGroupBy.value === 'system') {
@@ -734,7 +749,8 @@ const groupedSpecs = computed(() => {
       if (systemSpecs.length > 0) {
         result.push({
           id: system.id,
-          label: system.label,
+			label: system.label,
+		  description: system.description,
           icon: system.icon,
           specs: systemSpecs,
         });
@@ -824,6 +840,16 @@ const interventionBands = computed(() => {
   }
   return bands;
 });
+
+const openGroupIds = ref<string[]>([]);
+const toggleGroupDescription = (id: string) => {
+  const idx = openGroupIds.value.indexOf(id);
+  if (idx > -1) {
+    openGroupIds.value.splice(idx, 1);
+  } else {
+    openGroupIds.value.push(id);
+  }
+};
 </script>
 
 <style scoped>
@@ -978,6 +1004,7 @@ const interventionBands = computed(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: nowrap;
 }
 
 .control-label {
@@ -987,12 +1014,14 @@ const interventionBands = computed(() => {
   font-weight: 800;
   opacity: 0.4;
   margin-right: 0.5rem;
+  white-space: nowrap;
 }
 
 .control-group {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .toggle-pill {
@@ -1002,6 +1031,7 @@ const interventionBands = computed(() => {
   border-radius: 8px;
   padding: 2px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
 }
 
 .toggle-pill__btn {
@@ -1014,6 +1044,7 @@ const interventionBands = computed(() => {
   font-size: 0.8rem;
   font-weight: 600;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .toggle-pill__btn:hover {
@@ -1119,6 +1150,46 @@ const interventionBands = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.system-group-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.group-info-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.group-info-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.group-info-btn.is-active {
+  color: #8fbf5f;
+  background: rgba(143, 191, 95, 0.1);
+}
+
+.system-group-description {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid #8fbf5f;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
 }
 
 .system-group-header {
