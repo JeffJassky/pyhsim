@@ -91,7 +91,7 @@
                 v-for="band in normalizedBands"
                 :key="band.key + spec.key"
                 class="series__band"
-                :style="{ left: band.left, width: band.width, background: band.color }"
+                :style="{ left: band.left, width: band.width }"
               />
             </div>
             <svg viewBox="0 0 100 30" preserveAspectRatio="none">
@@ -830,7 +830,7 @@ const fillPoints = (spec: ChartSeriesSpec) => {
 const playheadPercent = computed(() => `${minToPercent(props.playheadMin)}%`);
 
 const normalizedBands = computed(() => {
-  if (!props.interventions?.length) return [] as Array<{ key: string; left: string; width: string; color: string }>;
+  if (!props.interventions?.length) return [] as Array<{ key: string; left: string; width: string }>;
   return props.interventions.map((band) => {
     const startRel = band.start - props.dayStartMin;
     const endRel = band.end - props.dayStartMin;
@@ -841,8 +841,7 @@ const normalizedBands = computed(() => {
     return {
       key: band.key,
       left: `${left}%`,
-      width: `${width}%`,
-      color: band.color ?? 'rgba(255,255,255,0.1)'
+      width: `${width}%`
     };
   });
 });

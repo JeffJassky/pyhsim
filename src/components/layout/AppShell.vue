@@ -68,12 +68,9 @@
           </div>
         </Pane>
         <Pane :size="chatPaneSize" :min-size="15" :max-size="40">
-          <div class="app-shell__chat-pane">
-            <div class="app-shell__chat-handle"></div>
-            <aside class="app-shell__sidebar app-shell__sidebar--right">
-              <slot name="right-sidebar" />
-            </aside>
-          </div>
+          <aside class="app-shell__sidebar app-shell__sidebar--right">
+            <slot name="right-sidebar" />
+          </aside>
         </Pane>
       </Splitpanes>
 
@@ -258,29 +255,19 @@ const handlePaneResize = (panes: { size: number }[]) => {
   overflow: hidden;
 }
 
-/* Hide the default splitter visually - we use chat-handle instead */
+/* Style the splitter to appear inside the chat panel */
 .app-shell__splitpanes :deep(.splitpanes__splitter) {
-  background: transparent;
-  width: 0 !important;
-  min-width: 0 !important;
+    width: 6px !important;
+    min-width: 6px !important;
+    border-left: none;
+    border-right: none;
+    position: relative;
+    z-index: 1;
+    margin-left: -6px;
+    transform: translateX(7px);
 }
 
-/* Chat pane wrapper with internal handle */
-.app-shell__chat-pane {
-  display: flex;
-  height: 100%;
-  min-height: 0;
-}
-
-.app-shell__chat-handle {
-  width: 6px;
-  flex-shrink: 0;
-  background: var(--color-bg-subtle);
-  cursor: col-resize;
-  transition: background 0.15s ease;
-}
-
-.app-shell__chat-handle:hover {
+.app-shell__splitpanes :deep(.splitpanes__splitter:hover) {
   background: var(--color-border-default);
 }
 
@@ -292,7 +279,6 @@ const handlePaneResize = (panes: { size: number }[]) => {
 
 .app-shell__sidebar--right {
   padding: 0;
-  flex: 1;
   height: 100%;
   min-width: 0;
   overflow: auto;

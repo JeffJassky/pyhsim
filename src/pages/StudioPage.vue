@@ -31,196 +31,198 @@
       </Pane>
 
       <Pane :size="chartsPaneSize" :min-size="40">
-        <Panel class="studio-panel studio-panel--charts">
-          <div class="chart-header-row">
-            <div class="header-controls">
-              <!-- Filter By -->
-              <div class="control-group">
-                <span class="control-label">Filter</span>
-                <div class="toggle-pill">
-                  <button
-                    class="toggle-pill__btn"
-                    :class="{ 'is-active': chartFilter === 'goals' }"
-                    v-tooltip="'Show charts related to your goals'"
-                    @click="chartFilter = 'goals'"
-                  >
-                    My Goals
-                  </button>
-                  <button
-                    class="toggle-pill__btn"
-                    :class="{ 'is-active': chartFilter === 'auto' }"
-                    v-tooltip="'Only show charts that are modified by items on the timeline'"
-                    @click="chartFilter = 'auto'"
-                  >
-                    Active
-                  </button>
-                  <button
-                    class="toggle-pill__btn"
-                    :class="{ 'is-active': chartFilter === 'all' }"
-                    v-tooltip="'Show all available physiological signals'"
-                    @click="chartFilter = 'all'"
-                  >
-                    All
-                  </button>
+        <Panel class="studio-panel">
+          <div class="charts-content">
+            <div class="chart-header-row">
+              <div class="header-controls">
+                <!-- Filter By -->
+                <div class="control-group">
+                  <span class="control-label">Filter</span>
+                  <div class="toggle-pill">
+                    <button
+                      class="toggle-pill__btn"
+                      :class="{ 'is-active': chartFilter === 'goals' }"
+                      v-tooltip="'Show charts related to your goals'"
+                      @click="chartFilter = 'goals'"
+                    >
+                      My Goals
+                    </button>
+                    <button
+                      class="toggle-pill__btn"
+                      :class="{ 'is-active': chartFilter === 'auto' }"
+                      v-tooltip="'Only show charts that are modified by items on the timeline'"
+                      @click="chartFilter = 'auto'"
+                    >
+                      Active
+                    </button>
+                    <button
+                      class="toggle-pill__btn"
+                      :class="{ 'is-active': chartFilter === 'all' }"
+                      v-tooltip="'Show all available physiological signals'"
+                      @click="chartFilter = 'all'"
+                    >
+                      All
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Group By -->
+                <div class="control-group">
+                  <span class="control-label">Group</span>
+                  <div class="toggle-pill">
+                    <button
+                      class="toggle-pill__btn"
+                      :class="{ 'is-active': chartGroupBy === 'system' }"
+                      v-tooltip="'Group charts by physiological system (e.g. Nervous, Endocrine)'"
+                      @click="chartGroupBy = 'system'"
+                    >
+                      Biological System
+                    </button>
+                    <button
+                      class="toggle-pill__btn"
+                      :class="{ 'is-active': chartGroupBy === 'goals' }"
+                      v-tooltip="'Group charts by Goal'"
+                      @click="chartGroupBy = 'goals'"
+                    >
+                      Goal
+                    </button>
+                    <button
+                      class="toggle-pill__btn"
+                      :class="{ 'is-active': chartGroupBy === 'none' }"
+                      v-tooltip="'Display charts in a flat list without grouping'"
+                      @click="chartGroupBy = 'none'"
+                    >
+                      None
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Group By -->
-              <div class="control-group">
-                <span class="control-label">Group</span>
-                <div class="toggle-pill">
-                  <button
-                    class="toggle-pill__btn"
-                    :class="{ 'is-active': chartGroupBy === 'system' }"
-                    v-tooltip="'Group charts by physiological system (e.g. Nervous, Endocrine)'"
-                    @click="chartGroupBy = 'system'"
-                  >
-                    Biological System
-                  </button>
-                  <button
-                    class="toggle-pill__btn"
-                    :class="{ 'is-active': chartGroupBy === 'goals' }"
-                    v-tooltip="'Group charts by Goal'"
-                    @click="chartGroupBy = 'goals'"
-                  >
-                    Goal
-                  </button>
-                  <button
-                    class="toggle-pill__btn"
-                    :class="{ 'is-active': chartGroupBy === 'none' }"
-                    v-tooltip="'Display charts in a flat list without grouping'"
-                    @click="chartGroupBy = 'none'"
-                  >
-                    None
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="layout-toggle">
-              <button
-                class="layout-toggle__btn"
-                :class="{ 'is-active': chartLayout === 'list' }"
-                title="List View"
-                v-tooltip="'View charts as a list'"
-                @click="chartLayout = 'list'"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="8" y1="6" x2="21" y2="6"></line>
-                  <line x1="8" y1="12" x2="21" y2="12"></line>
-                  <line x1="8" y1="18" x2="21" y2="18"></line>
-                  <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                  <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                  <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                </svg>
-              </button>
-              <button
-                class="layout-toggle__btn"
-                :class="{ 'is-active': chartLayout === 'grid' }"
-                title="Grid View"
-                v-tooltip="'View charts as grid'"
-                @click="chartLayout = 'grid'"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <rect x="3" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="3" width="7" height="7"></rect>
-                  <rect x="14" y="14" width="7" height="7"></rect>
-                  <rect x="3" y="14" width="7" height="7"></rect>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div class="grouped-charts">
-            <div
-              v-for="group in groupedSpecs"
-              :key="group.id"
-              class="chart-system-group"
-            >
-              <div
-                v-if="chartGroupBy !== 'none'"
-                class="system-group-header-row"
-              >
-                <h3 class="system-group-header">
-                  {{ group.label }}
-                </h3>
+              <div class="layout-toggle">
                 <button
-                  v-if="group.description"
-                  class="group-info-btn"
-                  :class="{ 'is-active': openGroupIds.includes(group.id) }"
-                  @click="toggleGroupDescription(group.id)"
-                  v-tooltip="'What is this system?'"
+                  class="layout-toggle__btn"
+                  :class="{ 'is-active': chartLayout === 'list' }"
+                  title="List View"
+                  v-tooltip="'View charts as a list'"
+                  @click="chartLayout = 'list'"
                 >
                   <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="2.5"
+                    stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   >
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                </button>
+                <button
+                  class="layout-toggle__btn"
+                  :class="{ 'is-active': chartLayout === 'grid' }"
+                  title="Grid View"
+                  v-tooltip="'View charts as grid'"
+                  @click="chartLayout = 'grid'"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
                   </svg>
                 </button>
               </div>
-
-              <Transition name="expand">
-                <div
-                  v-if="group.description && openGroupIds.includes(group.id)"
-                  class="system-group-description"
-                >
-                  {{ group.description }}
-                </div>
-              </Transition>
-
-              <SignalChart
-                :grid="gridMins"
-                :series-specs="group.specs"
-                :series-data="activeChartData"
-                :playhead-min="minute"
-                :interventions="interventionBands"
-                :day-start-min="dayStartMin"
-                :view-minutes="viewMinutes"
-                :loading="busy"
-                :layout="chartLayout"
-                @playhead="(val: number) => setMinute(val as Minute)"
-              />
             </div>
-          </div>
 
-          <NutritionCarousel
-            v-if="timeline.foodItems.length > 0"
-            class="studio-nutrition"
-            :calories-goal="user.nutritionTargets.calories"
-            :calories-total="foodTotals.calories"
-            :macros="macroTotals"
-            :macro-targets="user.nutritionTargets.macros"
-            :macros-enabled="user.nutritionTargets.macrosEnabled"
-          />
+            <div class="grouped-charts">
+              <div
+                v-for="group in groupedSpecs"
+                :key="group.id"
+                class="chart-system-group"
+              >
+                <div
+                  v-if="chartGroupBy !== 'none'"
+                  class="system-group-header-row"
+                >
+                  <h3 class="system-group-header">
+                    {{ group.label }}
+                  </h3>
+                  <button
+                    v-if="group.description"
+                    class="group-info-btn"
+                    :class="{ 'is-active': openGroupIds.includes(group.id) }"
+                    @click="toggleGroupDescription(group.id)"
+                    v-tooltip="'What is this system?'"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="16" x2="12" y2="12"></line>
+                      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                  </button>
+                </div>
+
+                <Transition name="expand">
+                  <div
+                    v-if="group.description && openGroupIds.includes(group.id)"
+                    class="system-group-description"
+                  >
+                    {{ group.description }}
+                  </div>
+                </Transition>
+
+                <SignalChart
+                  :grid="gridMins"
+                  :series-specs="group.specs"
+                  :series-data="activeChartData"
+                  :playhead-min="minute"
+                  :interventions="interventionBands"
+                  :day-start-min="dayStartMin"
+                  :view-minutes="viewMinutes"
+                  :loading="busy"
+                  :layout="chartLayout"
+                  @playhead="(val: number) => setMinute(val as Minute)"
+                />
+              </div>
+            </div>
+
+            <NutritionCarousel
+              v-if="timeline.foodItems.length > 0"
+              class="studio-nutrition"
+              :calories-goal="user.nutritionTargets.calories"
+              :calories-total="foodTotals.calories"
+              :macros="macroTotals"
+              :macro-targets="user.nutritionTargets.macros"
+              :macros-enabled="user.nutritionTargets.macrosEnabled"
+            />
+          </div>
         </Panel>
       </Pane>
     </Splitpanes>
@@ -899,14 +901,29 @@ const toggleGroupDescription = (id: string) => {
   flex-direction: column;
 }
 
-.studio-panel--charts {
+.charts-content {
   padding: 1em 1em 6em 1em;
   background: var(--color-bg-subtle);
+  border-top: 1px solid var(--color-border-default);
 }
 
 .studio-splitpanes :deep(.splitpanes__pane) {
   min-height: 100px;
   overflow: hidden;
+}
+
+/* Timeline/Charts horizontal splitter - reset any inherited styles */
+.studio-splitpanes :deep(.splitpanes__splitter) {
+  height: 6px !important;
+  min-height: 6px !important;
+  width: 100% !important;
+  margin: 0;
+  transform: none;
+  cursor: row-resize;
+}
+
+.studio-splitpanes :deep(.splitpanes__splitter:hover) {
+  background: var(--color-border-default);
 }
 
 .studio-splitpanes :deep(.splitpanes__pane > *) {

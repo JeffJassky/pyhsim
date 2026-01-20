@@ -55,7 +55,6 @@ body {
 
 /* Splitpanes theme overrides */
 .splitpanes__splitter {
-  background: var(--color-bg-subtle);
   transition: background 0.15s ease;
 }
 
