@@ -350,7 +350,7 @@ onBeforeUnmount(() => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--color-bg-overlay);
+    background: var(--color-bg-base);
     z-index: 30;
   }
 }

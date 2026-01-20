@@ -47,7 +47,7 @@ The UI will be strictly monochromatic, using a pure grayscale scale.
 Variables should describe _intent_, not _appearance_:
 
 - `--color-bg-base`: Main app background.
-- `--color-bg-surface`: Card/Panel background.
+- `--color-bg-elevated`: Card/Panel background.
 - `--color-text-primary`: Main text color.
 - `--color-border-subtle`: Default border color.
 - `--color-accent`: High-contrast primary action (grayscale).

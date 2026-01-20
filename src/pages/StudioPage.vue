@@ -18,17 +18,9 @@
         />
       </Panel>
 
-      <NutritionCarousel
-        v-if="timeline.foodItems.length > 0"
-        class="studio-nutrition"
-        :calories-goal="user.nutritionTargets.calories"
-        :calories-total="foodTotals.calories"
-        :macros="macroTotals"
-        :macro-targets="user.nutritionTargets.macros"
-        :macros-enabled="user.nutritionTargets.macrosEnabled"
-      />
-
-      <Panel>
+      <Panel
+        style="background: var(--color-bg-subtle); padding: 1em 1em 5em 1em "
+      >
         <div class="chart-header-row">
           <div class="header-controls">
             <!-- Filter By -->
@@ -206,6 +198,16 @@
           </div>
         </div>
       </Panel>
+
+      <NutritionCarousel
+        v-if="timeline.foodItems.length > 0"
+        class="studio-nutrition"
+        :calories-goal="user.nutritionTargets.calories"
+        :calories-total="foodTotals.calories"
+        :macros="macroTotals"
+        :macro-targets="user.nutritionTargets.macros"
+        :macros-enabled="user.nutritionTargets.macrosEnabled"
+      />
     </section>
 
     <template #floating>
@@ -1028,10 +1030,9 @@ const toggleGroupDescription = (id: string) => {
 .toggle-pill {
   display: flex;
   align-items: center;
-  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 2px;
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border-default);
   white-space: nowrap;
 }
 

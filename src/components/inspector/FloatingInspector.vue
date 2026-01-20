@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
   width: 340px;
   max-width: calc(100% - 32px);
   z-index: 30;
-  background: rgba(5, 5, 10, 0.5);
+  background: var(--color-bg-base);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);

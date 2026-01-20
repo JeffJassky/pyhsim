@@ -738,7 +738,6 @@ export interface ChartSeriesSpec {
   label: string;
   isPremium?: boolean;
   unit?: string;
-  color?: string;
   idealTendency: IdealTendency;
   yMin?: number;
   yMax?: number;

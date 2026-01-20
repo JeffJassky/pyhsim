@@ -25,7 +25,11 @@
       v-if="hoverMinute !== null"
       class="playhead-line hover-line"
       :style="{ left: `${getMinutePercent(hoverMinute)}%` }"
-    ></div>
+    >
+      <div class="playhead-time-label hover-time-label">
+        {{ minuteToLabel(hoverMinute as Minute) }}
+      </div>
+    </div>
 
     <!-- Active Playhead -->
     <div
@@ -612,7 +616,7 @@ watch(durationDays, () => {
 
 .timeline-vis :deep(.vis-timeline) {
   border: none;
-  background: var(--color-bg-surface);
+  background: var(--color-bg-elevated);
   border-radius: 14px;
 }
 
@@ -662,8 +666,8 @@ watch(durationDays, () => {
 }
 
 .timeline-vis :deep(.vis-item.vis-selected) {
-	color: var(--color-text-primary);
-  box-shadow: 0 0 0 2px var(--color-border-strong), 0 10px 25px rgba(0, 0, 0, 0.4);
+color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-active), 0 10px 25px rgba(0, 0, 0, 0.4);
 }
 
 .timeline-vis :deep(.vis-time-axis .vis-grid),
@@ -710,6 +714,11 @@ watch(durationDays, () => {
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.hover-time-label {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
 }
 
 .playhead-add-btn {

@@ -56,7 +56,7 @@
 }
 
 .vis-item.vis-selected {
-  background-color: var(--color-bg-surface);
+  background-color: var(--color-bg-elevated);
   border-color: var(--color-accent);
 }
 

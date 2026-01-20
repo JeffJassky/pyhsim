@@ -587,7 +587,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: var(--color-bg-overlay);
+  background: var(--color-bg-base);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;

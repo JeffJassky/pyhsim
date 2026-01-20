@@ -4,21 +4,21 @@ export const TENDENCY_COLORS: Record<
   IdealTendency,
   { line: string; fill: string }
 > = {
-  higher: { 
-    line: "var(--color-macro-carbs)", 
-    fill: "color-mix(in srgb, var(--color-macro-carbs), transparent 88%)" 
+  higher: {
+    line: "var(--color-macro-carbs)",
+    fill: "color-mix(in srgb, var(--color-macro-carbs), transparent 88%)",
   },
-  lower: { 
-    line: "var(--color-warning)", 
-    fill: "color-mix(in srgb, var(--color-warning), transparent 88%)" 
+  lower: {
+    line: "var(--color-warning)",
+    fill: "color-mix(in srgb, var(--color-warning), transparent 88%)",
   },
-  mid: { 
-    line: "var(--neutral-400)", 
-    fill: "color-mix(in srgb, var(--neutral-400), transparent 88%)" 
+  mid: {
+    line: "var(--neutral-900)",
+    fill: "var(--neutral-900)",
   },
-  none: { 
-    line: "var(--neutral-400)", 
-    fill: "color-mix(in srgb, var(--neutral-400), transparent 88%)" 
+  none: {
+    line: "var(--neutral-900)",
+    fill: "var(--neutral-900)",
   },
 };
 

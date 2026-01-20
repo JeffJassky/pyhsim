@@ -4,9 +4,7 @@
   /* Backgrounds */
   --color-bg-base: var(--neutral-0);
   --color-bg-subtle: var(--neutral-100);
-  --color-bg-surface: var(--neutral-200);
   --color-bg-elevated: var(--neutral-200);
-  --color-bg-overlay: rgba(255, 255, 255, 0.85);
   --color-bg-active: var(--neutral-200);
 
   /* Text */

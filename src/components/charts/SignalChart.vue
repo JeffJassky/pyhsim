@@ -195,6 +195,22 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       }}{{ (cond.value * 100).toFixed(0) }}%)
                     </span>
                   </div>
@@ -227,6 +243,22 @@
                     <span class="contributor-mech">{{ item.mechanism }}</span>
                     <span class="contributor-value">
                       ({{ item.value > 0 ? '+' : ''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -891,7 +923,7 @@ watch(
   align-items: flex-start;
   gap: 4px;
   padding: 0 10px;
-  background: var(--color-bg-surface);
+  background: var(--color-bg-base);
   border-right: 1px solid var(--color-border-subtle);
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
