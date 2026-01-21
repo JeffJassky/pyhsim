@@ -56,11 +56,10 @@ onBeforeUnmount(() => {
   width: 340px;
   max-width: calc(100% - 32px);
   z-index: 30;
-  background: var(--color-bg-elevated);
   border: 1px solid var(--color-border-default);
-  border-radius: 16px;
+  border-radius: 6px;
   box-shadow: var(--shadow-large);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(15px);
   padding: 1.25rem;
   overflow: auto;
   max-height: calc(100vh - 260px);

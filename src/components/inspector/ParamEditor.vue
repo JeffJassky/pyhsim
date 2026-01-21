@@ -19,6 +19,7 @@
     <component
       :is="inputType"
       v-bind="inputProps"
+      :class="{ 'input-mono': paramDef.type === 'number' || paramDef.type === 'slider' }"
       :value="value"
       @input="onInput"
       @change="onInput"
@@ -108,6 +109,7 @@ label {
   border-radius: 4px;
   color: inherit;
   font-size: 0.8rem;
+  font-family: var(--font-mono);
   padding: 0.1rem 0.25rem;
   text-align: right;
 }
@@ -115,5 +117,9 @@ label {
 .number-readout:focus {
   outline: none;
   border-color: var(--color-active);
+}
+
+.input-mono {
+  font-family: var(--font-mono);
 }
 </style>

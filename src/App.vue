@@ -55,7 +55,6 @@ watchEffect(() => {
   margin: 1.5em 0 0 0;
   padding: 0 !important;
   color: white;
-  opacity: 0.5;
   font-size: 0.9em;
 }
 </style>

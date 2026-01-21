@@ -26,6 +26,7 @@
             @update="handleTimelineMove"
             @playhead="setMinute"
             @trigger-add="handlePlayheadAdd"
+            @hover="handleTimelineHover"
           />
         </Panel>
       </Pane>
@@ -208,6 +209,8 @@
                   :view-minutes="viewMinutes"
                   :loading="busy"
                   :layout="chartLayout"
+                  :highlighted-keys="highlightedSignalKeys"
+                  :selected-keys="selectedSignalKeys"
                   @playhead="(val: number) => setMinute(val as Minute)"
                 />
               </div>
@@ -700,6 +703,62 @@ const chartFilter = ref<'auto' | 'goals' | 'all'>('goals');
 const chartGroupBy = ref<'none' | 'system' | 'goals'>('system');
 const chartLayout = ref<'list' | 'grid'>('grid');
 
+const hoveredItemId = ref<UUID | undefined>(undefined);
+const handleTimelineHover = (id?: UUID) => {
+  hoveredItemId.value = id;
+};
+
+const resolveSignalsForItems = (items: TimelineItem[]): Set<Signal> => {
+  const directSignals = new Set<Signal>();
+
+  items.forEach((item) => {
+    const def = library.defs.find((d) => d.key === item.meta.key);
+    if (!def) return;
+
+    let pharms: PharmacologyDef[] = [];
+    if (typeof def.pharmacology === 'function') {
+      const result = (def.pharmacology as any)(item.meta.params || {});
+      pharms = Array.isArray(result) ? result : [result];
+    } else {
+      pharms = [def.pharmacology];
+    }
+
+    pharms.forEach((pharm) => {
+      if (pharm.pd) {
+        pharm.pd.forEach((effect) => {
+          directSignals.add(effect.target as Signal);
+          const affected = getReceptorSignals(effect.target);
+          affected.forEach((mapping) => directSignals.add(mapping.signal));
+        });
+      }
+    });
+  });
+
+  const signalsToShow = new Set(directSignals);
+
+  Object.values(UNIFIED_DEFS).forEach((def) => {
+    if (!def.dynamics.couplings) return;
+    const isCoupled = def.dynamics.couplings.some((c) => directSignals.has(c.source));
+    if (isCoupled) {
+      signalsToShow.add(def.key);
+    }
+  });
+
+  return signalsToShow;
+};
+
+const highlightedSignalKeys = computed(() => {
+  if (!hoveredItemId.value) return [];
+  const item = timeline.items.find((i) => i.id === hoveredItemId.value);
+  if (!item) return [];
+  return Array.from(resolveSignalsForItems([item]));
+});
+
+const selectedSignalKeys = computed(() => {
+  if (!selectedItem.value) return [];
+  return Array.from(resolveSignalsForItems([selectedItem.value]));
+});
+
 const panelIcon = computed(() => {
   if (chartFilter.value === 'goals') return '✨';
   if (chartFilter.value === 'all') return '📊';
@@ -715,44 +774,7 @@ const activeSpecs = computed(() => {
       ? timeline.items.filter((it) => it.id === timeline.selectedId)
       : timeline.items;
 
-    const directSignals = new Set<Signal>();
-
-    sourceItems.forEach((item) => {
-      const def = library.defs.find((d) => d.key === item.meta.key);
-      if (!def) return;
-
-      let pharms: PharmacologyDef[] = [];
-      if (typeof def.pharmacology === 'function') {
-        const result = (def.pharmacology as any)(item.meta.params || {});
-        pharms = Array.isArray(result) ? result : [result];
-      } else {
-        pharms = [def.pharmacology];
-      }
-
-      pharms.forEach((pharm) => {
-        if (pharm.pd) {
-          pharm.pd.forEach((effect) => {
-            // Add the target itself if it's a signal
-            directSignals.add(effect.target as Signal);
-            // Also add signals affected by this target (for transporters/receptors)
-            const affected = getReceptorSignals(effect.target);
-            affected.forEach(mapping => directSignals.add(mapping.signal));
-          });
-        }
-      });
-    });
-
-    const signalsToShow = new Set(directSignals);
-
-    // Include signals that are coupled to the directly modified signals (downstream effects)
-    Object.values(UNIFIED_DEFS).forEach((def) => {
-      if (!def.dynamics.couplings) return;
-      const isCoupled = def.dynamics.couplings.some((c) => directSignals.has(c.source));
-      if (isCoupled) {
-        signalsToShow.add(def.key);
-      }
-    });
-    keys = Array.from(signalsToShow);
+    keys = Array.from(resolveSignalsForItems(sourceItems));
   } else if (chartFilter.value === 'goals') {
     // Show signals relevant to SELECTED goals
     const selectedGoalIds = user.selectedGoals;
@@ -1273,11 +1295,11 @@ background: var(--color-active);
 }
 
 .system-group-header {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--color-text-primary);
+  color: var(--color-text-muted);
   margin: 0;
   display: flex;
   align-items: center;

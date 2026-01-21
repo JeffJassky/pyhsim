@@ -87,6 +87,7 @@ const emit = defineEmits<{
   update: [{ id: UUID; start: string; end: string; group?: string | number }];
   playhead: [Minute];
   triggerAdd: [Minute, (string | number | undefined)?];
+  hover: [UUID | undefined];
 }>();
 
 const container = ref<HTMLDivElement | null>(null);
@@ -169,6 +170,8 @@ const handleMouseMove = (event: MouseEvent) => {
 
   const visProps = timeline.getEventProperties(event);
   hoverGroup.value = visProps.group ?? null;
+  const hoverItemId = visProps.item ? (visProps.item as string).split('_')[0] : undefined;
+  emit('hover', hoverItemId as UUID);
 
   if (visProps.time) {
     // This gives absolute time. We need to map back to minute-of-day (0-1440)
@@ -183,6 +186,7 @@ const handleMouseMove = (event: MouseEvent) => {
 const handleMouseLeave = () => {
   hoverMinute.value = null;
   hoverGroup.value = null;
+  emit('hover', undefined);
   isUserMoving.value = false;
   if (hideTimeout) clearTimeout(hideTimeout);
 };
@@ -344,7 +348,7 @@ const syncItems = () => {
       const cat = INTERVENTION_CATEGORIES.find(c => c.id === gid);
       groupDataset?.add({
         id: gid,
-        content: cat ? `${cat.icon} ${cat.label}` : gid.toString().charAt(0).toUpperCase() + gid.toString().slice(1)
+        content: cat ? `${cat.label}` : gid.toString().charAt(0).toUpperCase() + gid.toString().slice(1)
       });
     }
   });
@@ -455,15 +459,14 @@ const options = (): TimelineOptions => {
     },
     template: (item: any, element: any, data: any) => {
       const container = document.createElement('div');
+      container.className = 'timeline-item-inner';
 
       const vnode = h('div', {
         innerHTML: item.content,
         style: { width: '100%', height: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
       });
 
-
-        render(vnode, container);
-
+      render(vnode, container);
       return container;
     },
   };
@@ -637,31 +640,56 @@ watch(durationDays, () => {
 
 .timeline-vis :deep(.vis-item) {
   border: none;
-  border-radius: 12px;
-  padding: 6px;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  min-width: 50px;
+  overflow: visible;
+  transition: left 0.2s ease, right 0.2s ease, width 0.2s ease, top 0.2s ease;
+}
+
+.timeline-vis :deep(.timeline-item-inner) {
+  background: var(--color-bg-elevated);
+  padding: 0.25em 0.5em;
   font-weight: 600;
   color: var(--color-text-secondary);
-  background: var(--color-bg-elevated);
   box-shadow: var(--shadow-large);
-  min-width: 50px;
-  overflow: hidden;
-  transition: left 0.2s ease, right 0.2s ease, width 0.2s ease, top 0.2s ease;
+font-size: 0.8rem;
+  border: 1px solid var(--color-border-default) !important;
+  border-radius: 6px;
+  transition: scale 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s ease;
+  transform-origin: center center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+
 }
 
 .timeline-vis :deep(.vis-item .vis-item-content) {
   display: block;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  padding: 0;
 }
 
-.timeline-vis :deep(.vis-item.timeline-item--locked) {
+.timeline-vis :deep(.vis-item:hover) {
+  z-index: 100 !important;
+}
+
+.timeline-vis :deep(.vis-item:hover .timeline-item-inner) {
+  scale: 1.05;
+  color: var(--color-text-primary);
+}
+
+
+
+.timeline-vis :deep(.vis-item.timeline-item--locked .timeline-item-inner) {
   opacity: 0.65;
   background: var(--color-bg-subtle);
 }
 
-.timeline-vis :deep(.vis-item.vis-selected) {
+.timeline-vis :deep(.vis-item.vis-selected .timeline-item-inner) {
 	color: var(--color-text-primary);
   box-shadow: 0 0 0 2px var(--color-active);
 }
@@ -821,7 +849,6 @@ watch(durationDays, () => {
 .timeline-vis :deep(.vis-item.timeline-item--bolus) {
   min-width: auto !important;
   width: auto !important;
-  padding: 6px 10px;
   border-radius: 8px;
 }
 

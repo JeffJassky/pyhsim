@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, watch, nextTick, onMounted, onBeforeUnmount, StyleValue } from 'vue';
 import { useUIStore } from '@/stores/ui';
 import { useOnboardingStore, OnboardingState } from '@/stores/onboarding';
 
@@ -263,7 +263,7 @@ onBeforeUnmount(() => {
   if (resizeObserver) resizeObserver.disconnect();
 });
 
-const spotlightStyle = computed(() => {
+const spotlightStyle = computed<StyleValue>(() => {
   if (currentStepData.value.target === 'center') {
     return {
       top: '50%',
@@ -307,7 +307,7 @@ const glowStyle = computed(() => {
   };
 });
 
-const cardStyle = computed(() => {
+const cardStyle = computed<StyleValue>(() => {
   const rect = targetRect.value;
   const pos = currentStepData.value.position;
 

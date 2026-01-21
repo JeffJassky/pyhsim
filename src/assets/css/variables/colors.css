@@ -7,11 +7,11 @@
   --neutral-300: #d4d4d4;
   --neutral-400: #a3a3a3;
   --neutral-500: #737373;
-  --neutral-600: #525252;
-  --neutral-700: #343434;
-  --neutral-750: #252525;
-  --neutral-800: #181818;
-  --neutral-900: #101010;
+  --neutral-600: #404040;
+  --neutral-700: #303030;
+  --neutral-750: #202020;
+  --neutral-800: #101010;
+  --neutral-900: #000000;
 
   /* Functional Colors (Exceptions - Only for signals/charts) */
 
@@ -22,10 +22,17 @@
   --emerald-600: #059669;
 
   /* Info / Carbs / Chart Tendency */
-  --sky-50: #f0f9ff;
-  --sky-400: #38bdf8;
-  --sky-500: #0ea5e9;
-  --sky-600: #0284c7;
+  --sky-50: #ecfdf5;
+  --sky-400: #38eff8;
+  --sky-500: #0ee9e5;
+  --sky-600: #00acb5;
+  --sky-1000: #092c2e;
+
+  /* Accent color */
+  /* --purp-50: #f4ecfd;
+  --purp-400: #c793ff;
+  --purp-500: #7f0ee9;
+  --purp-600: #6400b5; */
 
   /* Warning / Fat */
   --amber-50: #fffbeb;

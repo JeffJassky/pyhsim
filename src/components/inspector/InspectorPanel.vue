@@ -23,7 +23,7 @@
       <label class="field-label">Time</label>
       <input
         type="text"
-        class="field-input"
+        class="field-input field-input--mono"
         :value="timeDisplay"
         :placeholder="'e.g. 2:30pm, 14:30'"
         @blur="handleTimeBlur"
@@ -36,7 +36,7 @@
       <label class="field-label">Duration (minutes)</label>
       <input
         type="number"
-        class="field-input"
+        class="field-input field-input--mono"
         :value="durationMinutes"
         min="5"
         step="5"
@@ -116,9 +116,13 @@
             {{ getTargetLabel(effect.target as any) }}
           </span>
           <span v-if="effect.intrinsicEfficacy" class="gain-value">
-            {{ (effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy > 0 ? '+' : ''}}
-            {{ ((effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1)}}
-            {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }}
+            {{ 
+				((effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy > 0 ? '+' : '') +
+	(((effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1))
+            }}
+            <span class="gain-unit">
+              {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }}
+            </span>
           </span>
           <p
             v-if="effect.description || getTargetDescription(effect.target as any)"
@@ -370,13 +374,14 @@ const updateDuration = (minutes: number) => {
 .header-row h3 {
   margin: 0;
   font-size: 1.1rem;
-  color: var(--color-text-primary);
+  color: var(--color-text-active);
 }
 
 .total-kcal {
   font-weight: 700;
   color: var(--color-text-active);
   font-size: 1.1rem;
+  font-family: var(--font-mono);
 }
 
 .macro-breakdown {
@@ -409,6 +414,7 @@ const updateDuration = (minutes: number) => {
   justify-content: space-between;
   font-size: 0.75rem;
   font-weight: 600;
+  font-family: var(--font-mono);
 }
 
 .macro-label.protein { color: var(--color-success); }
@@ -454,13 +460,18 @@ h4 {
 .gain-value{
   font-size: 0.7rem;
   line-height: 1.4;
-  color: var(--color-text-muted);
+  color: var(--color-metric-primary);
   font-weight: 600;
+  font-family: var(--font-mono);
   margin-left: 0.25rem;
   background: var(--color-bg-subtle);
   padding: 0.2rem 0.4rem;
   float: right;
   border-radius: 6px;
+}
+
+.gain-unit{
+	color: var(--color-text-muted);
 }
 
 .effect-help {
@@ -473,13 +484,12 @@ h4 {
 .effects-section {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--color-border-subtle);
 }
 
 .effects-toggle-btn {
   width: 100%;
   padding: 0.6rem 1rem;
-  background: var(--color-bg-active);
+  background: transparent;
   border: 1px solid var(--color-border-default);
   border-radius: 8px;
   color: var(--color-text-active);
@@ -490,7 +500,6 @@ h4 {
 }
 
 .effects-toggle-btn:hover {
-  background: var(--color-bg-elevated);
   border-color: var(--color-active);
 }
 
@@ -550,6 +559,10 @@ h4 {
   font-size: 0.9rem;
   color: inherit;
   transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.field-input--mono {
+  font-family: var(--font-mono);
 }
 
 .field-input:hover {

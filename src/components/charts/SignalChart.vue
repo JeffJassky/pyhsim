@@ -8,6 +8,11 @@
       v-for="spec in seriesSpecs"
       :key="spec.key"
       class="series-container"
+      :class="{
+        'is-dimmed': isDimmed(spec.key),
+	'is-selected': isSelected(spec.key),
+		'is-highlighted': isHighlighted(spec.key),
+      }"
       :data-id="spec.key"
     >
       <div class="series-wrapper">
@@ -185,172 +190,18 @@
                     <span class="contributor-label">{{ cond.label }}</span>
                   </div>
                   <div class="contributor-effect">
-                    <span
-                      class="contributor-mech"
-                      >{{ cond.mechanisms.join(', ') }}</span
-                    >
                     <span v-if="cond.value !== 0" class="contributor-value">
-                      ({{ cond.value > 0 ? '+' : ''
+                      {{ cond.value > 0 ? '+' : ''
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                      }}{{ (cond.value * 100).toFixed(0) }}%)
+                      }}{{ (cond.value * 100).toFixed(0) }}%
                     </span>
+                    <span
+                      class="contributor-badge"
+                      v-for="mechanism in cond.mechanisms"
+                      >{{ mechanism }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -373,178 +224,17 @@
                   <div class="contributor-main">
                     <span class="contributor-icon">{{ item.icon }}</span>
                     <span class="contributor-label">{{ item.label }}</span>
-                    <span v-if="item.isIndirect" class="contributor-badge"
-                      >Indirect via {{ item.via }}</span
-                    >
                   </div>
                   <div class="contributor-effect">
-                    <span class="contributor-mech">{{ item.mechanism }}</span>
                     <span class="contributor-value">
-                      ({{ item.value > 0 ? '+' : ''
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                      }}{{ item.value.toFixed(1) }} {{ item.unit }})
+                      {{ item.value > 0 ? '+' : ''}}{{ item.value.toFixed(1) }}
+                      <span class="contributor-unit">
+                        {{ item.unit }}
+                      </span>
                     </span>
+                    <span v-if="item.isIndirect" class="contributor-badge"
+                      >via {{ item.via }}</span
+                    >
                   </div>
                 </div>
               </div>
@@ -618,6 +308,8 @@ interface Props {
   viewMinutes: number;
   loading?: boolean;
   layout?: 'list' | 'grid';
+  highlightedKeys?: string[];
+  selectedKeys?: string[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -628,6 +320,10 @@ const emit = defineEmits<{ (e: 'playhead', min: number): void }>();
 const userStore = useUserStore();
 const timelineStore = useTimelineStore();
 const libraryStore = useLibraryStore();
+
+const isSelected = (key: string) => props.selectedKeys?.includes(key);
+const isDimmed = (key: string) => (props.highlightedKeys?.length && !props.highlightedKeys.includes(key)) || (props.selectedKeys?.length && !props.selectedKeys.includes(key));
+const isHighlighted = (key: string) => props.highlightedKeys?.includes(key);
 
 const getSignalConditions = (signalKey: string) => {
   const contributors = [];
@@ -1115,6 +811,17 @@ watch(
   border-radius: 8px;
   background: var(--color-bg-base);
   box-shadow: var(--shadow-large);
+  transition: opacity 0.2s ease, filter 0.2s ease, transform 0.5s ease-out;
+}
+
+.series-container.is-dimmed {
+  opacity: 0.25;
+  filter: grayscale(1) brightness(0.5);
+  transform: scale(0.95);
+}
+
+.series-container.is-selected .series-sidebar {
+  z-index: 10;
 }
 
 .loading-spinner {
@@ -1298,11 +1005,12 @@ watch(
   transform: translateY(-50%);
   font-size: 0.7rem;
   font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--color-metric-primary);
   background: rgba(0, 0, 0, 0.6);
   padding: 1px 4px;
   border-radius: 4px;
   backdrop-filter: blur(2px);
-  color: white;
   display: flex;
   align-items: baseline;
   gap: 1px;
@@ -1438,7 +1146,7 @@ watch(
 .contributor-badge {
   font-size: 0.6rem;
   text-transform: uppercase;
-  background: var(--color-bg-active);
+  background: var(--color-bg-subtle);
   color: var(--color-text-muted);
   padding: 1px 4px;
   border-radius: 4px;
@@ -1454,13 +1162,22 @@ watch(
 }
 
 .contributor-mech {
-  color: var(--color-text-active);
+  color: var(--color-text-secondary);
   text-transform: capitalize;
 }
 
 .contributor-value {
-  color: var(--color-text-secondary);
   font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--color-metric-secondary);
+}
+
+.contributor-unit {
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  float: right;
+  margin-left: 0.25em;
 }
 
 .no-contributors {
@@ -1497,8 +1214,8 @@ watch(
 
 .series__coupling-mapping {
   font-size: 0.7rem;
-  font-family: monospace;
-  color: var(--color-text-active);
+  font-family: var(--font-mono);
+  color: var(--color-metric-primary);
 }
 
 .series__coupling-desc {
@@ -1576,24 +1293,27 @@ watch(
   position: absolute;
   z-index: 2;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 800;
+  font-family: var(--font-mono);
   padding: 0;
   background: transparent;
   pointer-events: none;
-  color: var(--color-text-primary);
-  text-shadow: 0 1px 3px var(--color-text-inverted);
+  text-shadow: 1px 1px 4px var(--color-text-inverted);
+  color: var(--color-metric-primary);
 }
 
 .series__overlay--value {
   top: 4px;
   right: 6px;
-  opacity: 0.5;
+  font-weight: var(--weight-bold);
 }
 
 .unit {
-  font-size: 0.65rem;
-  opacity: 0.7;
   margin-left: 1px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  float: right;
+  margin-left: 0.25em;
 }
 
 .premium-tag {

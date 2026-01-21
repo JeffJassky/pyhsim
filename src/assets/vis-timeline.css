@@ -51,7 +51,12 @@
 .vis-item {
   color: var(--color-text-muted);
   background-color: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-default) !important;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.vis-item .vis-item-overflow {
+  overflow: visible !important;
 }
 
 .vis-item.vis-selected {
@@ -93,9 +98,8 @@
 }
 
 .item-duration {
-  margin-left: 6px;
   font-weight: 500;
-  color: var(--color-text-muted) !important;
+  color: var(--color-text-secondary) !important;
 }
 
 .tooltip-time {
