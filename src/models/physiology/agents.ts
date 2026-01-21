@@ -3597,4 +3597,830 @@ export const Agents = {
       ],
     };
   },
+
+  // =============================================================================
+  // PSYCHEDELICS & RELATED COMPOUNDS
+  // =============================================================================
+
+  /**
+   * MDMA (3,4-Methylenedioxymethamphetamine)
+   * Entactogen/empathogen with potent serotonin-releasing effects.
+   *
+   * Pharmacology:
+   * - Primary mechanism: SERT reversal → massive serotonin release
+   * - Secondary: DAT and NET reversal → dopamine and norepinephrine release
+   * - Oxytocin release (prosocial effects)
+   * - 5-HT2A agonism (mild psychedelic component)
+   * - Cortisol/stress hormone elevation
+   * - Hyperthermia risk (thermoregulation disruption)
+   *
+   * PK: Well absorbed orally, CYP2D6 metabolism, 8-9 hour half-life
+   */
+  MDMA: (mg: number): PharmacologyDef => ({
+    molecule: { name: "MDMA", molarMass: 193.25, logP: 2.28 },
+    pk: {
+      model: "1-compartment",
+      delivery: "bolus",
+      bioavailability: 0.75,
+      halfLifeMin: 510, // ~8.5 hours
+      timeToPeakMin: 120, // 1.5-2 hours
+      clearance: { hepatic: { baseCL_mL_min: 600, CYP: "CYP2D6" } },
+      volume: { kind: "weight", base_L_kg: 5.0 },
+    },
+    pd: [
+      // Massive SERT reversal - serotonin release (primary mechanism)
+      {
+        target: "SERT",
+        mechanism: "antagonist",
+        Ki: 610,
+        intrinsicEfficacy: mg * 8.0, // Very potent SERT effect
+        unit: "nM",
+        description:
+          "MDMA reverses the serotonin transporter, causing a massive flood of serotonin into synapses—this drives the intense emotional warmth and empathy.",
+      },
+      // Direct serotonin elevation
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 12.0,
+        unit: "nM",
+        tau: 30,
+        description:
+          "Serotonin levels surge dramatically, creating feelings of emotional openness, love, and connectedness that define the MDMA experience.",
+      },
+      // DAT reversal - dopamine release (secondary)
+      {
+        target: "DAT",
+        mechanism: "antagonist",
+        Ki: 1500,
+        intrinsicEfficacy: mg * 2.5,
+        unit: "nM",
+        description:
+          "Dopamine release contributes to the euphoria and stimulation, though this is secondary to serotonin effects.",
+      },
+      // Dopamine elevation
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 3.0,
+        unit: "nM",
+        tau: 25,
+        description:
+          "Elevated dopamine creates reward sensations and motivational energy, adding to the pleasurable experience.",
+      },
+      // NET reversal - norepinephrine release
+      {
+        target: "NET",
+        mechanism: "antagonist",
+        Ki: 380,
+        intrinsicEfficacy: mg * 3.5,
+        unit: "nM",
+        description:
+          "Norepinephrine release drives stimulant effects: increased heart rate, alertness, and physical energy.",
+      },
+      // Norepinephrine elevation
+      {
+        target: "norepi",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 4.0,
+        unit: "pg/mL",
+        tau: 20,
+        description:
+          "Elevated norepinephrine causes the 'speedy' component—increased heart rate, wakefulness, and arousal.",
+      },
+      // Oxytocin release - social bonding
+      {
+        target: "oxytocin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 1.5,
+        unit: "pg/mL",
+        tau: 40,
+        description:
+          "MDMA triggers oxytocin release, the 'bonding hormone,' creating deep feelings of trust and emotional intimacy.",
+      },
+      // 5-HT2A agonism (mild psychedelic component)
+      {
+        target: "5HT2A",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.3,
+        Ki: 5100,
+        unit: "nM",
+        description:
+          "Mild 5-HT2A activation contributes to sensory enhancement—colors seem brighter, music more moving.",
+      },
+      // Cortisol elevation (stress response)
+      {
+        target: "cortisol",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.15,
+        unit: "µg/dL",
+        tau: 60,
+        description:
+          "Cortisol rises as part of the physiological stress response, contributing to alertness but also to the 'comedown.'",
+      },
+      // Adrenaline release
+      {
+        target: "adrenaline",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 5.0,
+        unit: "pg/mL",
+        tau: 30,
+        description:
+          "Adrenaline release causes physical stimulation—dilated pupils, increased body temperature, and energized feeling.",
+      },
+      // Prolactin elevation (post-peak)
+      {
+        target: "prolactin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.3,
+        unit: "ng/mL",
+        tau: 180,
+        description:
+          "Prolactin rises after the peak, contributing to the 'loved up' feeling but also to subsequent low mood during comedown.",
+      },
+      // Body temperature elevation (thermogenesis)
+      {
+        target: "temperature",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.012,
+        unit: "index",
+        tau: 45,
+        description:
+          "MDMA impairs thermoregulation—body temperature rises, which is why staying cool and hydrated is critical.",
+      },
+    ],
+  }),
+
+  /**
+   * LSD (Lysergic acid diethylamide)
+   * Classic serotonergic psychedelic with extremely high 5-HT2A affinity.
+   *
+   * Pharmacology:
+   * - Primary: 5-HT2A agonism (visual/cognitive effects)
+   * - Secondary: 5-HT2C, 5-HT1A agonism
+   * - Dopamine D1/D2 receptor activity
+   * - Very high potency (microgram doses)
+   * - Long duration due to receptor residence time
+   *
+   * PK: Rapid absorption, hepatic metabolism, 3-5 hour half-life
+   * but effects last 8-12 hours due to prolonged receptor binding
+   */
+  LSD: (mcg: number): PharmacologyDef => {
+    // LSD is dosed in micrograms; convert to mg-equivalent for calculations
+    const mgEquiv = mcg / 1000;
+
+    return {
+      molecule: { name: "LSD", molarMass: 323.43, logP: 2.95 },
+      pk: {
+        model: "1-compartment",
+        delivery: "bolus",
+        bioavailability: 0.71, // High oral bioavailability
+        halfLifeMin: 210, // ~3.5 hours but effects much longer
+        timeToPeakMin: 90, // 1-2 hours
+        clearance: { hepatic: { baseCL_mL_min: 650, CYP: "CYP3A4" } },
+        volume: { kind: "weight", base_L_kg: 0.55 },
+      },
+      pd: [
+        // 5-HT2A agonism - PRIMARY mechanism (psychedelic effects)
+        {
+          target: "5HT2A",
+          mechanism: "agonist",
+          Ki: 1.1, // Extremely high affinity (Ki ~1 nM)
+          intrinsicEfficacy: mcg * 0.8, // Scaled for microgram dosing
+          unit: "nM",
+          tau: 480, // Prolonged due to receptor residence time
+          description:
+            "LSD binds tightly to 5-HT2A receptors and stays there—this drives the visual distortions, altered thinking, and profound shifts in perception.",
+        },
+        // 5-HT2C agonism (anxiety/cardiovascular)
+        {
+          target: "5HT2C",
+          mechanism: "agonist",
+          Ki: 23,
+          intrinsicEfficacy: mcg * 0.4,
+          unit: "nM",
+          tau: 360,
+          description:
+            "5-HT2C activation can cause anxiety or restlessness, especially during the come-up. It also suppresses appetite.",
+        },
+        // 5-HT1A partial agonism (calming/mood)
+        {
+          target: "5HT1A",
+          mechanism: "agonist",
+          Ki: 54,
+          intrinsicEfficacy: mcg * 0.25,
+          unit: "nM",
+          tau: 300,
+          description:
+            "5-HT1A activity provides an anxiolytic counterbalance, contributing to peaceful or mystical experiences.",
+        },
+        // Dopamine D2 agonism (stimulation, euphoria)
+        {
+          target: "D2",
+          mechanism: "agonist",
+          Ki: 420,
+          intrinsicEfficacy: mcg * 0.15,
+          unit: "nM",
+          tau: 240,
+          description:
+            "Dopamine receptor activation adds stimulation and can contribute to euphoric or grandiose thinking.",
+        },
+        // Dopamine D1 agonism (cognition)
+        {
+          target: "D1",
+          mechanism: "agonist",
+          Ki: 960,
+          intrinsicEfficacy: mcg * 0.1,
+          unit: "nM",
+          tau: 240,
+          description:
+            "D1 activation may enhance cognitive flexibility—the ability to see things from new perspectives.",
+        },
+        // Glutamate modulation (neuroplasticity)
+        {
+          target: "glutamate",
+          mechanism: "agonist",
+          intrinsicEfficacy: mcg * 0.3,
+          unit: "µM",
+          tau: 300,
+          description:
+            "LSD increases glutamate signaling in the prefrontal cortex, potentially driving neuroplastic changes and insights.",
+        },
+        // BDNF upregulation (neuroplasticity)
+        {
+          target: "bdnf",
+          mechanism: "agonist",
+          intrinsicEfficacy: mcg * 0.02,
+          unit: "ng/mL",
+          tau: 720,
+          description:
+            "Psychedelics promote BDNF release, which supports neural growth and may underlie lasting therapeutic benefits.",
+        },
+        // Cortisol elevation (stress response)
+        {
+          target: "cortisol",
+          mechanism: "agonist",
+          intrinsicEfficacy: mcg * 0.03,
+          unit: "µg/dL",
+          tau: 120,
+          description:
+            "Cortisol rises during the experience, reflecting the psychological intensity—this normalizes as effects subside.",
+        },
+        // Norepinephrine elevation (arousal)
+        {
+          target: "norepi",
+          mechanism: "agonist",
+          intrinsicEfficacy: mcg * 0.5,
+          unit: "pg/mL",
+          tau: 180,
+          description:
+            "Mild sympathetic activation causes dilated pupils, slight increase in heart rate, and heightened alertness.",
+        },
+      ],
+    };
+  },
+
+  /**
+   * PSILOCYBIN (4-phosphoryloxy-N,N-dimethyltryptamine)
+   * Prodrug converted to psilocin; classic serotonergic psychedelic.
+   *
+   * Pharmacology:
+   * - Dephosphorylated to psilocin (active metabolite) in gut/liver
+   * - Primary: 5-HT2A agonism (psychedelic effects)
+   * - Secondary: 5-HT2C, 5-HT1A agonism
+   * - Shorter duration than LSD (4-6 hours)
+   *
+   * PK: Rapid conversion to psilocin, 2-3 hour half-life
+   * Note: mg refers to psilocybin content, not dried mushroom weight
+   * (dried mushrooms typically contain 0.5-2% psilocybin by weight)
+   */
+  Psilocybin: (mg: number): PharmacologyDef => ({
+    molecule: { name: "Psilocybin", molarMass: 284.25, logP: -0.19 },
+    pk: {
+      model: "1-compartment",
+      delivery: "bolus",
+      bioavailability: 0.52, // After first-pass conversion to psilocin
+      halfLifeMin: 165, // ~2.75 hours (psilocin)
+      timeToPeakMin: 80, // 1-1.5 hours
+      clearance: {
+        hepatic: { baseCL_mL_min: 1200, CYP: "CYP2D6" },
+      },
+      volume: { kind: "weight", base_L_kg: 3.0 },
+    },
+    pd: [
+      // 5-HT2A agonism - PRIMARY mechanism
+      {
+        target: "5HT2A",
+        mechanism: "agonist",
+        Ki: 6.0, // High affinity
+        intrinsicEfficacy: mg * 8.0,
+        unit: "nM",
+        tau: 240,
+        description:
+          "Psilocin (the active form) binds 5-HT2A receptors, dissolving default brain patterns and creating visual/perceptual shifts.",
+      },
+      // 5-HT2C agonism
+      {
+        target: "5HT2C",
+        mechanism: "agonist",
+        Ki: 18,
+        intrinsicEfficacy: mg * 4.5,
+        unit: "nM",
+        tau: 200,
+        description:
+          "5-HT2C activation contributes to body load, nausea (early), and emotional amplification.",
+      },
+      // 5-HT1A agonism (calming, anti-anxiety)
+      {
+        target: "5HT1A",
+        mechanism: "agonist",
+        Ki: 49,
+        intrinsicEfficacy: mg * 3.0,
+        unit: "nM",
+        tau: 180,
+        description:
+          "5-HT1A activity provides emotional warmth and can reduce anxiety, contributing to peaceful experiences.",
+      },
+      // 5-HT2B agonism (noted for cardiac consideration)
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 2.5,
+        unit: "nM",
+        tau: 150,
+        description:
+          "Overall serotonin signaling increases, affecting mood, perception, and bodily sensations.",
+      },
+      // Glutamate release (cortical)
+      {
+        target: "glutamate",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.6,
+        unit: "µM",
+        tau: 120,
+        description:
+          "Increased glutamate in prefrontal regions supports cognitive flexibility and may enable therapeutic insights.",
+      },
+      // BDNF upregulation
+      {
+        target: "bdnf",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.25,
+        unit: "ng/mL",
+        tau: 480,
+        description:
+          "Psilocybin promotes BDNF expression, supporting neuroplasticity—this may underlie lasting mood improvements.",
+      },
+      // Dopamine modulation (indirect)
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.8,
+        unit: "nM",
+        tau: 120,
+        description:
+          "Indirect dopamine elevation contributes to the meaningful, significant quality of experiences.",
+      },
+      // Cortisol (mild stress response)
+      {
+        target: "cortisol",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.08,
+        unit: "µg/dL",
+        tau: 90,
+        description:
+          "Mild cortisol elevation reflects the psychological intensity but is less pronounced than with stimulants.",
+      },
+    ],
+  }),
+
+  /**
+   * KETAMINE
+   * Dissociative anesthetic with rapid-acting antidepressant properties.
+   *
+   * Pharmacology:
+   * - Primary: NMDA receptor antagonism (dissociation, analgesia)
+   * - Secondary: D2 receptor agonism, opioid receptor activity
+   * - AMPA receptor potentiation (downstream)
+   * - Rapid BDNF/synaptogenesis (antidepressant effect)
+   *
+   * PK: Variable by route; intranasal/sublingual common for therapy
+   * Half-life ~2.5-3 hours; effects 45-90 min
+   */
+  Ketamine: (
+    mg: number,
+    route: "intranasal" | "sublingual" | "iv" | "im" = "intranasal",
+  ): PharmacologyDef => {
+    // Bioavailability varies significantly by route
+    const routeParams = {
+      intranasal: { bioavail: 0.45, tPeak: 20, halfLife: 150 },
+      sublingual: { bioavail: 0.3, tPeak: 30, halfLife: 155 },
+      iv: { bioavail: 1.0, tPeak: 5, halfLife: 150 },
+      im: { bioavail: 0.93, tPeak: 15, halfLife: 155 },
+    };
+    const params = routeParams[route];
+
+    return {
+      molecule: { name: "Ketamine", molarMass: 237.73, logP: 3.12 },
+      pk: {
+        model: "1-compartment",
+        delivery: route === "iv" ? "infusion" : "bolus",
+        bioavailability: params.bioavail,
+        halfLifeMin: params.halfLife,
+        timeToPeakMin: params.tPeak,
+        clearance: {
+          hepatic: { baseCL_mL_min: 1100, CYP: "CYP3A4" },
+        },
+        volume: { kind: "weight", base_L_kg: 3.0 },
+      },
+      pd: [
+        // NMDA antagonism - PRIMARY mechanism
+        {
+          target: "NMDA",
+          mechanism: "antagonist",
+          Ki: 500, // Non-competitive antagonist
+          intrinsicEfficacy: mg * 0.004, // Scaled for µM
+          unit: "µM",
+          tau: 60,
+          description:
+            "NMDA blockade causes dissociation—a dreamlike detachment from body and surroundings. Also provides profound pain relief.",
+        },
+        // Glutamate surge (paradoxical - drives AMPA)
+        {
+          target: "glutamate",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 0.08,
+          unit: "µM",
+          tau: 30,
+          description:
+            "NMDA blockade paradoxically increases glutamate release, activating AMPA receptors and triggering neuroplastic cascades.",
+        },
+        // AMPA potentiation (downstream antidepressant)
+        {
+          target: "AMPA",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 0.05,
+          unit: "µM",
+          tau: 45,
+          description:
+            "Enhanced AMPA signaling drives rapid synapse formation—this is thought to underlie ketamine's fast antidepressant action.",
+        },
+        // BDNF upregulation (synaptogenesis)
+        {
+          target: "bdnf",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 0.15,
+          unit: "ng/mL",
+          tau: 180,
+          description:
+            "Ketamine rapidly increases BDNF, promoting new synaptic connections within hours—unlike traditional antidepressants that take weeks.",
+        },
+        // D2 receptor agonism
+        {
+          target: "D2",
+          mechanism: "agonist",
+          Ki: 4800,
+          intrinsicEfficacy: mg * 0.8,
+          unit: "nM",
+          tau: 50,
+          description:
+            "Dopamine receptor activity contributes to mood elevation and the rewarding aspects of the experience.",
+        },
+        // Dopamine elevation
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 1.2,
+          unit: "nM",
+          tau: 40,
+          description:
+            "Increased dopamine signaling adds to mood improvement and may contribute to abuse potential.",
+        },
+        // Mu-opioid receptor activity (analgesia)
+        {
+          target: "endorphin",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 0.3,
+          unit: "nM",
+          tau: 45,
+          description:
+            "Opioid receptor activity provides additional pain relief and contributes to the warm, floaty feeling.",
+        },
+        // Norepinephrine elevation (sympathomimetic)
+        {
+          target: "norepi",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 1.5,
+          unit: "pg/mL",
+          tau: 30,
+          description:
+            "Sympathetic activation increases heart rate and blood pressure—monitoring is important at higher doses.",
+        },
+        // GABA modulation
+        {
+          target: "gaba",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 0.4,
+          unit: "nM",
+          tau: 50,
+          description:
+            "Mild GABAergic effects contribute to anxiolysis and the sedated, dreamy quality.",
+        },
+        // Cortisol (mild elevation)
+        {
+          target: "cortisol",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 0.03,
+          unit: "µg/dL",
+          tau: 60,
+          description:
+            "Modest stress hormone elevation occurs during the experience but normalizes quickly.",
+        },
+      ],
+    };
+  },
+
+  /**
+   * THC - INHALED (Delta-9-Tetrahydrocannabinol)
+   * Primary psychoactive compound in cannabis, inhaled route.
+   *
+   * Pharmacology:
+   * - Primary: CB1 receptor agonism (CNS effects)
+   * - Secondary: CB2 receptor agonism (immune/peripheral)
+   * - GPR55 agonism, TRPV1 modulation
+   * - Complex effects on dopamine, GABA, glutamate
+   *
+   * PK (Inhaled): Rapid absorption through lungs
+   * - Peak: 5-10 minutes
+   * - Duration: 2-4 hours acute effects
+   * - Half-life: 20-30 hours (due to lipophilicity/redistribution)
+   */
+  THCInhaled: (mg: number): PharmacologyDef => ({
+    molecule: { name: "THC (inhaled)", molarMass: 314.47, logP: 6.97 },
+    pk: {
+      model: "2-compartment", // High lipophilicity = redistribution
+      delivery: "bolus",
+      bioavailability: 0.25, // 10-35% typical for smoking
+      halfLifeMin: 120, // Effective half-life for acute effects
+      timeToPeakMin: 8, // Very rapid via lungs
+      clearance: {
+        hepatic: { baseCL_mL_min: 950, CYP: "CYP2C9" },
+      },
+      volume: { kind: "weight", base_L_kg: 3.4 },
+    },
+    pd: [
+      // CB1 agonism - PRIMARY mechanism (CNS effects)
+      {
+        target: "CB1",
+        mechanism: "agonist",
+        Ki: 10, // High affinity
+        intrinsicEfficacy: mg * 12.0,
+        unit: "nM",
+        tau: 90,
+        description:
+          "CB1 activation in the brain creates the 'high'—altered perception, relaxation, euphoria, and changes in time perception.",
+      },
+      // CB2 agonism (peripheral/immune)
+      {
+        target: "CB2",
+        mechanism: "agonist",
+        Ki: 24,
+        intrinsicEfficacy: mg * 5.0,
+        unit: "nM",
+        tau: 120,
+        description:
+          "CB2 receptors in the immune system may reduce inflammation and contribute to body relaxation.",
+      },
+      // Dopamine release (reward, motivation)
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 2.0,
+        unit: "nM",
+        tau: 45,
+        description:
+          "THC increases dopamine in reward circuits, creating pleasurable feelings—this underlies both enjoyment and dependence risk.",
+      },
+      // GABA modulation (relaxation)
+      {
+        target: "gaba",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 1.5,
+        unit: "nM",
+        tau: 60,
+        description:
+          "Enhanced GABA signaling contributes to relaxation, reduced anxiety (at low doses), and sedation.",
+      },
+      // Glutamate inhibition
+      {
+        target: "glutamate",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.4,
+        unit: "µM",
+        tau: 60,
+        description:
+          "Reduced glutamate release impairs short-term memory and can cause the 'foggy' thinking characteristic of being high.",
+      },
+      // Serotonin modulation
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.8,
+        unit: "nM",
+        tau: 75,
+        description:
+          "Serotonin effects contribute to mood changes—elevating mood for some, but potentially increasing anxiety in others.",
+      },
+      // Appetite stimulation (munchies)
+      {
+        target: "ghrelin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 8.0,
+        unit: "pg/mL",
+        tau: 45,
+        description:
+          "CB1 activation in the hypothalamus triggers intense hunger—the classic 'munchies' effect.",
+      },
+      // Orexin modulation (sedation/appetite)
+      {
+        target: "orexin",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 2.0,
+        unit: "pg/mL",
+        tau: 90,
+        description:
+          "Reduced orexin signaling contributes to drowsiness and the couch-lock effect of many strains.",
+      },
+      // Heart rate increase (acute)
+      {
+        target: "adrenaline",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 1.5,
+        unit: "pg/mL",
+        tau: 30,
+        description:
+          "Acute sympathetic activation increases heart rate—this is why heart pounding can occur, especially for new users.",
+      },
+      // Cortisol modulation (biphasic)
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.05,
+        unit: "µg/dL",
+        tau: 120,
+        description:
+          "Cannabis tends to reduce stress hormones, contributing to relaxation—though this effect varies by individual.",
+      },
+      // Anandamide potentiation (endocannabinoid)
+      {
+        target: "anandamide",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.3,
+        unit: "nM",
+        tau: 90,
+        description:
+          "THC mimics and enhances the body's natural cannabinoid, anandamide—named after the Sanskrit word for 'bliss.'",
+      },
+    ],
+  }),
+
+  /**
+   * THC - ORAL/EDIBLE (Delta-9-Tetrahydrocannabinol)
+   * Cannabis consumed orally with hepatic first-pass metabolism.
+   *
+   * Key differences from inhaled:
+   * - Slower onset (1-3 hours vs minutes)
+   * - Longer duration (6-8+ hours vs 2-4 hours)
+   * - First-pass creates 11-OH-THC (more potent, more psychoactive)
+   * - More intense, less controllable experience
+   * - Lower bioavailability but higher peak intensity
+   */
+  THCOral: (mg: number): PharmacologyDef => ({
+    molecule: { name: "THC (oral)", molarMass: 314.47, logP: 6.97 },
+    pk: {
+      model: "2-compartment",
+      delivery: "bolus",
+      bioavailability: 0.08, // 4-12% oral; but 11-OH-THC more potent
+      halfLifeMin: 300, // Longer effective duration
+      timeToPeakMin: 120, // 1-3 hours (highly variable)
+      clearance: {
+        hepatic: { baseCL_mL_min: 950, CYP: "CYP2C9" },
+      },
+      volume: { kind: "weight", base_L_kg: 3.4 },
+    },
+    pd: [
+      // CB1 agonism - enhanced by 11-OH-THC
+      {
+        target: "CB1",
+        mechanism: "agonist",
+        Ki: 5, // 11-OH-THC has higher affinity
+        intrinsicEfficacy: mg * 18.0, // More potent due to metabolite
+        unit: "nM",
+        tau: 240, // Much longer duration
+        description:
+          "Oral THC is converted to 11-OH-THC in the liver—this metabolite crosses the blood-brain barrier more easily and is more potent, leading to stronger effects.",
+      },
+      // CB2 agonism
+      {
+        target: "CB2",
+        mechanism: "agonist",
+        Ki: 20,
+        intrinsicEfficacy: mg * 7.0,
+        unit: "nM",
+        tau: 300,
+        description:
+          "Prolonged CB2 activation provides extended anti-inflammatory and body-relaxing effects.",
+      },
+      // Dopamine (more sustained)
+      {
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 2.5,
+        unit: "nM",
+        tau: 180,
+        description:
+          "Dopamine elevation is more gradual but longer-lasting, contributing to extended euphoria or dysphoria.",
+      },
+      // GABA (stronger sedation)
+      {
+        target: "gaba",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 2.5,
+        unit: "nM",
+        tau: 180,
+        description:
+          "Enhanced GABA effects create stronger sedation—edibles are known for being more 'body heavy.'",
+      },
+      // Glutamate inhibition (more pronounced)
+      {
+        target: "glutamate",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.7,
+        unit: "µM",
+        tau: 180,
+        description:
+          "Stronger glutamate suppression causes more pronounced cognitive impairment and memory disruption.",
+      },
+      // Serotonin modulation
+      {
+        target: "serotonin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 1.2,
+        unit: "nM",
+        tau: 180,
+        description:
+          "Prolonged serotonin effects can intensify emotional experiences—both positive and negative.",
+      },
+      // Appetite stimulation (prolonged)
+      {
+        target: "ghrelin",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 12.0,
+        unit: "pg/mL",
+        tau: 180,
+        description:
+          "Extended appetite stimulation—the munchies can persist for hours with edibles.",
+      },
+      // Orexin suppression (stronger sedation)
+      {
+        target: "orexin",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 4.0,
+        unit: "pg/mL",
+        tau: 240,
+        description:
+          "Pronounced orexin suppression creates strong sedation—falling asleep is common with edibles.",
+      },
+      // Heart rate (more gradual)
+      {
+        target: "adrenaline",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 1.0,
+        unit: "pg/mL",
+        tau: 90,
+        description:
+          "Heart rate increases more gradually than smoking but can persist longer, occasionally causing anxiety.",
+      },
+      // Cortisol (stress reduction)
+      {
+        target: "cortisol",
+        mechanism: "antagonist",
+        intrinsicEfficacy: mg * 0.08,
+        unit: "µg/dL",
+        tau: 240,
+        description:
+          "Extended stress hormone suppression contributes to deep relaxation or, if too intense, feeling 'stuck.'",
+      },
+      // Anandamide potentiation
+      {
+        target: "anandamide",
+        mechanism: "agonist",
+        intrinsicEfficacy: mg * 0.5,
+        unit: "nM",
+        tau: 240,
+        description:
+          "Prolonged enhancement of the endocannabinoid system creates the extended, often intense edible experience.",
+      },
+    ],
+  }),
 };

@@ -48,6 +48,8 @@ import { useOnboardingStore, OnboardingState } from '@/stores/onboarding';
 const uiStore = useUIStore();
 const onboardingStore = useOnboardingStore();
 
+console.log('[Tour] StudioTour component script setup executing');
+
 const isActive = computed(() => uiStore.tourActive);
 
 interface TourStep {
@@ -68,9 +70,9 @@ const tourSteps: TourStep[] = [
   {
     id: 'timeline',
     onboardingState: OnboardingState.TIMELINE_TUTORIAL,
-    target: '.studio-grid > .panel:first-child', // Timeline panel
-    title: 'Your Timeline',
-    text: 'This is where you design your day. Add foods, exercises, and habits to see how they interact.',
+    target: '.tour-timeline-panel',
+    title: 'Your Day Planner',
+    text: `You'll add your foods, supplements, exercieses and activities here.`,
     btnText: 'Next',
     position: 'right',
     skip: true,
@@ -79,29 +81,19 @@ const tourSteps: TourStep[] = [
   {
     id: 'charts',
     onboardingState: OnboardingState.TIMELINE_TUTORIAL,
-    target: '.studio-grid > .panel:last-child', // Charts panel
-    title: 'Real-time Charts',
-    text: 'Watch your biology respond instantly. Switch between views to see different systems.',
+    target: '.tour-charts-panel',
+    title: 'See the Effects',
+    text: 'Watch how your biology responds throughout the day.',
     btnText: 'Next',
     position: 'left',
     shape: 'rect'
   },
   {
-    id: 'add-item',
-    onboardingState: OnboardingState.TIMELINE_TUTORIAL,
-    target: '.studio-fab:not(.studio-fab--secondary)',
-    title: 'Add exercise, food, supplements, etc',
-    text: 'Tap here to add activities, meals, or supplements to your timeline.',
-    btnText: 'Got it',
-    position: 'top-left',
-    shape: 'pill'
-  },
-  {
     id: 'ai',
     onboardingState: OnboardingState.AI_INTRODUCTION,
-    target: '.app-shell__sidebar--right', // AI Chat Panel
-    title: 'Bio-Pilot',
-    text: 'Stuck? Ask your AI co-pilot to explain your data or optimize your schedule.',
+    target: '.tour-ai-panel', // AI Chat Panel
+    title: 'AI Copilot',
+    text: 'Get suggestions, explanations, and let AI manage your day.',
     btnText: 'Got it',
     position: 'left',
     shape: 'rect'
@@ -110,9 +102,9 @@ const tourSteps: TourStep[] = [
     id: 'finish',
     onboardingState: OnboardingState.SOFT_LANDING,
     target: 'center', // Center screen
-    title: "You're Ready",
-    text: "Your simulation is calibrated. Start building your perfect day.",
-    btnText: 'Let\'s go',
+    title: "You're All Set!",
+    text: "",
+    btnText: 'Start Building My Day',
     position: 'center'
   }
 ];
@@ -156,55 +148,119 @@ function finishTour() {
 
 // Spotlight logic
 const targetRect = ref({ top: 0, left: 0, width: 0, height: 0 });
+const isTargetVisible = ref(false);
+let resizeObserver: ResizeObserver | null = null;
 
-async function updateHighlight(attempts = 0) {
-  if (!isActive.value) return;
-  await nextTick();
-
+function updateRect() {
   const targetSelector = currentStepData.value.target;
+  console.log('[Tour] updateRect for', targetSelector);
 
   if (targetSelector === 'center') {
     targetRect.value = { top: 0, left: 0, width: 0, height: 0 };
+    isTargetVisible.value = true;
     return;
   }
 
   const el = document.querySelector(targetSelector);
   if (el) {
     const rect = el.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      targetRect.value = {
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height
-      };
-      return;
+    targetRect.value = {
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height
+    };
+
+    // Panels should be at least 100px to be considered "rendered" for the tour
+    const minSize = targetSelector.includes('panel') ? 100 : 1;
+    const isBigEnough = rect.width >= minSize && rect.height >= minSize;
+
+    console.log('[Tour] Dimensions:', rect.width, 'x', rect.height, 'Target min:', minSize, 'Big enough:', isBigEnough);
+
+    if (isBigEnough) {
+      isTargetVisible.value = true;
     }
+  } else {
+    console.warn('[Tour] Target not found in DOM:', targetSelector);
+  }
+}
+
+async function updateHighlight(attempts = 0) {
+  if (!isActive.value) {
+    console.log('[Tour] updateHighlight called but tour not active');
+    return;
+  }
+  await nextTick();
+
+  const targetSelector = currentStepData.value.target;
+  console.log('[Tour] updateHighlight for', targetSelector, 'attempt', attempts);
+
+  if (targetSelector === 'center') {
+    targetRect.value = { top: 0, left: 0, width: 0, height: 0 };
+    isTargetVisible.value = true;
+    return;
   }
 
-  // Retry if not found or 0 dimensions
-  if (attempts < 10) {
-    setTimeout(() => updateHighlight(attempts + 1), 200);
+  const el = document.querySelector(targetSelector);
+  if (el) {
+    console.log('[Tour] Target found, setting up ResizeObserver');
+    // Found it! Start observing immediately regardless of size
+    if (resizeObserver) resizeObserver.disconnect();
+    resizeObserver = new ResizeObserver(() => {
+      console.log('[Tour] ResizeObserver trigger');
+      updateRect();
+    });
+    resizeObserver.observe(el);
+
+    // Initial check
+    updateRect();
+    return;
+  }
+
+  // Debug: list all tour elements in DOM
+  const allTourEls = document.querySelectorAll('[class*="tour"]');
+  console.log('[Tour] Target not found. All elements with "tour" in class:', Array.from(allTourEls).map(e => e.className));
+
+  // Retry if not found in DOM yet (retry for much longer now)
+  if (attempts < 100) {
+    setTimeout(() => updateHighlight(attempts + 1), 100);
+  } else {
+    console.error('[Tour] Failed to find target after 100 attempts:', targetSelector);
   }
 }
 
 watch(currentStepIndex, () => {
-  // Small delay to allow UI to settle (e.g. if panels expand)
-  setTimeout(() => updateHighlight(), 100);
+  isTargetVisible.value = false; // Hide while switching/searching
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+  updateHighlight();
 });
 
 watch(isActive, (active) => {
-  if (active) setTimeout(() => updateHighlight(), 100);
-});
+  console.log('[Tour] isActive changed:', active);
+  if (active) {
+    updateHighlight();
+  } else {
+    isTargetVisible.value = false;
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+  }
+}, { immediate: true });
 
 onMounted(() => {
-  window.addEventListener('resize', () => updateHighlight());
-  window.addEventListener('scroll', () => updateHighlight());
+  console.log('[Tour] StudioTour mounted, isActive:', isActive.value);
+  window.addEventListener('resize', () => updateRect());
+  window.addEventListener('scroll', () => updateRect());
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', () => updateHighlight());
-  window.removeEventListener('scroll', () => updateHighlight());
+  window.removeEventListener('resize', () => updateRect());
+  window.removeEventListener('scroll', () => updateRect());
+  if (resizeObserver) resizeObserver.disconnect();
 });
 
 const spotlightStyle = computed(() => {
@@ -214,7 +270,7 @@ const spotlightStyle = computed(() => {
       left: '50%',
       width: '0',
       height: '0',
-      opacity: '1'
+      opacity: isTargetVisible.value ? '1' : '0'
     };
   }
 
@@ -229,12 +285,13 @@ const spotlightStyle = computed(() => {
     width: `calc(${targetRect.value.width}px + 20px)`,
     height: `calc(${targetRect.value.height}px + 20px)`,
     borderRadius: radius,
-    opacity: '1'
+    opacity: isTargetVisible.value ? '1' : '0',
+    visibility: isTargetVisible.value ? 'visible' : 'hidden'
   };
 });
 
 const glowStyle = computed(() => {
-  if (currentStepData.value.target === 'center') return { display: 'none' };
+  if (currentStepData.value.target === 'center' || !isTargetVisible.value) return { display: 'none' };
 
   const shape = currentStepData.value.shape || 'rect';
   let radius = '12px';
@@ -258,7 +315,8 @@ const cardStyle = computed(() => {
     return {
       top: '50%',
       left: '50%',
-      transform: 'translate(-50%, -50%)'
+      transform: 'translate(-50%, -50%)',
+      opacity: isTargetVisible.value ? '1' : '0'
     };
   }
 
@@ -290,7 +348,9 @@ const cardStyle = computed(() => {
   return {
     top: `${top}px`,
     left: `${left}px`,
-    transform
+    transform,
+    opacity: isTargetVisible.value ? '1' : '0',
+    visibility: isTargetVisible.value ? 'visible' : 'hidden'
   };
 });
 </script>

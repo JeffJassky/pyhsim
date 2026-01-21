@@ -13,7 +13,7 @@
           ref="timelinePanelRef"
           title=""
           icon="📅"
-          class="studio-panel"
+          class="studio-panel tour-timeline-panel"
           style="background: var(--color-bg-base)"
         >
           <TimelineView
@@ -31,7 +31,7 @@
       </Pane>
 
       <Pane :size="chartsPaneSize" :min-size="40">
-        <Panel class="studio-panel">
+        <Panel class="studio-panel tour-charts-panel">
           <div class="charts-content">
             <div class="chart-header-row">
               <div class="header-controls">
@@ -248,15 +248,29 @@
           type="button"
           @click="addItemModalOpen = true"
         >
-          ➕ Add Item
+          + Add Item
         </button>
         <button
           class="studio-fab studio-fab--secondary"
           type="button"
-          title="Toggle Chat"
+          title="Chat with AI"
           @click="showChat = !showChat"
         >
-          AI Icon here
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <polygon
+              points="12,2 13.5,9 20,12 13.5,15 12,22 10.5,15 4,12 10.5,9"
+            />
+            <polygon
+              points="20,4 20.5,6 22,6.5 20.5,7 20,9 19.5,7 18,6.5 19.5,6"
+            />
+            <polygon points="4,4 4.5,6 6,6.5 4.5,7 4,9 3.5,7 2,6.5 3.5,6" />
+          </svg>
         </button>
       </div>
     </template>
@@ -951,8 +965,8 @@ const toggleGroupDescription = (id: string) => {
 .studio-fab {
   padding: 0.75rem 1.25rem;
   border-radius: 999px;
-  background: var(--color-accent);
-  color: var(--color-text-inverted);
+background: var(--color-active);
+	color: white;
   border: none;
   cursor: pointer;
   font-weight: 700;
@@ -967,12 +981,6 @@ const toggleGroupDescription = (id: string) => {
   color: var(--color-text-inverted);
 }
 
-.studio-fab--secondary {
-  background: var(--color-bg-elevated);
-  color: var(--color-text-primary);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--color-border-subtle);
-}
 
 .studio-fab:hover {
   transform: translateY(-2px);
@@ -1269,7 +1277,7 @@ const toggleGroupDescription = (id: string) => {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-primary);
   margin: 0;
   display: flex;
   align-items: center;

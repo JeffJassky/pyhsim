@@ -1,7 +1,7 @@
 <template>
   <div v-if="item && def" class="inspector">
     <div class="header-row">
-      <h3>{{ displayTitle }}</h3>
+      <h3>{{ props.def?.label }}</h3>
       <span v-if="isFood" class="total-kcal">{{ totalKcal }} kcal</span>
     </div>
     <p v-if="def.notes" class="def-notes">{{ def.notes }}</p>
@@ -97,12 +97,12 @@
         class="effects-toggle-btn"
         @click="showEffects = true"
       >
-        Read about {{ displayTitle }}
+        Read about {{ props.def?.label }}
       </button>
 
       <div v-if="showEffects" class="effects">
         <div class="effects-header">
-          <h4>Biological Effects</h4>
+          <h4>Biological Effects of {{ props.def?.label }}</h4>
           <button class="effects-collapse-btn" @click="showEffects = false">
             Hide
           </button>
@@ -112,27 +112,14 @@
           :key="index"
           class="effect"
         >
-          <span
-            class="effect-signal"
-            >{{ getTargetLabel(effect.target as any) }}</span
-          >
-          <p class="effect-desc">
-            {{ effect.mechanism }}
-            <template v-if="effect.intrinsicEfficacy">
-              <span class="gain-value">
-                ({{ effect.intrinsicEfficacy > 0 ? '+' : ''
-
-
-
-
-
-
-
-                }}{{ (effect.intrinsicEfficacy * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1) }}
-                {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }})
-              </span>
-            </template>
-          </p>
+          <span class="effect-signal">
+            {{ getTargetLabel(effect.target as any) }}
+          </span>
+          <span v-if="effect.intrinsicEfficacy" class="gain-value">
+            {{ (effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy > 0 ? '+' : ''}}
+            {{ ((effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1)}}
+            {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }}
+          </span>
           <p
             v-if="effect.description || getTargetDescription(effect.target as any)"
             class="effect-help"
@@ -464,12 +451,23 @@ h4 {
   color: var(--color-text-primary);
 }
 
+.gain-value{
+  font-size: 0.7rem;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-left: 0.25rem;
+  background: var(--color-bg-subtle);
+  padding: 0.2rem 0.4rem;
+  float: right;
+  border-radius: 6px;
+}
+
 .effect-help {
-  margin: 0.25rem 0 0;
-  font-size: 0.75rem;
+  margin: .25em 0 1em 0;
+  font-size: 0.8rem;
   line-height: 1.4;
   color: var(--color-text-secondary);
-  font-style: italic;
 }
 
 .effects-section {

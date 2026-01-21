@@ -274,6 +274,36 @@ export const RAW_TARGETS = {
     couplings: [{ signal: "acetylcholine", sign: 1 }],
   },
 
+  CB1: {
+    category: "receptor",
+    system: "Cannabinoid",
+    description:
+      "The brain's main cannabis receptor. Concentrated in areas controlling memory, movement, and pleasure. THC activates this receptor, causing the 'high'—altered perception, relaxation, and euphoria.",
+    couplings: [{ signal: "endocannabinoid", sign: 1 }],
+  },
+  CB2: {
+    category: "receptor",
+    system: "Cannabinoid",
+    description:
+      "Found mainly in immune cells and peripheral tissues. Activation reduces inflammation and pain without the psychoactive effects of CB1. Target of CBD and some synthetic cannabinoids.",
+    couplings: [{ signal: "endocannabinoid", sign: 1 }],
+  },
+
+  Mu_Opioid: {
+    category: "receptor",
+    system: "Opioid",
+    description:
+      "The primary target of opioid painkillers and the brain's natural endorphins. Activation provides powerful pain relief, euphoria, and sedation. Also slows breathing—the main risk of opioid overdose.",
+    couplings: [{ signal: "endorphin", sign: 1 }],
+  },
+  Kappa_Opioid: {
+    category: "receptor",
+    system: "Opioid",
+    description:
+      "Produces pain relief but with dysphoria rather than euphoria. Activation can cause dissociation and hallucinations. Salvia divinorum works primarily here. May be protective against addiction.",
+    couplings: [{ signal: "dynorphin", sign: 1 }],
+  },
+
   // === TRANSPORTERS ===
   DAT: {
     category: "transporter",
@@ -428,5 +458,33 @@ export const RAW_TARGETS = {
     system: "Growth",
     description:
       "Production of BDNF, a protein that helps brain cells grow and form new connections. Increased by exercise, learning, and some antidepressants. Essential for mental sharpness and resilience.",
+  },
+
+  // === ENDOCANNABINOID & OPIOID SIGNALING ===
+  anandamide: {
+    category: "auxiliary",
+    system: "Cannabinoid",
+    description:
+      "Your body's natural 'bliss molecule'—named from the Sanskrit word for bliss. Produced on-demand during exercise and stress relief. Creates mild euphoria, pain relief, and appetite regulation.",
+  },
+  endorphin: {
+    category: "auxiliary",
+    system: "Opioid",
+    description:
+      "Your body's natural painkillers, released during exercise, laughter, and social bonding. Creates the 'runner's high' and natural feelings of well-being. Provides pain relief without external drugs.",
+  },
+  dynorphin: {
+    category: "auxiliary",
+    system: "Opioid",
+    description:
+      "A stress-response opioid that produces dysphoria rather than pleasure. Released during intense stress or pain. May serve as the brain's 'enough is enough' signal to limit reward-seeking.",
+  },
+
+  // === THERMOREGULATION ===
+  temperature: {
+    category: "auxiliary",
+    system: "Thermoregulation",
+    description:
+      "Core body temperature, normally tightly regulated around 37°C. Elevated by stimulants, MDMA, and fever. Hypothermia or hyperthermia can be dangerous—the body has limited ability to compensate.",
   },
 } as const;

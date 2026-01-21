@@ -11,7 +11,6 @@
       :data-id="spec.key"
     >
       <div class="series-wrapper">
-        <div class="series-sidebar__drag">☰</div>
         <div class="series-sidebar">
           <div class="series-sidebar__label" :title="spec.label">
             {{ spec.label }}
@@ -296,6 +295,60 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       }}{{ (cond.value * 100).toFixed(0) }}%)
                     </span>
                   </div>
@@ -328,6 +381,60 @@
                     <span class="contributor-mech">{{ item.mechanism }}</span>
                     <span class="contributor-value">
                       ({{ item.value > 0 ? '+' : ''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -945,7 +1052,7 @@ onMounted(() => {
   if (chartContainer.value) {
     sortable.value = new Sortable(chartContainer.value, {
       animation: 150,
-      handle: '.series-sidebar__drag',
+      handle: '.series-sidebar',
       ghostClass: 'sortable-ghost',
       onEnd: (evt) => {
         if (evt.oldIndex === evt.newIndex) return;
@@ -986,7 +1093,7 @@ watch(
 .chart {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1rem;
   position: relative;
 }
 
@@ -1005,6 +1112,9 @@ watch(
   display: flex;
   flex-direction: column;
   position: relative;
+  border-radius: 8px;
+  background: var(--color-bg-base);
+  box-shadow: var(--shadow-large);
 }
 
 .loading-spinner {
@@ -1045,28 +1155,6 @@ watch(
   border-radius: 8px;
 }
 
-.series-sidebar__drag {
-  position: absolute;
-  left: -24px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: grab;
-  opacity: 0;
-  font-size: 0.9rem;
-  padding: 4px;
-  transition: opacity 0.2s ease;
-  color: var(--color-text-muted);
-  user-select: none;
-}
-
-.series-container:hover .series-sidebar__drag {
-  opacity: 1;
-}
-
-.series-sidebar__drag:active {
-  cursor: grabbing;
-}
-
 .series-sidebar {
   width: 120px;
   flex-shrink: 0;
@@ -1082,6 +1170,12 @@ watch(
   border-bottom-left-radius: 8px;
   color: var(--color-text-secondary);
   transition: all 0.2s ease;
+  cursor: grab;
+  user-select: none;
+}
+
+.series-sidebar:active {
+  cursor: grabbing;
 }
 
 .series-sidebar__actions {
@@ -1257,6 +1351,10 @@ watch(
   overflow: hidden;
 }
 
+.chart.is-grid .series-info-expanded__content {
+  padding: 1rem;
+  padding-left: 1rem;
+}
 .series-info-expanded__content {
   padding: 1rem;
   padding-left: 132px; /* Sidebar width + gap */
@@ -1264,7 +1362,7 @@ watch(
 
 .info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -1373,16 +1471,15 @@ watch(
 }
 
 .couplings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
 .coupling-item {
   background: var(--color-bg-elevated);
   border-radius: 6px;
-  padding: 0.6rem;
-
+  padding: 0.6rem 0.8rem;
 }
 
 .coupling-item__header {

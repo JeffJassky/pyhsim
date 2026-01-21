@@ -75,7 +75,7 @@
           </div>
         </Pane>
         <Pane :size="chatPaneSize" :min-size="15" :max-size="40">
-          <aside class="app-shell__sidebar app-shell__sidebar--right">
+          <aside class="app-shell__sidebar app-shell__sidebar--right tour-ai-panel">
             <slot name="right-sidebar" />
           </aside>
         </Pane>

@@ -376,4 +376,145 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     categories: ["medications"],
     goals: ["calm", "sleep"],
   },
+
+  // =============================================================================
+  // PSYCHEDELICS & EMPATHOGENS
+  // =============================================================================
+  {
+    key: "mdma",
+    label: "MDMA",
+    icon: "🔮",
+    defaultDurationMin: 360,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 50,
+        max: 150,
+        step: 25,
+        default: 100,
+        hint: "Typical therapeutic dose: 75-125mg",
+      },
+    ],
+    pharmacology: (params) => Agents.MDMA(Number(params.mg) || 100),
+    group: "Psychedelics",
+    categories: ["medications"],
+    goals: ["mood", "connection"],
+  },
+  {
+    key: "lsd",
+    label: "LSD",
+    icon: "🌀",
+    defaultDurationMin: 720,
+    params: [
+      {
+        key: "mcg",
+        label: "Dose (µg)",
+        type: "slider",
+        min: 25,
+        max: 200,
+        step: 25,
+        default: 100,
+        hint: "Micrograms - typical dose 75-150µg",
+      },
+    ],
+    pharmacology: (params) => Agents.LSD(Number(params.mcg) || 100),
+    group: "Psychedelics",
+    categories: ["medications"],
+    goals: ["perception", "insight"],
+  },
+  {
+    key: "psilocybin",
+    label: "Psilocybin Mushrooms",
+    icon: "🍄",
+    defaultDurationMin: 360,
+    params: [
+      {
+        key: "mg",
+        label: "Psilocybin (mg)",
+        type: "slider",
+        min: 5,
+        max: 30,
+        step: 5,
+        default: 15,
+        hint: "Pure psilocybin - 15mg ≈ 2-3g dried mushrooms",
+      },
+    ],
+    pharmacology: (params) => Agents.Psilocybin(Number(params.mg) || 15),
+    group: "Psychedelics",
+    categories: ["medications"],
+    goals: ["perception", "insight", "mood"],
+  },
+  {
+    key: "ketamine",
+    label: "Ketamine (Intranasal)",
+    icon: "💫",
+    defaultDurationMin: 180,
+    params: [
+      {
+        key: "mg",
+        label: "Dose (mg)",
+        type: "slider",
+        min: 25,
+        max: 100,
+        step: 25,
+        default: 50,
+        hint: "Intranasal - therapeutic dose range",
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.Ketamine(Number(params.mg) || 50, "intranasal"),
+    group: "Dissociatives",
+    categories: ["medications"],
+    goals: ["mood", "pain"],
+  },
+
+  // =============================================================================
+  // CANNABIS
+  // =============================================================================
+  {
+    key: "cannabisSmoked",
+    label: "Cannabis (Smoked/Vaped)",
+    icon: "🌿",
+    defaultDurationMin: 180,
+    params: [
+      {
+        key: "mg",
+        label: "THC (mg)",
+        type: "slider",
+        min: 2.5,
+        max: 25,
+        step: 2.5,
+        default: 10,
+        hint: "THC content - 10mg ≈ one joint",
+      },
+    ],
+    pharmacology: (params) => Agents.THCInhaled(Number(params.mg) || 10),
+    group: "Cannabis",
+    categories: ["cannabis"],
+    goals: ["calm", "sleep", "appetite"],
+  },
+  {
+    key: "cannabisEdible",
+    label: "Cannabis (Edible)",
+    icon: "🍪",
+    defaultDurationMin: 480,
+    params: [
+      {
+        key: "mg",
+        label: "THC (mg)",
+        type: "slider",
+        min: 2.5,
+        max: 50,
+        step: 2.5,
+        default: 10,
+        hint: "Start low (2.5-5mg) - edibles are stronger",
+      },
+    ],
+    pharmacology: (params) => Agents.THCOral(Number(params.mg) || 10),
+    group: "Cannabis",
+    categories: ["cannabis"],
+    goals: ["calm", "sleep", "appetite"],
+  },
 ];
