@@ -18,7 +18,7 @@
         >
           <TimelineView
             :items="timeline.items"
-            :selected-id="timeline.selectedId"
+            :selected-ids="timeline.selectedIds"
             :playhead-min="minute"
             :day-start-min="dayStartMin"
             @select="handleTimelineSelect"
@@ -235,7 +235,10 @@
         :visible="inspectorVisible"
         :item="selectedItem"
         :def="selectedDef"
+        :selected-count="timeline.selectedIds.length"
+        :selected-items="selectedItems"
         @change="handleInspectorChange"
+        @bulk-change="handleBulkInspectorChange"
         @close="handleInspectorClose"
       />
       <div class="fab-group">
@@ -407,6 +410,7 @@ useArousal();
 const timelinePanelRef = ref<ComponentPublicInstance | null>(null);
 
 const selectedItem = computed(() => timeline.items.find((item) => item.id === timeline.selectedId));
+const selectedItems = computed(() => timeline.items.filter((item) => timeline.selectedIds.includes(item.id)));
 const selectedDef = computed(() => library.defs.find((def) => def.key === selectedItem.value?.meta.key));
 const inspectorVisible = ref(false);
 const showChat = ref(true);
@@ -457,12 +461,15 @@ const handlePlayheadAdd = (m: Minute, group?: string | number) => {
 };
 
 const handleInspectorChange = (item: TimelineItem) => timeline.updateItem(item.id, item);
+const handleBulkInspectorChange = (items: TimelineItem[]) => {
+  items.forEach(item => timeline.updateItem(item.id, item));
+};
 const handleTimelineMove = ({ id, start, end, group }: { id: UUID; start: string; end: string; group?: string | number }) => {
   timeline.updateItem(id, { start, end, group });
 };
-const handleTimelineSelect = (id?: UUID) => {
-  timeline.select(id);
-  inspectorVisible.value = Boolean(id);
+const handleTimelineSelect = (ids: UUID[]) => {
+  timeline.select(ids);
+  inspectorVisible.value = ids.length > 0;
 };
 const handleInspectorClose = () => {
   inspectorVisible.value = false;
@@ -517,10 +524,10 @@ const isEditableTarget = (target: EventTarget | null) => {
 const handleTimelineDeleteShortcut = (event: KeyboardEvent) => {
   if (event.key !== 'Backspace' && event.key !== 'Delete') return;
   if (isEditableTarget(event.target)) return;
-  const id = timeline.selectedId;
-  if (!id) return;
+  const ids = timeline.selectedIds;
+  if (ids.length === 0) return;
   event.preventDefault();
-  timeline.removeItem(id);
+  ids.forEach(id => timeline.removeItem(id));
 };
 
 onMounted(() => {
@@ -532,16 +539,15 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => timeline.selectedId,
-  (id, prev) => {
-    if (!id) {
+  () => timeline.selectedIds,
+  (ids) => {
+    if (ids.length === 0) {
       inspectorVisible.value = false;
       return;
     }
-    if (id !== prev) {
-      inspectorVisible.value = true;
-    }
-  }
+    inspectorVisible.value = true;
+  },
+  { deep: true }
 );
 
 const enabledSignals = computed(() => user.enabledSignals);
@@ -770,8 +776,8 @@ const activeSpecs = computed(() => {
 
   if (chartFilter.value === 'auto') {
     // Logic from old autoSpecs
-    const sourceItems = timeline.selectedId
-      ? timeline.items.filter((it) => it.id === timeline.selectedId)
+    const sourceItems = timeline.selectedIds.length > 0
+      ? timeline.items.filter((it) => timeline.selectedIds.includes(it.id))
       : timeline.items;
 
     keys = Array.from(resolveSignalsForItems(sourceItems));

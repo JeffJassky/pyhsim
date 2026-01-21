@@ -6,7 +6,10 @@
           :item="item"
           :def="def"
           :readonly="readonly"
+          :selected-count="selectedCount"
+          :selected-items="selectedItems"
           @change="$emit('change', $event)"
+          @bulk-change="$emit('bulkChange', $event)"
         />
       </Panel>
     </aside>
@@ -24,9 +27,11 @@ const props = defineProps<{
   item?: TimelineItem;
   def?: InterventionDef;
   readonly?: boolean;
+  selectedCount?: number;
+  selectedItems?: TimelineItem[];
 }>();
 
-const emit = defineEmits<{ change: [TimelineItem]; close: [] }>();
+const emit = defineEmits<{ change: [TimelineItem]; bulkChange: [TimelineItem[]]; close: [] }>();
 
 const inspectorEl = ref<HTMLElement | null>(null);
 

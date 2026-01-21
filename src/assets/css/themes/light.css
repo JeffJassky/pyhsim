@@ -5,6 +5,7 @@
   --color-bg-base: var(--neutral-0);
   --color-bg-subtle: var(--neutral-100);
   --color-bg-elevated: var(--neutral-50);
+  --color-bg-disabled: var(--amber-50);
   --color-bg-active: var(--neutral-200);
 
   /* Text */

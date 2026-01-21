@@ -6,6 +6,7 @@
   --color-bg-subtle: var(--neutral-800);
   --color-bg-elevated: var(--neutral-750);
   --color-bg-active: var(--neutral-700);
+  --color-bg-disabled: var(--amber-1000);
 
   /* Text */
   --color-text-primary: var(--neutral-100);

@@ -35,10 +35,11 @@
   --purp-600: #6400b5; */
 
   /* Warning / Fat */
-  --amber-50: #fffbeb;
+  --amber-50: #f2e9da;
   --amber-400: #fbbf24;
   --amber-500: #f59e0b;
   --amber-600: #d97706;
+  --amber-1000: #27160b;
 
   /* Error / Danger */
   --rose-50: #fff1f2;

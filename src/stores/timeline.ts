@@ -6,7 +6,7 @@ import { createFoodTimelineItem } from '@/utils/food';
 
 interface TimelineStoreState {
   items: TimelineItem[];
-  selectedId?: UUID;
+  selectedIds: UUID[];
   isDragging?: boolean;
   selectedDate: string; // YYYY-MM-DD
 }
@@ -45,11 +45,12 @@ const todayISO = () => {
 export const useTimelineStore = defineStore('timeline', {
   state: (): TimelineStoreState => ({
     items: createDefaultRoutineItems(),
-    selectedId: undefined,
+    selectedIds: [],
     isDragging: false,
     selectedDate: todayISO(),
   }),
   getters: {
+    selectedId: (state): UUID | undefined => state.selectedIds.length === 1 ? state.selectedIds[0] : undefined,
     foodItems: (state): TimelineItem[] => state.items.filter((it) => it.meta.key === 'food'),
     itemsForSelectedDate: (state): TimelineItem[] => {
       return state.items.filter((it) => it.start.startsWith(state.selectedDate));
@@ -125,7 +126,7 @@ export const useTimelineStore = defineStore('timeline', {
         meta,
       };
       this.items.push(item);
-      this.selectedId = item.id;
+      this.selectedIds = [item.id];
     },
     updateItem(id: UUID, patch: Partial<TimelineItem>) {
       const idx = this.items.findIndex((it) => it.id === id);
@@ -134,7 +135,7 @@ export const useTimelineStore = defineStore('timeline', {
     },
     removeItem(id: UUID) {
       this.items = this.items.filter((it) => it.id !== id);
-      if (this.selectedId === id) this.selectedId = undefined;
+      this.selectedIds = this.selectedIds.filter(sid => sid !== id);
       this.ensureRoutineAnchors();
     },
     duplicate(id: UUID) {
@@ -142,10 +143,16 @@ export const useTimelineStore = defineStore('timeline', {
       if (!item) return;
       const copy = { ...item, id: uuid() as UUID };
       this.items.push(copy);
-      this.selectedId = copy.id;
+      this.selectedIds = [copy.id];
     },
-    select(id?: UUID) {
-      this.selectedId = id;
+    select(ids?: UUID | UUID[]) {
+      if (!ids) {
+        this.selectedIds = [];
+      } else if (Array.isArray(ids)) {
+        this.selectedIds = ids;
+      } else {
+        this.selectedIds = [ids];
+      }
     },
     setDragging(isDragging: boolean) {
       this.isDragging = isDragging;
@@ -157,7 +164,7 @@ export const useTimelineStore = defineStore('timeline', {
     addFood(startISO: string, nutrients: TrackedNutrients, quantity: number = 1, label?: string) {
       const item = createFoodTimelineItem(startISO, nutrients, quantity, label);
       this.items.push(item);
-      this.selectedId = item.id;
+      this.selectedIds = [item.id];
       return item;
     },
     setDate(dateISO: string) {

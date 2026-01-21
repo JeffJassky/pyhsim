@@ -1,8 +1,15 @@
 <template>
-  <div v-if="item && def" class="inspector" :class="{ 'inspector--disabled': local.disabled }">
-    <h3 v-if="local.labelOverride" class="normal-title">{{ def.label }}</h3>
+  <div
+    v-if="props.selectedCount && props.selectedCount > 0"
+    class="inspector-root"
+    :class="{ 'inspector--disabled': !isBulkDisabled && local.disabled }"
+  >
+    <!-- Shared Header with Toggle -->
     <div class="header-row">
-      <div class="title-with-toggle">
+      <div v-if="props.selectedCount > 1" class="multi-title">
+        <h3>{{ props.selectedCount }} items selected</h3>
+      </div>
+      <div v-else-if="item && def" class="title-with-toggle">
         <input
           type="text"
           class="title-input seamless-input"
@@ -11,140 +18,164 @@
           :value="local.labelOverride"
           @input="updateLabelOverride(($event.target as HTMLInputElement).value)"
         />
-        <label class="switch-container" v-tooltip="local.disabled ? 'Enable item' : 'Disable item'">
+      </div>
+
+      <div class="header-actions">
+        <span
+          v-if="props.selectedCount === 1 && isFood"
+          class="total-kcal"
+          :class="{ 'is-disabled': local.disabled }"
+        >
+          {{ totalKcal }} kcal
+        </span>
+        <label
+          class="switch-container"
+          v-tooltip="isBulkDisabled ? `Enable ${props.selectedCount} items` : `Disable ${props.selectedCount} items`"
+        >
           <input
             type="checkbox"
-            :checked="!local.disabled"
+            :checked="!isBulkDisabled"
             @change="updateDisabled(!($event.target as HTMLInputElement).checked)"
           />
           <span class="switch-slider"></span>
         </label>
       </div>
-      <span v-if="isFood" class="total-kcal" :class="{ 'is-disabled': local.disabled }">
-        {{ totalKcal }} kcal
-      </span>
     </div>
-    <p v-if="def.notes" class="def-notes">{{ def.notes }}</p>
 
-    <!-- Meta row for Time and Duration -->
-    <div class="meta-section">
-      <div class="meta-field">
-        <label class="meta-label">Time</label>
-        <input
-          type="text"
-          class="seamless-input meta-input mono"
-          :value="timeDisplay"
-          :placeholder="'e.g. 2:30pm'"
-          @blur="handleTimeBlur"
-          @keydown.enter="($event.target as HTMLInputElement).blur()"
-        />
-      </div>
-      <div v-if="showDurationField" class="meta-field">
-        <label class="meta-label">Duration</label>
-        <div class="duration-control">
+    <!-- Multi-select body -->
+    <div v-if="props.selectedCount > 1" class="multi-select-summary">
+      <div class="summary-icon"></div>
+      <p>Select a single item to edit its parameters.</p>
+    </div>
+
+    <!-- Single-select body -->
+    <div v-else-if="item && def" class="inspector-body">
+      <h3 v-if="local.labelOverride" class="normal-title">{{ def.label }}</h3>
+      <p v-if="def.notes" class="def-notes">{{ def.notes }}</p>
+
+      <!-- Meta row for Time and Duration -->
+      <div class="meta-section">
+        <div class="meta-field">
+          <label class="meta-label">Time</label>
           <input
-            type="number"
-            class="seamless-input meta-input mono duration-input"
-            :value="durationMinutes"
-            min="5"
-            step="5"
-            @input="updateDuration(Number(($event.target as HTMLInputElement).value))"
+            type="text"
+            class="seamless-input meta-input mono"
+            :value="timeDisplay"
+            :placeholder="'e.g. 2:30pm'"
+            @blur="handleTimeBlur"
+            @keydown.enter="($event.target as HTMLInputElement).blur()"
           />
-          <span class="meta-unit">min</span>
+        </div>
+        <div v-if="showDurationField" class="meta-field">
+          <label class="meta-label">Duration</label>
+          <div class="duration-control">
+            <input
+              type="number"
+              class="seamless-input meta-input mono duration-input"
+              :value="durationMinutes"
+              min="5"
+              step="5"
+              @input="updateDuration(Number(($event.target as HTMLInputElement).value))"
+            />
+            <span class="meta-unit">min</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="isFood" class="macro-breakdown">
-      <div class="macro-bar">
-        <div
-          class="macro-segment protein"
-          :style="{ width: macroPercentages.protein + '%' }"
-          title="Protein"
-        ></div>
-        <div
-          class="macro-segment carbs"
-          :style="{ width: macroPercentages.carbs + '%' }"
-          title="Carbs"
-        ></div>
-        <div
-          class="macro-segment fat"
-          :style="{ width: macroPercentages.fat + '%' }"
-          title="Fat"
-        ></div>
-      </div>
-      <div class="macro-labels">
-        <span class="macro-label protein"
-          >P: {{ macroPercentages.protein }}%</span
-        >
-        <span class="macro-label carbs">C: {{ macroPercentages.carbs }}%</span>
-        <span class="macro-label fat">F: {{ macroPercentages.fat }}%</span>
-      </div>
-    </div>
-
-    <ParamEditor
-      v-for="param in def.params"
-      :key="param.key"
-      :param-def="param"
-      :value="local.params[param.key] ?? param.default"
-      @update="(val) => updateParam(param.key, val)"
-    />
-
-    <!-- User notes -->
-    <div class="notes-field">
-      <label v-if="local.notes" class="notes-label">My Notes</label>
-      <textarea
-        ref="notesTextarea"
-        class="seamless-input notes-textarea"
-        :value="local.notes"
-        placeholder="Add notes..."
-        rows="1"
-        @input="updateNotes(($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
-    </div>
-
-    <div v-if="resolvedEffects.length" class="effects-section">
-      <button
-        v-if="!showEffects"
-        class="effects-toggle-btn"
-        @click="showEffects = true"
-      >
-        Read about {{ props.def?.label }}
-      </button>
-
-      <div v-if="showEffects" class="effects">
-        <div class="effects-header">
-          <h4>Biological Effects of {{ props.def?.label }}</h4>
-          <button class="effects-collapse-btn" @click="showEffects = false">
-            Hide
-          </button>
+      <div v-if="isFood" class="macro-breakdown">
+        <div class="macro-bar">
+          <div
+            class="macro-segment protein"
+            :style="{ width: macroPercentages.protein + '%' }"
+            title="Protein"
+          ></div>
+          <div
+            class="macro-segment carbs"
+            :style="{ width: macroPercentages.carbs + '%' }"
+            title="Carbs"
+          ></div>
+          <div
+            class="macro-segment fat"
+            :style="{ width: macroPercentages.fat + '%' }"
+            title="Fat"
+          ></div>
         </div>
-        <div
-          v-for="(effect, index) in resolvedEffects"
-          :key="index"
-          class="effect"
+        <div class="macro-labels">
+          <span class="macro-label protein"
+            >P: {{ macroPercentages.protein }}%</span
+          >
+          <span class="macro-label carbs"
+            >C: {{ macroPercentages.carbs }}%</span
+          >
+          <span class="macro-label fat">F: {{ macroPercentages.fat }}%</span>
+        </div>
+      </div>
+
+      <ParamEditor
+        v-for="param in def.params"
+        :key="param.key"
+        :param-def="param"
+        :value="local.params[param.key] ?? param.default"
+        @update="(val) => updateParam(param.key, val)"
+      />
+
+      <!-- User notes -->
+      <div class="notes-field">
+        <label v-if="local.notes" class="notes-label">My Notes</label>
+        <textarea
+          ref="notesTextarea"
+          class="seamless-input notes-textarea"
+          :value="local.notes"
+          placeholder="Add notes..."
+          rows="1"
+          @input="updateNotes(($event.target as HTMLTextAreaElement).value)"
+        ></textarea>
+      </div>
+
+      <div v-if="resolvedEffects.length" class="effects-section">
+        <button
+          v-if="!showEffects"
+          class="effects-toggle-btn"
+          @click="showEffects = true"
         >
-          <span class="effect-signal">
-            {{ getTargetLabel(effect.target as any) }}
-          </span>
-          <span v-if="effect.intrinsicEfficacy" class="gain-value">
-            {{ 
+          Read about {{ props.def?.label }}
+        </button>
+
+        <div v-if="showEffects" class="effects">
+          <div class="effects-header">
+            <h4>Biological Effects of {{ props.def?.label }}</h4>
+            <button class="effects-collapse-btn" @click="showEffects = false">
+              Hide
+            </button>
+          </div>
+          <div
+            v-for="(effect, index) in resolvedEffects"
+            :key="index"
+            class="effect"
+          >
+            <span class="effect-signal">
+              {{ getTargetLabel(effect.target as any) }}
+            </span>
+            <span v-if="effect.intrinsicEfficacy" class="gain-value">
+              {{ 
 				((effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy > 0 ? '+' : '') +
 	(((effect.mechanism === 'antagonist' || effect.mechanism === 'NAM' ? -1 : 1) * effect.intrinsicEfficacy * (UNIT_CONVERSIONS[effect.target as Signal]?.scaleFactor || 1)).toFixed(1))
-            }}
-            <span class="gain-unit">
-              {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }}
+              }}
+              <span class="gain-unit">
+                {{ SIGNAL_UNITS[effect.target as Signal]?.unit || '' }}
+              </span>
             </span>
-          </span>
-          <p
-            v-if="effect.description || getTargetDescription(effect.target as any)"
-            class="effect-help"
-          >
-            {{ effect.description || getTargetDescription(effect.target as any) }}
-          </p>
+            <p
+              v-if="effect.description || getTargetDescription(effect.target as any)"
+              class="effect-help"
+            >
+              {{ effect.description || getTargetDescription(effect.target as any) }}
+            </p>
+          </div>
         </div>
       </div>
     </div>
+    <!-- Close inspector-body -->
   </div>
   <p v-else class="empty">Select an item to edit parameters.</p>
 </template>
@@ -158,8 +189,14 @@ import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/
 import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@/models/engine/signal-units';
 import { getTargetDescription, getTargetLabel } from '@/models/physiology/pharmacology/registry';
 
-const props = defineProps<{ item?: TimelineItem; def?: InterventionDef; readonly?: boolean }>();
-const emit = defineEmits<{ change: [TimelineItem] }>();
+const props = defineProps<{
+  item?: TimelineItem;
+  def?: InterventionDef;
+  readonly?: boolean;
+  selectedCount?: number;
+  selectedItems?: TimelineItem[];
+}>();
+const emit = defineEmits<{ change: [TimelineItem]; bulkChange: [TimelineItem[]] }>();
 
 const showEffects = ref(false);
 const notesTextarea = ref<HTMLTextAreaElement | null>(null);
@@ -174,6 +211,13 @@ const local = reactive<{
   labelOverride: '',
   notes: '',
   disabled: false,
+});
+
+const isBulkDisabled = computed(() => {
+  if (props.selectedItems && props.selectedItems.length > 1) {
+    return props.selectedItems.every(i => i.meta.disabled);
+  }
+  return local.disabled;
 });
 
 const isFood = computed(() => props.def?.key === 'food');
@@ -309,8 +353,16 @@ const updateParam = (key: string, value: string | number | boolean) => {
 };
 
 const updateDisabled = (disabled: boolean) => {
-  local.disabled = disabled;
-  pushChange();
+  if (props.selectedItems && props.selectedItems.length > 1) {
+    const updated = props.selectedItems.map(item => ({
+      ...item,
+      meta: { ...item.meta, disabled: disabled || undefined }
+    }));
+    emit('bulkChange', updated);
+  } else {
+    local.disabled = disabled;
+    pushChange();
+  }
 };
 
 const updateLabelOverride = (value: string) => {
@@ -414,6 +466,19 @@ const updateDuration = (minutes: number) => {
   flex: 1;
 }
 
+.multi-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 /* Switch Styling */
 .switch-container {
   position: relative;
@@ -470,15 +535,15 @@ input:checked + .switch-slider:before {
 }
 
 .inspector--disabled > *:not(.header-row),
-.inspector--disabled .normal-title,
 .inspector--disabled .title-input,
-.inspector--disabled .total-kcal {
+.inspector--disabled .total-kcal,
+.inspector--disabled .multi-title {
   filter: grayscale(1);
   opacity: 0.6;
   pointer-events: none; /* Prevent editing while disabled */
 }
 
-.inspector--disabled .switch-container {
+.inspector--disabled .header-actions {
   pointer-events: auto; /* Ensure toggle still works */
 }
 
@@ -774,5 +839,32 @@ h4 {
   min-height: 1.4em;
   display: block;
   overflow: hidden;
+}
+
+.multi-select-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  height: 100%;
+}
+
+.summary-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.multi-select-summary h3 {
+  margin: 0 0 0.5rem;
+  color: var(--color-text-primary);
+}
+
+.multi-select-summary p {
+  font-size: 0.9rem;
+  margin: 0;
 }
 </style>

@@ -71,18 +71,18 @@ import { INTERVENTION_CATEGORIES } from '@/models/ui/categories';
 const props = withDefaults(
   defineProps<{
     items: TimelineItem[];
-    selectedId?: UUID;
+    selectedIds?: UUID[];
     editable?: boolean;
     zoomHours?: number;
     playheadMin: Minute;
     dateIso?: string; // YYYY-MM-DD to anchor the visible window
     dayStartMin?: number; // Minute of day where the view starts (e.g., 420 for 7 AM)
   }>(),
-  { editable: true, zoomHours: 6, dayStartMin: 0 }
+  { editable: true, zoomHours: 6, dayStartMin: 0, selectedIds: () => [] }
 );
 
 const emit = defineEmits<{
-  select: [UUID | undefined];
+  select: [UUID[]];
   remove: [UUID];
   update: [{ id: UUID; start: string; end: string; group?: string | number }];
   playhead: [Minute];
@@ -365,7 +365,7 @@ const toVisItems = (items: TimelineItem[]) => {
 
 const syncItems = () => {
   if (!dataset || !groupDataset) return;
-  const selectedId = props.selectedId;
+  const selectedIds = props.selectedIds || [];
 
   const activeGroups = new Set(props.items.map(getItemGroup));
   const existingGroups = groupDataset.getIds();
@@ -382,19 +382,18 @@ const syncItems = () => {
 
   dataset.clear();
   dataset.add(toVisItems(props.items));
-  if (selectedId) {
-    nextTick(() => setSelection(selectedId));
+  if (selectedIds.length > 0) {
+    nextTick(() => setSelection(selectedIds));
   }
 };
 
 const toISO = (value: any) => new Date(value).toISOString();
 
-const setSelection = (id?: UUID) => {
+const setSelection = (ids: UUID[]) => {
   if (!timeline) return;
-  // Select day 0 instance
-  const instanceId = id ? `${id}_0` : undefined;
-  if (instanceId) timeline.setSelection(instanceId);
-  else timeline.setSelection([]);
+  // Select day 0 instances
+  const instanceIds = ids.map(id => `${id}_0`);
+  timeline.setSelection(instanceIds);
 };
 
 const getDayBounds = () => {
@@ -543,10 +542,9 @@ const initTimeline = () => {
   syncItems();
 
   timeline.on('select', (event) => {
-    const id = (event.items?.[0] as string);
-    // ID format is uuid_dayIndex. We need uuid.
-    const uuid = id ? id.split('_')[0] : undefined;
-    emit('select', uuid as UUID);
+    const ids = (event.items as string[]) || [];
+    const uuids = ids.map(id => id.split('_')[0]) as UUID[];
+    emit('select', uuids);
   });
 
   const shouldHandlePlayheadClick = (event: any) => {
@@ -559,7 +557,7 @@ const initTimeline = () => {
     minute = Math.round(minute / 5) * 5 as Minute;
     emit('playhead', minute);
   });
-  if (props.selectedId) setSelection(props.selectedId);
+  setSelection(props.selectedIds || []);
 };
 
 onMounted(() => {
@@ -583,9 +581,9 @@ watch(
 );
 
 watch(
-  () => props.selectedId,
-  (id) => setSelection(id),
-  { immediate: true }
+  () => props.selectedIds,
+  (ids) => setSelection(ids || []),
+  { immediate: true, deep: true }
 );
 
 watch(
@@ -740,15 +738,19 @@ font-size: 0.8rem;
 }
 
 .timeline-vis :deep(.vis-item.timeline-item--disabled .timeline-item-inner) {
-  filter: grayscale(1);
-  opacity: 0.5;
   background-image: repeating-linear-gradient(
     45deg,
-    rgba(0, 0, 0, 0.1),
-    rgba(0, 0, 0, 0.1) 10px,
-    transparent 10px,
-    transparent 20px
+    var(--color-bg-disabled),
+    var(--color-bg-disabled) 8px,
+    var(--color-bg-base) 8px,
+    var(--color-bg-base) 16px
   );
+  border-color: var(--color-bg-disabled) !important;
+}
+
+.timeline-vis :deep(.vis-item.timeline-item--disabled .timeline-item-inner > div) {
+  filter: grayscale(1);
+  opacity: 0.3;
 }
 
 .timeline-vis :deep(.vis-item.vis-selected .timeline-item-inner) {
