@@ -258,6 +258,9 @@ const toVisItems = (items: TimelineItem[]) => {
       let label = item.content ?? item.meta.labelOverride ?? def?.label ?? item.meta.key;
       let content = `${icon}${label}`;
       let className = item.meta.locked ? 'timeline-item--locked' : '';
+      if (item.meta.disabled) {
+        className += ' timeline-item--disabled';
+      }
 
       const deliveryType = getDeliveryType(def, item.meta.params);
       const start = new Date(item.start);
@@ -311,8 +314,36 @@ const toVisItems = (items: TimelineItem[]) => {
 
       // Build tooltip content
       const startTimeStr = minuteToLabel((start.getHours() * 60 + start.getMinutes()) as Minute);
-	let tooltipContent = `<span class="tooltip-time">${startTimeStr}</span><br />${content}`
+      let paramsHtml = '';
+      if (def?.params && item.meta.params) {
+        const paramLines = def.params
+          .map((p) => {
+            const value = item.meta.params[p.key];
+            if (value === undefined || value === null) return null;
 
+            let displayValue = value;
+            if (p.type === 'select') {
+              const option = p.options.find((o) => o.value === value);
+              if (option) displayValue = option.label;
+            } else if (p.type === 'switch') {
+              displayValue = value ? 'On' : 'Off';
+            }
+
+            const unitStr = p.unit && (p.unit as any) !== 'a.u.' && p.unit !== 'units' ? p.unit : '';
+            const unitHtml = unitStr ? `<span class="tooltip-param-unit">${unitStr}</span>` : '';
+            return `<div class="tooltip-param">
+              <span class="tooltip-param-label">${p.label}:</span>
+              <span class="tooltip-param-value"><span class="tooltip-param-number">${displayValue}</span>${unitHtml}</span>
+            </div>`;
+          })
+          .filter(Boolean);
+
+        if (paramLines.length > 0) {
+          paramsHtml = `<div class="tooltip-params">${paramLines.join('')}</div>`;
+        }
+      }
+
+      let tooltipContent = `<span class="tooltip-time">${startTimeStr}</span><div class="tooltip-main">${content}${item.meta.disabled ? ' <span class="tooltip-disabled-badge">(Disabled)</span>' : ''}</div>${paramsHtml}`;
 
       visItems.push({
         id: `${item.id}_${d}`, // Unique ID for each day's instance
@@ -381,9 +412,11 @@ const getDayBounds = () => {
 const options = (): TimelineOptions => {
   const { start, end } = getDayBounds();
   return {
+    xss: { disabled: true },
     stack: true,
     selectable: true,
-    multiselect: false,
+
+    multiselect: true,
     orientation: 'top',
     start,
     end,
@@ -394,6 +427,9 @@ const options = (): TimelineOptions => {
       followMouse: false,
       overflowMethod: 'flip',
       delay: 500,
+      template: (item: any) => {
+        return item.title;
+      }
     },
     format: {
       minorLabels: {
@@ -703,6 +739,18 @@ font-size: 0.8rem;
   background: var(--color-bg-subtle);
 }
 
+.timeline-vis :deep(.vis-item.timeline-item--disabled .timeline-item-inner) {
+  filter: grayscale(1);
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 10px,
+    transparent 10px,
+    transparent 20px
+  );
+}
+
 .timeline-vis :deep(.vis-item.vis-selected .timeline-item-inner) {
 	color: var(--color-text-primary);
   box-shadow: 0 0 0 2px var(--color-active);
@@ -906,8 +954,58 @@ font-size: 0.8rem;
 
 .timeline-vis :deep(.vis-tooltip .tooltip-time) {
   display: block;
-  margin-top: 4px;
   font-weight: 500;
   color: var(--color-text-muted);
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-main) {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-disabled-badge) {
+  font-size: 0.7rem;
+  color: var(--color-warning);
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-params) {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-param) {
+  font-size: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-param-label) {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-param-value) {
+  color: var(--color-text-secondary);
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-param-number) {
+  color: var(--color-metric-secondary);
+}
+
+.timeline-vis :deep(.vis-tooltip .tooltip-param-unit) {
+  color: var(--color-text-muted);
+  margin-left: 0.25em;
 }
 </style>

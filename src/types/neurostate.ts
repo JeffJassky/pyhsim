@@ -392,6 +392,7 @@ export interface TimelineItemMeta {
   params: ParamValues; // tuned per instance
   intensity: number; // 0..1
   locked?: boolean; // allow drag?
+  disabled?: boolean; // temporary toggle off
   labelOverride?: string; // custom text on bar
   notes?: string; // user notes for the item
 }

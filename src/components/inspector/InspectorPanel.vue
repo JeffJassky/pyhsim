@@ -1,15 +1,28 @@
 <template>
-  <div v-if="item && def" class="inspector">
+  <div v-if="item && def" class="inspector" :class="{ 'inspector--disabled': local.disabled }">
     <h3 v-if="local.labelOverride" class="normal-title">{{ def.label }}</h3>
     <div class="header-row">
-      <input
-        type="text"
-        class="title-input seamless-input"
-        :placeholder="def.label"
-        :value="local.labelOverride"
-        @input="updateLabelOverride(($event.target as HTMLInputElement).value)"
-      />
-      <span v-if="isFood" class="total-kcal">{{ totalKcal }} kcal</span>
+      <div class="title-with-toggle">
+        <input
+          type="text"
+          class="title-input seamless-input"
+          :class="{ 'is-disabled': local.disabled }"
+          :placeholder="def.label"
+          :value="local.labelOverride"
+          @input="updateLabelOverride(($event.target as HTMLInputElement).value)"
+        />
+        <label class="switch-container" v-tooltip="local.disabled ? 'Enable item' : 'Disable item'">
+          <input
+            type="checkbox"
+            :checked="!local.disabled"
+            @change="updateDisabled(!($event.target as HTMLInputElement).checked)"
+          />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+      <span v-if="isFood" class="total-kcal" :class="{ 'is-disabled': local.disabled }">
+        {{ totalKcal }} kcal
+      </span>
     </div>
     <p v-if="def.notes" class="def-notes">{{ def.notes }}</p>
 
@@ -155,10 +168,12 @@ const local = reactive<{
   params: ParamValues;
   labelOverride: string;
   notes: string;
+  disabled: boolean;
 }>({
   params: {} as ParamValues,
   labelOverride: '',
   notes: '',
+  disabled: false,
 });
 
 const isFood = computed(() => props.def?.key === 'food');
@@ -267,6 +282,7 @@ watch(
     local.params = { ...(item.meta.params as ParamValues) };
     local.labelOverride = item.meta.labelOverride || '';
     local.notes = item.meta.notes || '';
+    local.disabled = item.meta.disabled || false;
   },
   { immediate: true }
 );
@@ -281,6 +297,7 @@ const pushChange = (overrides: Partial<TimelineItem> = {}) => {
       params: { ...local.params },
       labelOverride: local.labelOverride || undefined,
       notes: local.notes || undefined,
+      disabled: local.disabled || undefined,
       ...(overrides.meta || {}),
     },
   });
@@ -288,6 +305,11 @@ const pushChange = (overrides: Partial<TimelineItem> = {}) => {
 
 const updateParam = (key: string, value: string | number | boolean) => {
   local.params = { ...local.params, [key]: value };
+  pushChange();
+};
+
+const updateDisabled = (disabled: boolean) => {
+  local.disabled = disabled;
   pushChange();
 };
 
@@ -381,8 +403,83 @@ const updateDuration = (minutes: number) => {
 .header-row {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.title-with-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+/* Switch Styling */
+.switch-container {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.switch-container input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-warning);
+  transition: .2s;
+  border-radius: 20px;
+  border: 1px solid var(--color-warning);
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 10px;
+  width: 10px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+
+input:checked + .switch-slider {
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+input:checked + .switch-slider:before {
+  transform: translateX(12px);
+  background-color: white;
+}
+
+.is-disabled {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.inspector--disabled > *:not(.header-row),
+.inspector--disabled .normal-title,
+.inspector--disabled .title-input,
+.inspector--disabled .total-kcal {
+  filter: grayscale(1);
+  opacity: 0.6;
+  pointer-events: none; /* Prevent editing while disabled */
+}
+
+.inspector--disabled .switch-container {
+  pointer-events: auto; /* Ensure toggle still works */
 }
 
 .total-kcal {

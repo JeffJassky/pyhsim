@@ -138,7 +138,9 @@ export const useEngineStore = defineStore("engine", {
         };
       }
       const timelineStore = useTimelineStore();
-      const items = payload?.items ?? timelineStore.items;
+      const rawItems = payload?.items ?? timelineStore.items;
+      const items = rawItems.filter(item => !item.meta.disabled);
+      
       const gridCopy = [...this.gridMins] as Minute[];
       const sleepItem = items.find((item) => item.meta.key === "sleep");
       // Wake time is determined by when the sleep block ends
@@ -221,8 +223,6 @@ export const useEngineStore = defineStore("engine", {
       // Crucial: Ensure the entire request is serializable (removes any accidental functions)
       const request = JSON.parse(JSON.stringify(baseRequest));
 
-      this.busy = true;
-      worker.postMessage(request);
       this.busy = true;
       worker.postMessage(request);
     },

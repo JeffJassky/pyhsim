@@ -61,7 +61,7 @@ export const useTimelineStore = defineStore('timeline', {
       });
     },
     currentFoodTotals(state): TrackedNutrients {
-      const foods = state.items.filter((it) => it.meta.key === 'food' && it.start.startsWith(state.selectedDate));
+      const foods = state.items.filter((it) => it.meta.key === 'food' && !it.meta.disabled && it.start.startsWith(state.selectedDate));
       const totals: TrackedNutrients = { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0, sodium: 0 };
 
       for (const item of foods) {
@@ -84,7 +84,7 @@ export const useTimelineStore = defineStore('timeline', {
       return totals;
     },
     foodTotalsForDate: (state) => (dateISO: string): TrackedNutrients => {
-      const foods = state.items.filter((it) => it.meta.key === 'food' && it.start.startsWith(dateISO));
+      const foods = state.items.filter((it) => it.meta.key === 'food' && !it.meta.disabled && it.start.startsWith(dateISO));
       const totals: TrackedNutrients = { calories: 0, protein: 0, fat: 0, carbs: 0, fiber: 0, sugar: 0, sodium: 0 };
 
       for (const item of foods) {

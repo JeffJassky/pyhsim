@@ -711,7 +711,7 @@ const handleTimelineHover = (id?: UUID) => {
 const resolveSignalsForItems = (items: TimelineItem[]): Set<Signal> => {
   const directSignals = new Set<Signal>();
 
-  items.forEach((item) => {
+  items.filter(item => !item.meta.disabled).forEach((item) => {
     const def = library.defs.find((d) => d.key === item.meta.key);
     if (!def) return;
 
@@ -894,7 +894,7 @@ const interventionBands = computed(() => {
   const days = engineStore.durationDays;
 
   for (let d = 0; d < days; d++) {
-    timeline.items.forEach((item) => {
+    timeline.items.filter(item => !item.meta.disabled).forEach((item) => {
       const def = library.defs.find((it) => it.key === item.meta.key);
       const startMin = toMinuteOfDay(item.start);
       let endMin = toMinuteOfDay(item.end);
