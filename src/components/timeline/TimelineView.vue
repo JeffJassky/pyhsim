@@ -775,7 +775,6 @@ font-size: 0.8rem;
   width: 2px;
   pointer-events: none;
   z-index: 10;
-  transition: left 0.1s linear;
 }
 
 .active-line {
@@ -797,8 +796,9 @@ font-size: 0.8rem;
   color: white;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
+  font-family: var(--font-mono);
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);

@@ -217,6 +217,34 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       }}{{ (cond.value * 100).toFixed(0) }}%
                     </span>
                     <span
@@ -1017,6 +1045,8 @@ watch(
   transform: translate(-50%, -50%);
   font-size: 1.2rem;
   font-weight: bold;
+  color: var(--color-text-primary);
+  text-shadow: 1px 1px 4px var(--color-text-inverted);
 }
 
 .series__indicator-value {
@@ -1028,7 +1058,7 @@ watch(
   font-weight: 700;
   font-family: var(--font-mono);
   color: var(--color-metric-primary);
-  background: rgba(0, 0, 0, 0.6);
+  background: color-mix(in srgb, var(--color-bg-base) 70%, transparent);
   padding: 1px 4px;
   border-radius: 4px;
   backdrop-filter: blur(2px);
@@ -1041,15 +1071,8 @@ watch(
 .series__indicator-unit {
   font-size: 0.55rem;
   opacity: 0.8;
-  font-weight: 400;
-}
-
-.series__indicator--up .series__indicator-arrow {
-  color: white;
-}
-
-.series__indicator--down .series__indicator-arrow {
-  color: white;
+  font-weight: 700;
+  color: var(--color-text-secondary);
 }
 
 @keyframes indicator-bounce {

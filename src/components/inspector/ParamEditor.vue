@@ -112,6 +112,7 @@ const onInput = (event: Event) => {
 
 <style scoped>
 .param {
+	margin-top: 1em;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -131,7 +132,7 @@ label {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .readout-group {
