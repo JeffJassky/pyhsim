@@ -202,14 +202,14 @@ const getItemGroup = (item: TimelineItem) => {
 };
 
 // Helper to get delivery type from intervention definition
-const getDeliveryType = (def: any): 'bolus' | 'infusion' | 'continuous' | null => {
+const getDeliveryType = (def: any, params: any = {}): 'bolus' | 'infusion' | 'continuous' | null => {
   if (!def?.pharmacology) return null;
 
   // Handle dynamic pharmacology functions
   let pharms: any[] = [];
   if (typeof def.pharmacology === 'function') {
     try {
-      const result = def.pharmacology({});
+      const result = def.pharmacology(params);
       pharms = Array.isArray(result) ? result : [result];
     } catch {
       return null;
@@ -259,7 +259,7 @@ const toVisItems = (items: TimelineItem[]) => {
       let content = `${icon}${label}`;
       let className = item.meta.locked ? 'timeline-item--locked' : '';
 
-      const deliveryType = getDeliveryType(def);
+      const deliveryType = getDeliveryType(def, item.meta.params);
       const start = new Date(item.start);
       const end = new Date(item.end);
       const durationStr = formatDuration(start, end);
@@ -311,12 +311,8 @@ const toVisItems = (items: TimelineItem[]) => {
 
       // Build tooltip content
       const startTimeStr = minuteToLabel((start.getHours() * 60 + start.getMinutes()) as Minute);
-      let tooltipContent = content;
+	let tooltipContent = `<span class="tooltip-time">${startTimeStr}</span><br />${content}`
 
-      // Add time span for continuous/infusion items
-      if (deliveryType === 'continuous' || deliveryType === 'infusion') {
-        tooltipContent = `${content}<span class="tooltip-time">${startTimeStr}</span>`;
-      }
 
       visItems.push({
         id: `${item.id}_${d}`, // Unique ID for each day's instance
@@ -431,19 +427,37 @@ const options = (): TimelineOptions => {
         }
       : false,
     onMove: (item: any, callback) => {
-      // Map back to generic day time
-      // We only support moving items on day 0 for now (enforced by editable: d===0)
-      // But we need to make sure we don't accidentally shift date
       const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
 
-      const newStart = new Date(item.start);
-      // Normalize to base date
-      newStart.setFullYear(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+      // Find original item to preserve its duration if needed (especially for bolus/point items)
+      const originalItem = props.items.find(i => i.id === item._originalId);
 
-      const newEnd = item.end ? new Date(item.end) : newStart;
-      newEnd.setFullYear(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
-      // Handle wrap
-      if (newEnd < newStart) newEnd.setDate(newEnd.getDate() + 1);
+      const dStart = new Date(item.start);
+      const newStart = new Date(baseDate);
+      newStart.setHours(dStart.getHours(), dStart.getMinutes(), dStart.getSeconds(), 0);
+
+      // If it was dragged to a different day in vis-timeline (e.g. across midnight)
+      // we might want to preserve that relative day offset?
+      // For now, we stick to the baseDate normalization but ensure duration is kept.
+
+      let newEnd: Date;
+      if (item.end) {
+        const dEnd = new Date(item.end);
+        const durationMs = dEnd.getTime() - dStart.getTime();
+        newEnd = new Date(newStart.getTime() + durationMs);
+      } else if (originalItem) {
+        const origStart = new Date(originalItem.start);
+        const origEnd = new Date(originalItem.end);
+        const durationMs = origEnd.getTime() - origStart.getTime();
+        newEnd = new Date(newStart.getTime() + durationMs);
+      } else {
+        newEnd = newStart;
+      }
+
+      // Handle overnight wrap
+      if (newEnd < newStart) {
+        newEnd.setDate(newEnd.getDate() + 1);
+      }
 
       emit('update', {
         id: item._originalId as UUID,
@@ -858,7 +872,9 @@ font-size: 0.8rem;
   overflow: visible;
   text-overflow: clip;
   white-space: nowrap;
+  transform: translateX(50%);
 }
+
 
 /* Hide the vertical line and dot for box-type items */
 .timeline-vis :deep(.vis-item.vis-line),
