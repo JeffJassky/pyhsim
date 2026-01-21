@@ -52,6 +52,7 @@ export const glucose: UnifiedSignalDefinition = {
 export const insulin: UnifiedSignalDefinition = {
   key: "insulin",
   label: "Insulin",
+  isPremium: true,
   unit: "µIU/mL",
   description: "The 'storage' hormone. Produced by the pancreas, insulin moves sugar from the blood into your cells to be used for immediate energy or saved for later. It's the master regulator of nutrient storage.",
   idealTendency: "mid",
@@ -88,6 +89,7 @@ export const insulin: UnifiedSignalDefinition = {
 export const glucagon: UnifiedSignalDefinition = {
   key: "glucagon",
   label: "Glucagon",
+  isPremium: true,
   unit: "pg/mL",
   description: "The 'mobilization' hormone. When blood sugar drops, glucagon tells your liver to release its stores of glucose, ensuring your brain and body always have a steady supply of fuel.",
   idealTendency: "mid",

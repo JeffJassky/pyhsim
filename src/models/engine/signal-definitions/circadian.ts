@@ -46,6 +46,7 @@ export const melatonin: UnifiedSignalDefinition = {
 export const orexin: UnifiedSignalDefinition = {
   key: "orexin",
   label: "Orexin",
+  isPremium: true,
   unit: "pg/mL",
   description: "The brain's master 'wakefulness' switch. Orexin keeps you alert, motivated, and interested in the outside world. It acts as the glue that stabilizes your awake state and prevents sudden lapses into sleepiness.",
   idealTendency: "mid",
@@ -85,6 +86,7 @@ export const orexin: UnifiedSignalDefinition = {
 export const histamine: UnifiedSignalDefinition = {
   key: "histamine",
   label: "Histamine",
+  isPremium: true,
   unit: "nM",
   description: "Beyond its role in allergies, histamine in the brain is a powerful alertness chemical. It acts as a general 'on' switch for arousal and attention, which is why older antihistamines make you feel so drowsy.",
   idealTendency: "mid",

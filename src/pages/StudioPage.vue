@@ -39,6 +39,33 @@
           <div class="charts-content">
             <div class="chart-header-row">
               <div class="header-controls">
+                <!-- Search -->
+                <div class="control-group search-group">
+                  <div class="search-field">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8"></circle>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input
+                      v-model="chartSearchQuery"
+                      type="text"
+                      placeholder="Filter charts..."
+                    />
+                  </div>
+                </div>
+
+                <div class="divider"></div>
+
                 <!-- Filter By -->
                 <div class="control-group">
                   <span class="control-label">Filter</span>
@@ -102,7 +129,8 @@
                 </div>
               </div>
 
-              <div class="layout-toggle">
+              <div class="chart-header-row-right">
+                <div class="layout-toggle">
                 <button
                   class="layout-toggle__btn"
                   :class="{ 'is-active': chartLayout === 'list' }"
@@ -154,6 +182,41 @@
                   </svg>
                 </button>
               </div>
+
+              <!-- Signal Manager -->
+              <div class="control-group" ref="signalMenuBtnRef" style="position: relative;">
+                <button
+                  class="icon-btn"
+                  :class="{ 'is-active': showSignalMenu }"
+                  @click="showSignalMenu = !showSignalMenu"
+                  v-tooltip="'Manage available signals'"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+                <Transition name="fade">
+                  <div
+                    v-if="showSignalMenu"
+                    class="signal-menu-wrapper"
+                    ref="signalMenuRef"
+                  >
+                    <SignalToggleMenu />
+                  </div>
+                </Transition>
+              </div>
+            </div>
             </div>
 
             <div class="grouped-charts">
@@ -309,6 +372,7 @@ import TimelineView from '@/components/timeline/TimelineView.vue';
 import SignalChart from '@/components/charts/SignalChart.vue';
 import FloatingInspector from '@/components/inspector/FloatingInspector.vue';
 import AIChatPanel from '@/components/ai/AIChatPanel.vue';
+import SignalToggleMenu from '@/components/charts/SignalToggleMenu.vue';
 import NutritionCarousel from '@/components/log/NutritionCarousel.vue';
 import AddItemModal from '@/components/launcher/AddItemModal.vue';
 import UserProfileModal from '@/components/launcher/UserProfileModal.vue';
@@ -537,11 +601,13 @@ const handleTimelineDeleteShortcut = (event: KeyboardEvent) => {
 };
 
 onMounted(() => {
+  window.addEventListener('click', handleWindowClick);
   scenariosStore.init();
   window.addEventListener('keydown', handleTimelineDeleteShortcut);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('click', handleWindowClick);
   window.removeEventListener('keydown', handleTimelineDeleteShortcut);
 });
 
@@ -723,6 +789,19 @@ import { getReceptorSignals } from '@/models/physiology/pharmacology';
 const chartFilter = ref<'auto' | 'goals' | 'all'>('goals');
 const chartGroupBy = ref<'none' | 'system' | 'goals'>('system');
 const chartLayout = ref<'list' | 'grid'>('grid');
+const chartSearchQuery = ref('');
+const showSignalMenu = ref(false);
+const signalMenuRef = ref<HTMLElement | null>(null);
+const signalMenuBtnRef = ref<HTMLElement | null>(null);
+
+const handleWindowClick = (e: MouseEvent) => {
+  if (showSignalMenu.value && 
+      signalMenuRef.value && 
+      !signalMenuRef.value.contains(e.target as Node) &&
+      !signalMenuBtnRef.value?.contains(e.target as Node)) {
+    showSignalMenu.value = false;
+  }
+};
 
 const hoveredItemId = ref<UUID | undefined>(undefined);
 const handleTimelineHover = (id?: UUID) => {
@@ -815,9 +894,16 @@ const activeSpecs = computed(() => {
   }
 
   const specs = buildSpecs(keys, true);
+
+  // Filter by search query
+  const searchQ = chartSearchQuery.value.toLowerCase().trim();
+  const filteredSpecs = searchQ
+    ? specs.filter(s => s.label.toLowerCase().includes(searchQ) || s.key.toLowerCase().includes(searchQ))
+    : specs;
+
   const orderMap = new Map(user.signalOrder.map((key, idx) => [key, idx]));
 
-  return specs.sort((a, b) => {
+  return filteredSpecs.sort((a, b) => {
     const aPremium = !!a.isPremium;
     const bPremium = !!b.isPremium;
     if (aPremium && !bPremium) return 1;
@@ -1363,5 +1449,84 @@ background: var(--color-active);
   text-transform: uppercase;
   letter-spacing: 0.2em;
   opacity: 0.8;
+}
+
+.search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.search-field svg {
+  position: absolute;
+  left: 0.5rem;
+  pointer-events: none;
+}
+
+.search-field input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem 0.25rem 1.75rem;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  width: 140px;
+  transition: all 0.2s;
+}
+
+.search-field input:hover {
+  background: var(--color-bg-elevated);
+}
+
+.search-field input:focus {
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-default);
+  outline: none;
+  width: 180px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-elevated);
+}
+
+.icon-btn.is-active {
+  color: var(--color-active);
+  background: var(--color-bg-elevated);
+}
+
+.signal-menu-wrapper {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  z-index: 100;
+}
+
+.chart-header-row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border-subtle);
+  margin: 0 0.5rem;
 }
 </style>

@@ -68,6 +68,7 @@ export const energy: UnifiedSignalDefinition = {
 export const hrv: UnifiedSignalDefinition = {
   key: "hrv",
   label: "HRV",
+  isPremium: true,
   unit: "ms",
   description: "Heart Rate Variability. A powerful marker of your nervous system's balance and resilience. Higher values generally indicate that your body is well-recovered and ready to handle physical or mental stress.",
   idealTendency: "higher",
@@ -101,6 +102,7 @@ export const hrv: UnifiedSignalDefinition = {
 export const bloodPressure: UnifiedSignalDefinition = {
   key: "bloodPressure",
   label: "Blood Pressure",
+  isPremium: true,
   unit: "mmHg",
   description: "A proxy for the pressure in your arteries. Influenced by stress hormones, physical activity, and fluid balance, it reflects the immediate workload on your heart and cardiovascular system.",
   idealTendency: "mid",
@@ -134,6 +136,7 @@ export const bloodPressure: UnifiedSignalDefinition = {
 export const inflammation: UnifiedSignalDefinition = {
   key: "inflammation",
   label: "Inflammation",
+  isPremium: true,
   unit: "index",
   description: "A measure of your body's immune activation. While acute inflammation is part of healing, chronic high levels are a key driver of long-term health issues, fatigue, and reduced mental performance.",
   idealTendency: "lower",
@@ -174,6 +177,7 @@ export const inflammation: UnifiedSignalDefinition = {
 export const bdnf: UnifiedSignalDefinition = {
   key: "bdnf",
   label: "BDNF",
+  isPremium: true,
   unit: "ng/mL",
   description: "Often called 'brain fertilizer,' BDNF supports the survival of existing neurons and encourages the growth of new ones. It's essential for learning, memory, and overall cognitive health.",
   idealTendency: "higher",
@@ -220,6 +224,7 @@ export const bdnfExpression: AuxiliaryDefinition = {
 export const vagal: UnifiedSignalDefinition = {
   key: "vagal",
   label: "Vagal Tone",
+  isPremium: true,
   unit: "index",
   description: "A marker of your 'rest and digest' system's activity. High vagal tone helps you stay calm, recover from stress quickly, and maintains efficient digestion and heart rate regulation.",
   idealTendency: "higher",
@@ -259,6 +264,7 @@ export const vagal: UnifiedSignalDefinition = {
 export const ketone: UnifiedSignalDefinition = {
   key: "ketone",
   label: "Ketones",
+  isPremium: true,
   unit: "mmol/L",
   description: "An alternative fuel source made from fat when blood sugar is low. Often associated with sustained mental clarity and physical endurance, ketones signal that your body is in 'fat-burning' mode.",
   idealTendency: "none",
@@ -299,6 +305,7 @@ export const ketone: UnifiedSignalDefinition = {
 export const ethanol: UnifiedSignalDefinition = {
   key: "ethanol",
   label: "Ethanol",
+  isPremium: true,
   unit: "mg/dL",
   description: "Blood alcohol concentration. High levels impact coordination, judgment, and trigger systemic inflammatory responses throughout the body.",
   idealTendency: "lower",
@@ -325,6 +332,7 @@ export const ethanol: UnifiedSignalDefinition = {
 export const acetaldehyde: UnifiedSignalDefinition = {
   key: "acetaldehyde",
   label: "Acetaldehyde",
+  isPremium: true,
   unit: "µM",
   description: "A toxic byproduct of alcohol metabolism. It is responsible for many of the immediate negative effects of drinking, including headaches, nausea, and 'hangover' symptoms.",
   idealTendency: "lower",
@@ -351,6 +359,7 @@ export const acetaldehyde: UnifiedSignalDefinition = {
 export const magnesium: UnifiedSignalDefinition = {
   key: "magnesium",
   label: "Magnesium",
+  isPremium: true,
   unit: "mg/dL",
   description: "A vital mineral involved in over 300 biochemical reactions. It's essential for muscle and nerve function, blood sugar control, and supporting a calm, steady mood.",
   idealTendency: "mid",
@@ -377,6 +386,7 @@ export const magnesium: UnifiedSignalDefinition = {
 export const sensoryLoad: UnifiedSignalDefinition = {
   key: "sensoryLoad",
   label: "Sensory Load",
+  isPremium: true,
   unit: "index",
   description: "A measure of the total cognitive and sensory input your brain is currently processing. High levels can lead to feelings of overwhelm, mental fatigue, and reduced focus.",
   idealTendency: "lower",
@@ -405,6 +415,7 @@ export const sensoryLoad: UnifiedSignalDefinition = {
 export const mtor: UnifiedSignalDefinition = {
   key: "mtor",
   label: "mTOR",
+  isPremium: true,
   unit: "fold-change",
   description: "The body's primary 'build and grow' pathway. It's the master sensor for protein and energy availability, signaling your cells to grow, repair, and build new muscle tissue.",
   idealTendency: "mid",
@@ -431,6 +442,7 @@ export const mtor: UnifiedSignalDefinition = {
 export const ampk: UnifiedSignalDefinition = {
   key: "ampk",
   label: "AMPK",
+  isPremium: true,
   unit: "fold-change",
   description: "Your body's 'energy sensor' and fuel gauge. Activated when energy is low, it tells your cells to stop growing and start burning fat and clearing out cellular waste (autophagy).",
   idealTendency: "mid",
@@ -459,6 +471,7 @@ export const ampk: UnifiedSignalDefinition = {
 export const oxygen: UnifiedSignalDefinition = {
   key: "oxygen",
   label: "Oxygen",
+  isPremium: true,
   unit: "%",
   description: "A measure of how much oxygen your red blood cells are carrying. Maintaining high levels is essential for fueling your brain and muscles during both rest and intense activity.",
   idealTendency: "higher",

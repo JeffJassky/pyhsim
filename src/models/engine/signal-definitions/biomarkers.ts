@@ -17,6 +17,7 @@ const createBiomarker = (
   key,
   label,
   unit,
+  isPremium: true,
   description,
   idealTendency,
   dynamics: {

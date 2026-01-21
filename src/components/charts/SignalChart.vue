@@ -84,10 +84,7 @@
                 {{ latestValue(spec.key).toFixed(latestValue(spec.key) < 1 ? 2 : 1) }}
                 <span class="unit">{{ getUnit(spec.key) }}</span>
               </template>
-              <span v-else class="premium-tag">
-                <span class="premium-tag__icon">🔒</span>
-                PREMIUM
-              </span>
+              <span v-else class="premium-tag"> PREMIUM </span>
             </div>
             <div class="series__bands">
               <div
@@ -192,6 +189,24 @@
                   <div class="contributor-effect">
                     <span v-if="cond.value !== 0" class="contributor-value">
                       {{ cond.value > 0 ? '+' : ''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -899,8 +914,8 @@ watch(
   left: 8px;
   width: 0.75em;
   height: 0.75em;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-top-color: rgba(255, 255, 255, 0.8);
+  border: 2px solid var(--color-text-secondary);
+  border-top-color: var(--color-bg-base);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   opacity: 0;

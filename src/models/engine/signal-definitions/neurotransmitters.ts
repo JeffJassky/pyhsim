@@ -16,6 +16,7 @@ import {
 export const dopamine: UnifiedSignalDefinition = {
   key: "dopamine",
   label: "Dopamine",
+  isPremium: true,
   unit: "nM",
   description: "Often called the 'reward' chemical, dopamine is actually about motivation and anticipation. It's the signal that drives you to pursue goals and seek out pleasurable experiences, creating that 'get up and go' feeling.",
   idealTendency: "mid",
@@ -65,6 +66,7 @@ export const dopamine: UnifiedSignalDefinition = {
 export const serotonin: UnifiedSignalDefinition = {
   key: "serotonin",
   label: "Serotonin",
+  isPremium: true,
   unit: "nM",
   description: "The body's natural mood stabilizer. Serotonin helps regulate everything from sleep and appetite to social behavior and contentment. Higher levels are generally associated with a sense of well-being and emotional resilience.",
   idealTendency: "mid",
@@ -139,6 +141,7 @@ export const dopamineVesicles: AuxiliaryDefinition = {
 export const norepi: UnifiedSignalDefinition = {
   key: "norepi",
   label: "Norepinephrine",
+  isPremium: true,
   unit: "pg/mL",
   description: "Both a hormone and a neurotransmitter, this is your brain's 'focus' signal. It increases alertness and arousal, sharpening your attention and preparing your body for action—essential for concentration and productivity.",
   idealTendency: "mid",
@@ -203,6 +206,7 @@ export const norepinephrineVesicles: AuxiliaryDefinition = {
 export const gaba: UnifiedSignalDefinition = {
   key: "gaba",
   label: "GABA",
+  isPremium: true,
   unit: "nM",
   description: "The brain's primary 'off' switch. GABA reduces the activity of neurons, acting as a natural brake to prevent overstimulation. It's essential for relaxation, reducing anxiety, and falling asleep.",
   idealTendency: "mid",
@@ -259,6 +263,7 @@ export const gabaPool: AuxiliaryDefinition = {
 export const glutamate: UnifiedSignalDefinition = {
   key: "glutamate",
   label: "Glutamate",
+  isPremium: true,
   unit: "µM",
   description: "The most abundant 'on' switch in your brain. Glutamate is the gas pedal for neural activity, playing a central role in learning, memory, and fast communication between neurons. Balance is key, as too much can cause over-excitement.",
   idealTendency: "mid",
@@ -315,6 +320,7 @@ export const glutamatePool: AuxiliaryDefinition = {
 export const acetylcholine: UnifiedSignalDefinition = {
   key: "acetylcholine",
   label: "Acetylcholine",
+  isPremium: true,
   unit: "nM",
   description: "A critical messenger for both your brain and your muscles. In the brain, it supports learning, memory, and sustained attention. It's often associated with 'speed of thought' and your ability to process new information quickly.",
   idealTendency: "mid",
@@ -347,6 +353,7 @@ export const acetylcholine: UnifiedSignalDefinition = {
 export const endocannabinoid: UnifiedSignalDefinition = {
   key: "endocannabinoid",
   label: "Endocannabinoid",
+  isPremium: true,
   unit: "nM",
   description: "Part of your body's internal 'homeostasis' system. Endocannabinoids like anandamide (the 'bliss molecule') help balance other signals, regulating mood, pain perception, and appetite while promoting a sense of calm and balance.",
   idealTendency: "mid",
