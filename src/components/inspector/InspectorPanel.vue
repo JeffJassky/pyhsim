@@ -1,8 +1,8 @@
 <template>
   <div
     v-if="props.selectedCount && props.selectedCount > 0"
-    class="inspector-root"
-    :class="{ 'inspector--disabled': !isBulkDisabled && local.disabled }"
+    class="inspector"
+    :class="{ 'inspector--disabled': isBulkDisabled }"
   >
     <!-- Shared Header with Toggle -->
     <div class="header-row">
@@ -51,7 +51,7 @@
     <!-- Single-select body -->
     <div v-else-if="item && def" class="inspector-body">
       <h3 v-if="local.labelOverride" class="normal-title">{{ def.label }}</h3>
-      <p v-if="def.notes" class="def-notes">{{ def.notes }}</p>
+      <p v-if="def.notes" class="def-notes selectable">{{ def.notes }}</p>
 
       <!-- Meta row for Time and Duration -->
       <div class="meta-section">
@@ -141,7 +141,7 @@
           Read about {{ props.def?.label }}
         </button>
 
-        <div v-if="showEffects" class="effects">
+        <div v-if="showEffects" class="effects selectable">
           <div class="effects-header">
             <h4>Biological Effects of {{ props.def?.label }}</h4>
             <button class="effects-collapse-btn" @click="showEffects = false">

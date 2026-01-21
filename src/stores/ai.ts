@@ -28,7 +28,7 @@ export const useAIStore = defineStore("ai", () => {
       id: "init",
       role: "assistant",
       content:
-        "Hello! I am your biological co-pilot. I can help you optimize your routine, explain physiological signals, or find interventions. How can I help you today?",
+        "Hello! I'm Sim, your biological co-pilot. \n\nI can help you learn about your body and make recommendations to help you reach your goals. \n\nHow can I help you today?",
       timestamp: Date.now(),
     },
   ]);
@@ -207,8 +207,7 @@ export const useAIStore = defineStore("ai", () => {
       type: "function",
       function: {
         name: "update_conditions",
-        description:
-          "Enable or disable medical/physiological conditions.",
+        description: "Enable or disable medical/physiological conditions.",
         parameters: {
           type: "object",
           properties: {
@@ -467,7 +466,7 @@ export const useAIStore = defineStore("ai", () => {
   async function callOpenAI(
     apiKey: string,
     context: any,
-    systemPrompt: string
+    systemPrompt: string,
   ) {
     let currentMessages: any[] = [
       { role: "system", content: systemPrompt },
@@ -501,7 +500,7 @@ export const useAIStore = defineStore("ai", () => {
             tools: TOOLS,
             tool_choice: "auto",
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -520,7 +519,7 @@ export const useAIStore = defineStore("ai", () => {
         for (const toolCall of msg.tool_calls) {
           const result = await executeTool(
             toolCall.function.name,
-            JSON.parse(toolCall.function.arguments)
+            JSON.parse(toolCall.function.arguments),
           );
           currentMessages.push({
             role: "tool",
@@ -537,7 +536,7 @@ export const useAIStore = defineStore("ai", () => {
   async function callGemini(
     apiKey: string,
     context: any,
-    systemPrompt: string
+    systemPrompt: string,
   ) {
     const geminiTools = {
       function_declarations: TOOLS.map((t) => ({
@@ -585,7 +584,7 @@ export const useAIStore = defineStore("ai", () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        }
+        },
       );
 
       if (!response.ok) {

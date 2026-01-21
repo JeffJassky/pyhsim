@@ -1,15 +1,15 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="launcher-overlay" @click.self="close">
+      <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div
-          class="launcher-content"
+          class="modal-content launcher-content"
           :class="{ 'launcher-content--items': view !== 'categories' || search.length > 0 }"
         >
-          <button class="close-btn" @click="close">✕</button>
+          <button class="modal-close-btn" @click="close">✕</button>
 
-          <header class="launcher-header">
-            <h2 v-if="view === 'categories' && !search" class="section-title">
+          <header class="modal-header launcher-header">
+            <h2 v-if="view === 'categories' && !search" class="modal-title">
               Add to Timeline
             </h2>
             <button
@@ -37,8 +37,9 @@
             </div>
           </header>
 
-          <!-- Category View -->
-          <div v-if="view === 'categories' && !search" class="view-categories">
+          <div class="modal-body launcher-body">
+            <!-- Category View -->
+            <div v-if="view === 'categories' && !search" class="view-categories">
             <div class="category-group">
               <h3 class="group-label">Browse by Type</h3>
               <div class="grid">
@@ -161,14 +162,14 @@
             <div v-if="foodList.length === 0 && !loading" class="empty-state">
               {{ search ? 'No foods found' : 'Search for a food to begin' }}
             </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
-</template>
-
-<script setup lang="ts">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </Teleport>
+          </template>
+          <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue';
 import { useLibraryStore } from '@/stores/library';
 import { searchFoods } from '@/api/openfoodfacts';
@@ -357,32 +358,8 @@ watch(() => props.modelValue, (val) => {
 </script>
 
 <style scoped>
-.launcher-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10005;
-  background: rgba(10, 10, 15, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
 .launcher-content {
-  width: 100%;
   max-width: 800px;
-  background: rgba(30, 30, 35, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 90vh;
-  overflow: hidden;
 }
 
 .launcher-content--items {
@@ -392,38 +369,13 @@ watch(() => props.modelValue, (val) => {
 .launcher-header {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 3rem 3rem 1rem 3rem;
-  flex-shrink: 0;
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.launcher-content--items .launcher-header {
-  padding: 2rem 2rem 1rem 2rem;
-}
-
-.close-btn {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  z-index: 10;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+.launcher-body {
+  padding-top: 1.5rem;
 }
 
 .view-categories, .view-items {
@@ -432,43 +384,7 @@ watch(() => props.modelValue, (val) => {
   gap: 2rem;
   width: 100%;
   animation: fadeIn 0.3s ease-out;
-  overflow-y: auto;
-  padding: 1rem 3rem 3rem 3rem;
-  /* Allow space for hover scaling without clipping */
   overflow-x: visible;
-}
-
-.launcher-content--items .view-categories,
-.launcher-content--items .view-items {
-  padding: 1rem 2rem 2rem 2rem;
-}
-
-.view-categories::-webkit-scrollbar,
-.view-items::-webkit-scrollbar,
-.items-grid::-webkit-scrollbar {
-  width: 6px;
-}
-
-.view-categories::-webkit-scrollbar-thumb,
-.view-items::-webkit-scrollbar-thumb,
-.items-grid::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-
-.view-categories::-webkit-scrollbar-track,
-.view-items::-webkit-scrollbar-track,
-.items-grid::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: white;
-  margin: 0;
-  text-align: left;
-  letter-spacing: -0.02em;
 }
 
 .category-group {
@@ -481,7 +397,7 @@ watch(() => props.modelValue, (val) => {
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
   margin: 0 0 0.5rem 0.5rem;
   font-weight: 600;
 }
@@ -498,26 +414,26 @@ watch(() => props.modelValue, (val) => {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 20px;
   aspect-ratio: 1;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  color: white;
+  color: var(--color-text-primary);
 }
 
 .launcher-card:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-elevated);
   transform: translateY(-4px) scale(1.02);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  border-color: var(--color-border-default);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
 }
 
 .back-btn {
   background: transparent;
   border: none;
-  color: var(--color-text-active);
+  color: var(--color-active);
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -538,20 +454,20 @@ watch(() => props.modelValue, (val) => {
 
 .search-input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   padding: 0.85rem 1rem;
-  color: white;
+  color: var(--color-text-primary);
   font-size: 1.1rem;
   outline: none;
   transition: all 0.2s;
 }
 
 .search-input:focus {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(143, 191, 95, 0.5);
-  box-shadow: 0 0 0 4px rgba(143, 191, 95, 0.1);
+  background: var(--color-bg-elevated);
+  border-color: var(--color-active);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-active), transparent 90%);
 }
 
 .search-loader {
@@ -561,8 +477,8 @@ watch(() => props.modelValue, (val) => {
   transform: translateY(-50%);
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--color-text-active);
+  border: 2px solid var(--color-border-subtle);
+  border-top-color: var(--color-active);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -582,8 +498,8 @@ watch(() => props.modelValue, (val) => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 0.75rem 1rem;
   cursor: pointer;
@@ -594,8 +510,8 @@ watch(() => props.modelValue, (val) => {
 }
 
 .item-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-bg-elevated);
+  border-color: var(--color-border-default);
   transform: translateX(4px);
 }
 
@@ -603,7 +519,7 @@ watch(() => props.modelValue, (val) => {
   font-size: 1.75rem;
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-bg-base);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -617,7 +533,7 @@ watch(() => props.modelValue, (val) => {
 .item-card__title {
   font-weight: 600;
   font-size: 1.05rem;
-  color: white;
+  color: var(--color-text-primary);
 }
 
 .item-card__brand {
@@ -635,21 +551,21 @@ watch(() => props.modelValue, (val) => {
 
 .item-card__action {
   font-size: 1.25rem;
-  color: var(--color-text-active);
+  color: var(--color-active);
   opacity: 0.8;
 }
 
 /* Food specific expansion */
 .item-card--food.is-expanded {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(143, 191, 95, 0.3);
+  background: var(--color-bg-elevated);
+  border-color: var(--color-active);
   transform: none;
 }
 
 .food-controls {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -667,17 +583,17 @@ watch(() => props.modelValue, (val) => {
 
 .qty-stepper input {
   width: 70px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 6px;
   padding: 0.35rem;
-  color: white;
+  color: var(--color-text-primary);
   outline: none;
 }
 
 .log-btn {
-  background: var(--color-text-active);
-  color: black;
+  background: var(--color-active);
+  color: var(--color-text-inverted);
   border: none;
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -703,29 +619,17 @@ watch(() => props.modelValue, (val) => {
 }
 
 .card--goal {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  background: linear-gradient(145deg, var(--color-bg-subtle), var(--color-bg-base));
 }
 
 .card-icon {
   font-size: 2.5rem;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
 }
 
 .card-label {
   font-size: 0.95rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* Animations */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+  color: var(--color-text-primary);
 }
 
 @keyframes fadeIn {

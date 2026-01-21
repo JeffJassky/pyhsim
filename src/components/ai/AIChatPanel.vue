@@ -8,7 +8,7 @@
         :class="`message--${msg.role}`"
       >
         <div
-          class="message__content markdown-body"
+          class="message__content markdown-body selectable"
           v-html="renderMarkdown(msg.content || '')"
         ></div>
         <div class="message__meta">

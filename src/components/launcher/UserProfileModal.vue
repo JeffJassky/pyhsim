@@ -1,15 +1,15 @@
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="launcher-overlay" @click.self="close">
+      <div v-if="modelValue" class="modal-overlay" @click.self="close">
         <div
-          class="launcher-content"
-          :class="{ 'launcher-content--expanded': view !== 'categories' }"
+          class="modal-content profile-modal-content"
+          :class="{ 'profile-modal-content--expanded': view !== 'categories' }"
         >
-          <button class="close-btn" @click="close">✕</button>
+          <button class="modal-close-btn" @click="close">✕</button>
 
-          <header class="launcher-header">
-            <h2 v-if="view === 'categories'" class="section-title">
+          <header class="modal-header profile-modal-header">
+            <h2 v-if="view === 'categories'" class="modal-title">
               My Bio-Profile
             </h2>
             <button v-else class="back-btn" @click="view = 'categories'">
@@ -17,8 +17,9 @@
             </button>
           </header>
 
-          <!-- Category View -->
-          <div v-if="view === 'categories'" class="view-categories">
+          <div class="modal-body profile-modal-body">
+            <!-- Category View -->
+            <div v-if="view === 'categories'" class="view-categories">
             <div class="grid">
               <button class="launcher-card" @click="view = 'goals'">
                 <span class="card-icon">⚡</span>
@@ -400,14 +401,14 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
-</template>
-
-<script setup lang="ts">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+            </Teleport>
+          </template>
+          <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { useUIStore } from '@/stores/ui';
@@ -583,73 +584,16 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 </script>
 
 <style scoped>
-.launcher-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: var(--color-bg-base);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.launcher-content {
-  width: 100%;
+.profile-modal-content {
   max-width: 800px;
-  background: var(--color-bg-base);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 24px;
-  box-shadow: var(--ob-shadow-lg);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  max-height: 90vh;
-  overflow: hidden;
 }
 
-.launcher-content--expanded {
+.profile-modal-content--expanded {
   max-width: 600px;
 }
 
-.launcher-header {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 3rem 3rem 1rem 3rem;
-  flex-shrink: 0;
-}
-
-.launcher-content--expanded .launcher-header {
-  padding: 2.5rem 2.5rem 1rem 2.5rem;
-}
-
-.close-btn {
-  position: absolute;
-  top: 1.5rem;
-  right: 1.5rem;
-  background: transparent;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  z-index: 10;
-}
-
-.close-btn:hover {
-  background: var(--color-bg-subtle);
-  color: var(--color-text-primary);
+.profile-modal-body {
+  padding-top: 0;
 }
 
 .view-categories, .view-items {
@@ -658,38 +602,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
   gap: 2rem;
   width: 100%;
   animation: fadeIn 0.3s ease-out;
-  overflow-y: auto;
-  padding: 1rem 3rem 3rem 3rem;
   overflow-x: visible;
-}
-
-.launcher-content--expanded .view-categories,
-.launcher-content--expanded .view-items {
-  padding: 1rem 2.5rem 2.5rem 2.5rem;
-}
-
-.view-categories::-webkit-scrollbar,
-.view-items::-webkit-scrollbar,
-.settings-grid::-webkit-scrollbar,
-.items-grid::-webkit-scrollbar {
-  width: 6px;
-}
-
-.view-categories::-webkit-scrollbar-thumb,
-.view-items::-webkit-scrollbar-thumb,
-.settings-grid::-webkit-scrollbar-thumb,
-.items-grid::-webkit-scrollbar-thumb {
-  background: var(--color-border-subtle);
-  border-radius: 10px;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  margin: 0;
-  text-align: left;
-  letter-spacing: -0.02em;
 }
 
 .grid {
@@ -760,7 +673,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 .back-btn {
   background: transparent;
   border: none;
-  color: var(--color-accent);
+  color: var(--color-active);
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -801,7 +714,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 }
 
 .setting-value {
-  color: var(--color-accent);
+  color: var(--color-active);
   font-weight: 700;
   font-family: monospace;
   font-size: 1.1rem;
@@ -819,7 +732,7 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 
 input[type="range"] {
   width: 100%;
-  accent-color: var(--color-accent);
+  accent-color: var(--color-active);
 }
 
 /* Macro Grid */
@@ -880,8 +793,8 @@ input[type="range"] {
 }
 
 .profile-item {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 16px;
   padding: 1.25rem;
 }
@@ -912,7 +825,7 @@ input[type="range"] {
 .profile-item__params {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -928,7 +841,7 @@ input[type="range"] {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-muted);
   margin-bottom: 1rem;
 }
 
@@ -943,15 +856,15 @@ input[type="range"] {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 12px;
   gap: 0.75rem;
 }
 
 .signal-toggle-item__drag {
   cursor: grab;
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--color-text-muted);
   font-size: 1.2rem;
   padding: 0.25rem;
   user-select: none;
@@ -959,7 +872,7 @@ input[type="range"] {
 }
 
 .signal-toggle-item:hover .signal-toggle-item__drag {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-secondary);
 }
 
 .signal-toggle-item__drag:active {
@@ -975,7 +888,7 @@ input[type="range"] {
 .sortable-ghost {
   opacity: 0.3;
   background: var(--color-bg-subtle);
-  border-color: var(--color-accent);
+  border-color: var(--color-active);
 }
 
 .signal-toggle-item__label {
@@ -1048,6 +961,7 @@ input[type="range"] {
   padding: 0.25rem;
   width: 100%;
   max-width: 300px;
+  border: 1px solid var(--color-border-subtle);
 }
 
 .tier-toggle__btn {
@@ -1137,9 +1051,6 @@ input:checked + .slider:before {
   transform: translateX(20px);
 }
 
-/* Animations */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

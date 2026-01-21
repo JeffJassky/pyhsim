@@ -801,7 +801,7 @@ font-size: 0.8rem;
   font-family: var(--font-mono);
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px var(--color-text-inverted);
 }
 
 .hover-time-label {

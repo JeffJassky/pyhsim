@@ -11,23 +11,26 @@
         <slot name="header-center" />
       </div>
       <div class="header-right">
-        <button
-          class="profile-link"
-          @click="debugModalOpen = true"
-        >
+        <button class="profile-link" @click="debugModalOpen = true">
           Dev Tools
+        </button>
+        <button class="profile-link" @click="scienceModalOpen = true">
+          Science
         </button>
         <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
           My Profile
         </button>
-        <button
-          class="theme-toggle"
-          @click="toggleTheme"
+        <label
+          class="theme-switch"
           :title="'Theme: ' + uiStore.theme"
         >
-          <span v-if="uiStore.resolvedTheme === 'dark'">☀️</span>
-          <span v-else>🌙</span>
-        </button>
+          <input
+            type="checkbox"
+            :checked="uiStore.resolvedTheme === 'dark'"
+            @change="toggleTheme"
+          />
+          <span class="switch-slider"></span>
+        </label>
       </div>
     </header>
     <div
@@ -75,7 +78,9 @@
           </div>
         </Pane>
         <Pane :size="chatPaneSize" :min-size="15" :max-size="40">
-          <aside class="app-shell__sidebar app-shell__sidebar--right tour-ai-panel">
+          <aside
+            class="app-shell__sidebar app-shell__sidebar--right tour-ai-panel"
+          >
             <slot name="right-sidebar" />
           </aside>
         </Pane>
@@ -99,6 +104,7 @@
       ></div>
     </div>
     <DebugModal v-model="debugModalOpen" />
+    <ScienceModal v-model="scienceModalOpen" />
   </div>
 </template>
 
@@ -109,11 +115,13 @@ import { Splitpanes, Pane } from 'splitpanes';
 import 'splitpanes/dist/splitpanes.css';
 import { useUIStore } from '@/stores/ui';
 import DebugModal from '@/components/admin/DebugModal.vue';
+import ScienceModal from '@/components/layout/ScienceModal.vue';
 
 const uiStore = useUIStore();
 const route = useRoute();
 const isOnboarding = computed(() => route.name === 'onboarding');
 const debugModalOpen = ref(false);
+const scienceModalOpen = ref(false);
 
 const toggleTheme = () => {
   // Toggle between light and dark (if currently system, use the resolved theme's opposite)
@@ -201,7 +209,7 @@ const handlePaneResize = (panes: { size: number }[]) => {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .logo {
@@ -212,8 +220,8 @@ const handlePaneResize = (panes: { size: number }[]) => {
 }
 
 .profile-link {
-  color: var(--color-text-primary);
-  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-weight: 600;
   opacity: 0.7;
   font-size: 0.9rem;
   background: transparent;
@@ -224,21 +232,56 @@ const handlePaneResize = (panes: { size: number }[]) => {
 
 .profile-link:hover {
   opacity: 1;
-  text-decoration: underline;
+  color: var(--color-text-primary);
 }
 
-.theme-toggle {
-  background: transparent;
-  border: none;
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
   cursor: pointer;
-  font-size: 1.1rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 6px;
-  transition: background 0.2s;
 }
 
-.theme-toggle:hover {
-  background: var(--color-bg-subtle);
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-text-secondary);
+  transition: .2s;
+  border-radius: 20px;
+  border: 1px solid var(--color-text-secondary);
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 10px;
+  width: 10px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+
+input:checked + .switch-slider {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+input:checked + .switch-slider:before {
+  transform: translateX(12px);
+  background-color: white;
 }
 
 .app-shell {

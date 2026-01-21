@@ -41,15 +41,15 @@ const finalStateJson = computed(() => {
 <template>
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="modelValue" class="debug-overlay" @click.self="close">
-        <div class="debug-content">
-          <button class="close-btn" @click="close">✕</button>
+      <div v-if="modelValue" class="modal-overlay" @click.self="close">
+        <div class="modal-content debug-modal-content">
+          <button class="modal-close-btn" @click="close">✕</button>
 
-          <header class="debug-header">
-            <h2 class="section-title">Admin / Debug Tools</h2>
+          <header class="modal-header">
+            <h2 class="modal-title">Admin / Debug Tools</h2>
           </header>
 
-          <div class="debug-body">
+          <div class="modal-body">
             <!-- Signal Simulation Controls -->
             <div class="tool-group">
               <h3 class="group-title">Signal Simulation</h3>
@@ -203,72 +203,8 @@ const finalStateJson = computed(() => {
 </template>
 
 <style scoped>
-.debug-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 2000; /* Higher than normal modals */
-  background: rgba(10, 10, 15, 0.5);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.debug-content {
-  width: 100%;
+.debug-modal-content {
   max-width: 500px;
-  background: #1e1e23;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-  overflow: hidden;
-  color: white;
-}
-
-.close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 1.25rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.debug-header {
-  padding: 2rem 2rem 1rem 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.section-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.debug-body {
-  padding: 2rem;
-  overflow-y: auto;
 }
 
 .tool-group {
@@ -283,12 +219,12 @@ const finalStateJson = computed(() => {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: var(--color-text-primary);
 }
 
 .group-desc {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-secondary);
   margin-bottom: 1rem;
 }
 
@@ -308,25 +244,24 @@ const finalStateJson = computed(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
   width: 100%;
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-bg-elevated);
 }
 
 .action-btn.danger {
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.1);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger), transparent 90%);
 }
 
 .action-btn.danger:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.5);
+  background: color-mix(in srgb, var(--color-danger), transparent 80%);
 }
 
 .icon {
@@ -347,23 +282,15 @@ const finalStateJson = computed(() => {
 }
 
 .toggle-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 0.75rem;
+  background: var(--color-bg-subtle);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
   transition: background 0.2s;
+  border: 1px solid var(--color-border-subtle);
 }
 
 .toggle-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.toggle-item--optimized {
-  border: 1px solid rgba(143, 191, 95, 0.3);
-  background: rgba(143, 191, 95, 0.05);
-}
-
-.toggle-item--optimized .toggle-label {
-  color: var(--color-text-active);
+  background: var(--color-bg-elevated);
 }
 
 .toggle-label {
@@ -373,28 +300,26 @@ const finalStateJson = computed(() => {
 
 .toggle-desc {
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-secondary);
   margin: 0;
   line-height: 1.3;
 }
 
 .toggle-row input[type="checkbox"] {
-  transform: scale(1.2);
+  accent-color: var(--color-active);
+  transform: scale(1.1);
 }
 
 .json-dump {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--color-bg-subtle);
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: monospace;
   font-size: 0.8rem;
   white-space: pre-wrap;
   max-height: 200px;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
 }
-
-/* Transitions */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

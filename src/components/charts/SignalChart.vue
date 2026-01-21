@@ -161,7 +161,7 @@
       <Transition name="expand">
         <div
           v-if="spec.info && infoOpenKey === spec.key"
-          class="series-info-expanded"
+          class="series-info-expanded selectable"
         >
           <div class="series-info-expanded__content">
             <div class="info-grid">
@@ -623,6 +623,24 @@ const normalize = (val: number, spec: ChartSeriesSpec) => {
 const indicators = ref<Record<string, { type: 'up' | 'down'; x: number; y: number; id: number; value: number; unit: string }>>({});
 const flashStates = ref<Record<string, boolean>>({});
 const previousData = new Map<string, number[]>();
+const updatedKeysInCycle = new Set<string>();
+
+watch(
+  () => props.loading,
+  (isLoading, wasLoading) => {
+    if (isLoading && !wasLoading) {
+      updatedKeysInCycle.clear();
+    } else if (!isLoading && wasLoading) {
+      // Finished loading, wipe indicators that didn't change in this cycle
+      Object.keys(indicators.value).forEach((key) => {
+        if (!updatedKeysInCycle.has(key)) {
+          delete indicators.value[key];
+        }
+      });
+      updatedKeysInCycle.clear();
+    }
+  }
+);
 
 watch(
   () => props.seriesData,
@@ -673,6 +691,7 @@ watch(
             value: display.value,
             unit: display.unit
           };
+          updatedKeysInCycle.add(key);
 
           // Trigger gentle flash
           flashStates.value[key] = true;
