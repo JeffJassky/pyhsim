@@ -98,15 +98,15 @@ label {
   align-items: baseline;
   font-size: 0.8rem;
   text-transform: uppercase;
-  color: #aaa;
+  color: var(--color-text-secondary);
 }
 
 .number-readout {
   width: 60px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border-default);
   border-radius: 4px;
-  color: #fff;
+  color: inherit;
   font-size: 0.8rem;
   padding: 0.1rem 0.25rem;
   text-align: right;
@@ -114,6 +114,6 @@ label {
 
 .number-readout:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--color-active);
 }
 </style>

@@ -69,11 +69,10 @@
         >
           <div
             class="series__canvas"
-            :class="{ 'is-flashing': flashStates[spec.key] }"
-            :style="{
-                          '--line-color': lineColor(spec),
-                          '--fill-color': fillColor(spec),
-                        }"
+            :class="[
+              { 'is-flashing': flashStates[spec.key] },
+              `tendency-${spec.idealTendency || 'none'}`
+            ]"
           >
             <div class="loading-spinner" :class="{ 'is-active': loading }" />
             <div class="series__overlay series__overlay--value">
@@ -104,8 +103,8 @@
                   y2="30"
                   gradientUnits="userSpaceOnUse"
                 >
-                  <stop offset="0%" :stop-color="gradientStops(spec)[0]" />
-                  <stop offset="100%" :stop-color="gradientStops(spec)[1]" />
+                  <stop offset="0%" stop-color="var(--grad-0)" />
+                  <stop offset="100%" stop-color="var(--grad-1)" />
                 </linearGradient>
               </defs>
               <polyline
@@ -163,13 +162,16 @@
           <div class="series-info-expanded__content">
             <div class="info-grid">
               <div class="info-section">
-                <h4>Description</h4>
+                <h4>{{  spec.label  }}</h4>
                 <p>{{ spec.info.description }}</p>
               </div>
             </div>
 
-            <div class="series__contributors">
-              <h4>ACTIVE CONDITIONS</h4>
+            <div
+              class="series__contributors"
+              v-if="getSignalConditions(spec.key).length"
+            >
+              <h4>YOUR CONDITIONS</h4>
               <div
                 v-if="getSignalConditions(spec.key).length"
                 class="contributors-list"
@@ -190,6 +192,40 @@
                     >
                     <span v-if="cond.value !== 0" class="contributor-value">
                       ({{ cond.value > 0 ? '+' : ''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -366,6 +402,40 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       }}{{ item.value.toFixed(1) }} {{ item.unit }})
                     </span>
                   </div>
@@ -410,7 +480,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import type { ChartSeriesSpec, ResponseSpec, Signal, Minute } from '@/types';
-import { TENDENCY_COLORS, TENDENCY_LINE_GRADIENTS } from '@/models/ui/colors';
 import { getAllUnifiedDefinitions } from '@/models/engine';
 import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/signal-units';
 import Sortable from 'sortablejs';
@@ -665,14 +734,6 @@ const minToPercent = (minute: number) => {
 const percentToMin = (percent: number) => {
   return props.dayStartMin + (percent / 100) * props.viewMinutes;
 };
-
-const lineColor = (spec: ChartSeriesSpec) =>
-  TENDENCY_COLORS[spec.idealTendency ?? 'none'].line;
-
-const fillColor = (spec: ChartSeriesSpec) => TENDENCY_COLORS[spec.idealTendency ?? 'neutral'].fill;
-
-const gradientStops = (spec: ChartSeriesSpec) =>
-  TENDENCY_LINE_GRADIENTS[spec.idealTendency ?? 'none'];
 
 const gradientId = (spec: ChartSeriesSpec) => `grad-${spec.key}`;
 const strokeUrl = (spec: ChartSeriesSpec) => `url(#${gradientId(spec)})`;
@@ -994,7 +1055,7 @@ watch(
   font-size: 0.9rem;
   padding: 4px;
   transition: opacity 0.2s ease;
-  color: rgba(248, 250, 252, 0.35);
+  color: var(--color-text-muted);
   user-select: none;
 }
 
@@ -1032,7 +1093,7 @@ watch(
 .series-sidebar__btn {
   background: transparent;
   border: none;
-  color: rgba(248, 250, 252, 0.3);
+  color: var(--color-text-muted);
   cursor: pointer;
   padding: 2px;
   border-radius: 4px;
@@ -1048,8 +1109,8 @@ watch(
 }
 
 .series-sidebar__btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #f8fafc;
+  background: var(--color-bg-active);
+  color: var(--color-text-primary);
 }
 
 .series-sidebar__btn.is-active {
@@ -1058,7 +1119,7 @@ watch(
 }
 
 .series-sidebar__hide:hover {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .series-sidebar__label {
@@ -1078,6 +1139,28 @@ watch(
 
 .series__canvas {
   position: relative;
+}
+
+.series__canvas.tendency-higher {
+  --line-color: var(--chart-line-higher);
+  --fill-color: var(--chart-fill-higher);
+  --grad-0: var(--chart-grad-higher-0);
+  --grad-1: var(--chart-grad-higher-1);
+}
+
+.series__canvas.tendency-lower {
+  --line-color: var(--chart-line-lower);
+  --fill-color: var(--chart-fill-lower);
+  --grad-0: var(--chart-grad-lower-0);
+  --grad-1: var(--chart-grad-lower-1);
+}
+
+.series__canvas.tendency-mid,
+.series__canvas.tendency-none {
+  --line-color: var(--chart-line-neutral);
+  --fill-color: var(--chart-fill-neutral);
+  --grad-0: var(--chart-grad-neutral-0);
+  --grad-1: var(--chart-grad-neutral-1);
 }
 
 .series__canvas.is-flashing::after {
@@ -1165,7 +1248,7 @@ watch(
 
 /* Expanded Info Section */
 .series-info-expanded {
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border-subtle);
   border-top: none;
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
@@ -1198,7 +1281,7 @@ watch(
 .info-section p {
   font-size: 0.85rem;
   line-height: 1.5;
-  color: rgba(248, 250, 252, 0.8);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -1213,7 +1296,7 @@ watch(
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(248, 250, 252, 0.4);
+  color: var(--color-text-muted);
   margin: 0 0 0.75rem 0;
 }
 
@@ -1225,7 +1308,7 @@ watch(
 }
 
 .contributor-item {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-bg-elevated);
   border-radius: 6px;
   padding: 0.6rem 0.8rem;
   display: flex;
@@ -1235,7 +1318,7 @@ watch(
 }
 
 .contributor-item--condition {
-  border-left: 3px solid #818cf8;
+  border-left: 3px solid var(--color-active);
 }
 
 .contributor-main {
@@ -1251,14 +1334,14 @@ watch(
 .contributor-label {
   font-weight: 700;
   font-size: 0.85rem;
-  color: #f8fafc;
+  color: var(--color-text-primary);
 }
 
 .contributor-badge {
   font-size: 0.6rem;
   text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(248, 250, 252, 0.5);
+  background: var(--color-bg-active);
+  color: var(--color-text-muted);
   padding: 1px 4px;
   border-radius: 4px;
   font-weight: 800;
@@ -1278,13 +1361,13 @@ watch(
 }
 
 .contributor-value {
-  color: rgba(248, 250, 252, 0.6);
+  color: var(--color-text-secondary);
   font-weight: 600;
 }
 
 .no-contributors {
   font-size: 0.8rem;
-  color: rgba(248, 250, 252, 0.4);
+  color: var(--color-text-muted);
   font-style: italic;
   margin: 0 0 1.5rem 0;
 }
@@ -1296,9 +1379,10 @@ watch(
 }
 
 .coupling-item {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--color-bg-elevated);
   border-radius: 6px;
   padding: 0.6rem;
+
 }
 
 .coupling-item__header {
@@ -1311,7 +1395,7 @@ watch(
 .series__coupling-source {
   font-weight: 700;
   font-size: 0.8rem;
-  color: #f8fafc;
+  color: var(--color-text-primary);
 }
 
 .series__coupling-mapping {
@@ -1323,7 +1407,7 @@ watch(
 .series__coupling-desc {
   font-size: 0.75rem;
   line-height: 1.4;
-  color: rgba(248, 250, 252, 0.6);
+  color: var(--color-text-secondary);
 }
 
 /* Transition */
@@ -1363,6 +1447,7 @@ watch(
   bottom: 0;
   width: 2px;
   background: var(  --color-active);
+  box-shadow: 0 0 10px var(--color-active);
   z-index: 2;
 }
 
@@ -1398,8 +1483,8 @@ watch(
   padding: 0;
   background: transparent;
   pointer-events: none;
-  color: #f5f5f5;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  color: var(--color-text-primary);
+  text-shadow: 0 1px 3px var(--color-text-inverted);
 }
 
 .series__overlay--value {

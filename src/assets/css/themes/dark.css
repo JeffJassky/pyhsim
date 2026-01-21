@@ -20,6 +20,9 @@
   --color-border-strong: var(--neutral-600);
   --color-active: var(--sky-600);
 
+  /* Shadows */
+  --shadow-large: 3px 6px 10px rgba(0, 0, 0, 0.3);
+
   /* Semantic / Functional (Grayscale) */
   --color-accent: var(--neutral-0);
   --color-accent-hover: var(--neutral-200);
@@ -28,4 +31,23 @@
   --color-success: var(--emerald-500);
   --color-warning: var(--amber-500);
   --color-danger: var(--rose-500);
+
+  /* Legacy / Specific Macros */
+  --color-macro-carbs: var(--sky-500);
+
+  /* Chart Tendencies */
+  --chart-line-higher: var(--sky-500);
+  --chart-fill-higher: color-mix(in srgb, var(--sky-500), transparent 88%);
+  --chart-grad-higher-0: var(--sky-400);
+  --chart-grad-higher-1: var(--sky-600);
+
+  --chart-line-lower: var(--amber-500);
+  --chart-fill-lower: color-mix(in srgb, var(--amber-500), transparent 88%);
+  --chart-grad-lower-0: var(--rose-600);
+  --chart-grad-lower-1: var(--amber-400);
+
+  --chart-line-neutral: var(--neutral-400);
+  --chart-fill-neutral: color-mix(in srgb, var(--neutral-700), transparent 88%);
+  --chart-grad-neutral-0: var(--neutral-400);
+  --chart-grad-neutral-1: var(--neutral-400);
 }

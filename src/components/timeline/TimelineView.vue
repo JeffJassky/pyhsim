@@ -95,6 +95,7 @@ const hoverGroup = ref<string | number | null>(null);
 const mouseY = ref<number>(0);
 const isUserMoving = ref(false);
 const isButtonHovered = ref(false);
+const timelineWindow = ref<{ start: Date; end: Date } | null>(null);
 let hideTimeout: number | null = null;
 let timeline: VisTimeline | null = null;
 let dataset: DataSet<any> | null = null;
@@ -115,41 +116,31 @@ const addButtonLabel = computed(() => {
 });
 
 const getMinutePercent = (minute: number) => {
-  if (!timeline) return 0;
-  const { start, end } = getDayBounds();
-  const totalMs = end.getTime() - start.getTime();
+  if (!timeline || !timelineWindow.value) return 0;
 
-  // Calculate the time at the start of the visible window
+  // Use the current visible window from the timeline (updates on zoom/pan)
+  const { start: windowStart, end: windowEnd } = timelineWindow.value;
+  const totalMs = windowEnd.getTime() - windowStart.getTime();
+
+  // Calculate the absolute time for this minute on day 1 of the view
   const baseDate = props.dateIso ? new Date(props.dateIso + 'T00:00:00') : new Date();
-  const windowStart = new Date(baseDate);
-  windowStart.setHours(0, 0, 0, 0);
+  const playheadTime = new Date(baseDate);
+  playheadTime.setHours(0, 0, 0, 0);
   const startHours = Math.floor(props.dayStartMin / 60);
   const startMins = props.dayStartMin % 60;
-  windowStart.setHours(startHours, startMins, 0, 0);
+  playheadTime.setHours(startHours, startMins, 0, 0);
 
-  // Determine absolute minute from start of simulation window
-  // If multi-day, 'minute' argument is minute-of-simulation (can be > 1440)
-  // But wait, the prop `playheadMin` passed down is usually wrapped 0-1440.
-  // If we support multi-day, we need `playheadTotalMin` or similar.
-  // For now, let's assume `minute` wraps for display if days > 1, OR we map it relative to the window.
-  // Actually, `playheadMin` in app is currently day-based.
-  // If we view 7 days, we might want to see where the playhead is relative to TODAY (day 1).
-  // Let's assume the playhead is on the first day for now.
+  // Add the minute offset
+  playheadTime.setTime(playheadTime.getTime() + (minute - props.dayStartMin) * 60 * 1000);
 
-  // Actually, to support full multi-day playhead, the upstream store needs to track absolute time.
-  // But for this view, let's just project the 0-1440 minute onto the first day of the view.
-  const currentMs = (minute * 60 * 1000);
+  // Handle wrap around if minute is before dayStartMin
+  if (minute < props.dayStartMin) {
+    playheadTime.setTime(playheadTime.getTime() + 24 * 60 * 60 * 1000);
+  }
 
-  // Percent within the *total duration* window
-  // If duration is 7 days, 1 day is 14.2% width.
-  // We need to map `minute` (0-1440) to the correct day if we tracked day.
-  // Since we don't track day index in playhead yet, we show it on day 1.
-
-  const offsetMs = currentMs - (props.dayStartMin * 60 * 1000);
-  // Handle wrap around start time
-  const adjustedOffset = offsetMs < 0 ? offsetMs + (24 * 60 * 60 * 1000) : offsetMs;
-
-  const percent = (adjustedOffset / totalMs) * 100;
+  // Calculate offset from the current visible window start
+  const offsetMs = playheadTime.getTime() - windowStart.getTime();
+  const percent = (offsetMs / totalMs) * 100;
 
   // Since we have a left panel (group labels), we need to factor that in
   const leftPanel = container.value?.querySelector('.vis-panel.vis-left') as HTMLElement;
@@ -486,6 +477,15 @@ const initTimeline = () => {
 
   timeline = new VisTimeline(container.value, dataset, groupDataset, options());
 
+  // Initialize the window ref with the current visible window
+  const window = timeline.getWindow();
+  timelineWindow.value = { start: window.start, end: window.end };
+
+  // Update window ref on zoom/pan to keep playhead aligned
+  timeline.on('rangechanged', (event: { start: Date; end: Date }) => {
+    timelineWindow.value = { start: event.start, end: event.end };
+  });
+
   // Initial sync to populate groups
   syncItems();
 
@@ -566,7 +566,6 @@ watch(durationDays, () => {
 <style scoped>
 .timeline-container {
   position: relative;
-  box-shadow: inset 5px 5px 20px rgba(0, 0, 0, 0.2);
 }
 
 .timeline-controls {
@@ -643,7 +642,7 @@ watch(durationDays, () => {
   font-weight: 600;
   color: var(--color-text-secondary);
   background: var(--color-bg-elevated);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-large);
   min-width: 50px;
   overflow: hidden;
   transition: left 0.2s ease, right 0.2s ease, width 0.2s ease, top 0.2s ease;
@@ -663,8 +662,8 @@ watch(durationDays, () => {
 }
 
 .timeline-vis :deep(.vis-item.vis-selected) {
-color: var(--color-text-primary);
-  box-shadow: 0 0 0 2px var(--color-active), 0 10px 25px rgba(0, 0, 0, 0.4);
+	color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-active);
 }
 
 .timeline-vis :deep(.vis-time-axis .vis-grid),
@@ -703,7 +702,7 @@ color: var(--color-text-primary);
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-active);
-  color: var(--color-text-primary);
+  color: white;
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -842,6 +841,7 @@ color: var(--color-text-primary);
 
 /* Tooltip styling */
 .timeline-vis :deep(.vis-tooltip) {
+  background: var(--color-bg-base);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-subtle);
   font-family: inherit;
@@ -849,7 +849,7 @@ color: var(--color-text-primary);
   border-radius: 8px;
   padding: 8px 12px;
   font-size: 0.85rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-large);
   backdrop-filter: blur(8px);
   max-width: 280px;
   z-index: 100;

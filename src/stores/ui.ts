@@ -3,6 +3,7 @@ import type { Minute, PanelSizes, UIState, UUID } from '@/types';
 import { toMinute } from '@/utils/time';
 
 const PANEL_LAYOUT_KEY = 'physim-panel-layout';
+const THEME_KEY = 'physim-theme';
 
 const DEFAULT_PANEL_SIZES: PanelSizes = {
   timeline: 35,
@@ -37,6 +38,28 @@ function savePanelSizes(sizes: PanelSizes): void {
   }
 }
 
+function loadTheme(): UIState['theme'] {
+  if (typeof window === 'undefined') return 'system';
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      return stored;
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return 'system';
+}
+
+function saveTheme(theme: UIState['theme']): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // ignore storage errors
+  }
+}
+
 interface UIStoreState extends UIState {}
 
 export const useUIStore = defineStore('ui', {
@@ -44,7 +67,7 @@ export const useUIStore = defineStore('ui', {
     playheadMin: toMinute(8),
     isScrubbing: false,
     zoomHours: 6,
-    theme: 'system' as 'system' | 'light' | 'dark',
+    theme: loadTheme(),
     compareScenarioId: undefined,
     profileModalOpen: false,
     targetsModalOpen: false,
@@ -83,6 +106,7 @@ export const useUIStore = defineStore('ui', {
     },
     setTheme(theme: UIState['theme']) {
       this.theme = theme;
+      saveTheme(theme);
     },
     setCompareScenario(id?: UUID) {
       this.compareScenarioId = id;

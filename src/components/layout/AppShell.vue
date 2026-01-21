@@ -14,12 +14,19 @@
         <button
           class="profile-link"
           @click="debugModalOpen = true"
-          style="margin-right: 1.5rem"
         >
           Dev Tools
         </button>
         <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
           My Profile
+        </button>
+        <button
+          class="theme-toggle"
+          @click="toggleTheme"
+          :title="'Theme: ' + uiStore.theme"
+        >
+          <span v-if="uiStore.resolvedTheme === 'dark'">☀️</span>
+          <span v-else>🌙</span>
         </button>
       </div>
     </header>
@@ -108,6 +115,12 @@ const route = useRoute();
 const isOnboarding = computed(() => route.name === 'onboarding');
 const debugModalOpen = ref(false);
 
+const toggleTheme = () => {
+  // Toggle between light and dark (if currently system, use the resolved theme's opposite)
+  const current = uiStore.resolvedTheme;
+  uiStore.setTheme(current === 'dark' ? 'light' : 'dark');
+};
+
 withDefaults(
   defineProps<{
     alwaysShowSidebar?: boolean;
@@ -186,6 +199,7 @@ const handlePaneResize = (panes: { size: number }[]) => {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  gap: 1.5rem;
 }
 
 .logo {
@@ -209,6 +223,20 @@ const handlePaneResize = (panes: { size: number }[]) => {
 .profile-link:hover {
   opacity: 1;
   text-decoration: underline;
+}
+
+.theme-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.theme-toggle:hover {
+  background: var(--color-bg-subtle);
 }
 
 .app-shell {

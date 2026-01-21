@@ -4,11 +4,11 @@
   /* Backgrounds */
   --color-bg-base: var(--neutral-0);
   --color-bg-subtle: var(--neutral-100);
-  --color-bg-elevated: var(--neutral-200);
+  --color-bg-elevated: var(--neutral-50);
   --color-bg-active: var(--neutral-200);
 
   /* Text */
-  --color-text-primary: var(--neutral-900);
+  --color-text-primary: var(--neutral-1000);
   --color-text-secondary: var(--neutral-600);
   --color-text-muted: var(--neutral-400);
   --color-text-inverted: var(--neutral-50);
@@ -20,6 +20,9 @@
   --color-border-strong: var(--neutral-300);
   --color-active: var(--sky-600);
 
+  /* Shadows */
+  --shadow-large: 3px 6px 15px rgba(0, 0, 0, 0.1);
+
   /* Semantic / Functional (Grayscale) */
   --color-accent: var(--neutral-900);
   --color-accent-hover: var(--neutral-700);
@@ -28,4 +31,23 @@
   --color-success: var(--emerald-600);
   --color-warning: var(--amber-600);
   --color-danger: var(--rose-600);
+
+  /* Legacy / Specific Macros */
+  --color-macro-carbs: var(--sky-600);
+
+  /* Chart Tendencies */
+  --chart-line-higher: var(--sky-600);
+  --chart-fill-higher: color-mix(in srgb, var(--sky-600), transparent 88%);
+  --chart-grad-higher-0: var(--sky-400);
+  --chart-grad-higher-1: var(--sky-600);
+
+  --chart-line-lower: var(--amber-600);
+  --chart-fill-lower: color-mix(in srgb, var(--amber-600), transparent 88%);
+  --chart-grad-lower-0: var(--amber-400);
+  --chart-grad-lower-1: var(--rose-600);
+
+  --chart-line-neutral: var(--neutral-300);
+  --chart-fill-neutral: color-mix(in srgb, var(--neutral-300), transparent 88%);
+  --chart-grad-neutral-0: var(--neutral-200);
+  --chart-grad-neutral-1: var(--neutral-400);
 }
