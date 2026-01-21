@@ -193,6 +193,8 @@ const handlePaneResize = (panes: { size: number }[]) => {
 .header-center {
   flex: 1;
   min-width: 0;
+  display: flex;
+  justify-content: center;
 }
 
 .header-right {

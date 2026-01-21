@@ -1,5 +1,8 @@
 <template>
   <AppShell :show-right-sidebar="showChat">
+    <template #header-center>
+      <ScenarioSelector />
+    </template>
     <template #right-sidebar>
       <AIChatPanel />
     </template>
@@ -311,12 +314,14 @@ import AddItemModal from '@/components/launcher/AddItemModal.vue';
 import UserProfileModal from '@/components/launcher/UserProfileModal.vue';
 import TargetsModal from '@/components/log/TargetsModal.vue';
 import StudioTour from '@/components/onboarding/StudioTour.vue';
+import ScenarioSelector from '@/components/scenarios/ScenarioSelector.vue';
 import { useLibraryStore } from '@/stores/library';
 import { useTimelineStore } from '@/stores/timeline';
 import { useUserStore } from '@/stores/user';
 import { useMetersStore } from '@/stores/meters';
 import { useUIStore } from '@/stores/ui';
 import { useEngineStore } from '@/stores/engine';
+import { useScenariosStore } from '@/stores/scenarios';
 import { useEngine } from '@/composables/useEngine';
 import { usePlayhead } from '@/composables/usePlayhead';
 import { useMeters } from '@/composables/useMeters';
@@ -356,6 +361,7 @@ const heatmapStore = useHeatmapStore();
 const arousalStore = useArousalStore();
 const uiStore = useUIStore();
 const engineStore = useEngineStore();
+const scenariosStore = useScenariosStore();
 
 const viewMinutes = computed(() => engineStore.durationDays * 1440);
 
@@ -531,6 +537,7 @@ const handleTimelineDeleteShortcut = (event: KeyboardEvent) => {
 };
 
 onMounted(() => {
+  scenariosStore.init();
   window.addEventListener('keydown', handleTimelineDeleteShortcut);
 });
 
@@ -546,6 +553,14 @@ watch(
       return;
     }
     inspectorVisible.value = true;
+  },
+  { deep: true }
+);
+
+watch(
+  () => timeline.items,
+  () => {
+    scenariosStore.saveActiveToScenario();
   },
   { deep: true }
 );
