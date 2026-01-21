@@ -1,32 +1,44 @@
 <template>
   <div class="param">
     <div class="header">
-      <label>
-        {{ paramDef.label }}
-        <small v-if="paramDef.unit">{{ paramDef.unit }}</small>
-      </label>
-      <input
-        v-if="paramDef.type === 'slider'"
-        type="number"
-        class="number-readout"
-        :value="value"
-        :min="paramDef.min"
-        :max="paramDef.max"
-        :step="paramDef.step ?? 'any'"
-        @input="onInput"
-      />
+      <label>{{ paramDef.label }}</label>
+      <div
+        v-if="paramDef.type === 'slider' || paramDef.type === 'number'"
+        class="readout-group"
+      >
+        <input
+          type="text"
+          class="number-readout"
+          :value="formattedValue"
+          @input="onTextInput"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+        />
+        <span v-if="paramDef.unit" class="unit">{{ paramDef.unit }}</span>
+      </div>
     </div>
+
+    <PrecisionSlider
+      v-if="paramDef.type === 'slider'"
+      :value="Number(value)"
+      :min="(paramDef as SliderParamDef).min"
+      :max="(paramDef as SliderParamDef).max"
+      :step="(paramDef as SliderParamDef).step || 1"
+      :unit="paramDef.unit"
+      @input="onInput"
+    />
+
     <component
+      v-else
       :is="inputType"
       v-bind="inputProps"
-      :class="{ 'input-mono': paramDef.type === 'number' || paramDef.type === 'slider' }"
+      :class="{ 'input-mono': paramDef.type === 'number' }"
       :value="value"
       @input="onInput"
       @change="onInput"
     >
       <option
         v-if="paramDef.type === 'select'"
-        v-for="opt in paramDef.options"
+        v-for="opt in (paramDef as SelectParamDef).options"
         :key="opt.value"
         :value="opt.value"
       >
@@ -38,13 +50,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { ParamDef } from '@/types';
+import type { ParamDef, SliderParamDef, SelectParamDef } from '@/types';
+import PrecisionSlider from '../core/PrecisionSlider.vue';
 
 const props = defineProps<{ paramDef: ParamDef; value: string | number | boolean }>();
 const emit = defineEmits<{ update: [string | number | boolean] }>();
 
 const inputType = computed(() => {
-  if (props.paramDef.type === 'slider') return 'input';
   if (props.paramDef.type === 'switch') return 'input';
   if (props.paramDef.type === 'select') return 'select';
   return 'input';
@@ -52,13 +64,8 @@ const inputType = computed(() => {
 
 const inputProps = computed(() => {
   const base: Record<string, unknown> = {};
-  if (props.paramDef.type === 'slider') {
-    base.type = 'range';
-    base.min = props.paramDef.min;
-    base.max = props.paramDef.max;
-    base.step = props.paramDef.step ?? 1;
-  } else if (props.paramDef.type === 'number') {
-    base.type = 'number';
+  if (props.paramDef.type === 'number') {
+    base.type = 'text'; // Changed to text to support comma formatting
   } else if (props.paramDef.type === 'text') {
     base.type = 'text';
   } else if (props.paramDef.type === 'switch') {
@@ -67,6 +74,29 @@ const inputProps = computed(() => {
   }
   return base;
 });
+
+const formattedValue = computed(() => {
+  if (typeof props.value === 'number') {
+    // Format with commas, respecting any decimal places
+    return props.value.toLocaleString(undefined, {
+      maximumFractionDigits: 10
+    });
+  }
+  return String(props.value);
+});
+
+const onTextInput = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  // Remove commas before parsing as number
+  const rawValue = target.value.replace(/,/g, '');
+  const numValue = parseFloat(rawValue);
+
+  if (!isNaN(numValue)) {
+    emit('update', numValue);
+  } else if (rawValue === '') {
+    emit('update', 0);
+  }
+};
 
 const onInput = (event: Event) => {
   const target = event.target as HTMLInputElement | HTMLSelectElement;
@@ -97,26 +127,62 @@ label {
   display: flex;
   gap: 0.5rem;
   align-items: baseline;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.readout-group {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.unit {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
   color: var(--color-text-secondary);
+  font-weight: 500;
 }
 
 .number-readout {
-  width: 60px;
+  min-width: 40px;
+  max-width: 100px;
   background: transparent;
-  border: 1px solid var(--color-border-default);
+  border: 1px solid transparent;
   border-radius: 4px;
-  color: inherit;
+  color: var(--color-metric-secondary);
   font-size: 0.8rem;
+  font-weight: 600;
   font-family: var(--font-mono);
-  padding: 0.1rem 0.25rem;
+  padding: 2px 4px;
   text-align: right;
+  transition: all 0.15s ease;
+}
+
+.number-readout:hover {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-border-subtle);
 }
 
 .number-readout:focus {
-  outline: none;
-  border-color: var(--color-active);
+  outline: 1px solid var(--color-active);
+  background: var(--color-bg-active);
+  color: var(--color-text-primary);
+}
+
+/* Chrome, Safari, Edge, Opera */
+.number-readout::-webkit-outer-spin-button,
+.number-readout::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.number-readout[type=number] {
+  -moz-appearance: textfield;
 }
 
 .input-mono {

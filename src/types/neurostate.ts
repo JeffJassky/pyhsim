@@ -5,7 +5,7 @@ import type {
   PharmacologicalTarget,
   PDMechanism,
 } from "@/models/physiology/pharmacology/types";
-import type { PhysiologicalUnit } from "./units";
+import type { ParameterUnit, PhysiologicalUnit } from "./units";
 export type { Physiology, Subject };
 
 /* ===========================
@@ -184,7 +184,7 @@ export interface ParamDefBase<K extends string = string> {
   key: K;
   label: string;
   type: ParamType;
-  unit?: string;
+  unit: ParameterUnit;
   /** Show hints in UI (chips, helper text) */
   hint?: string;
 }

@@ -12,7 +12,8 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       // === MACRONUTRIENTS ===
       {
         key: "carbSugar",
-        label: "Sugar (g)",
+        label: "Sugar",
+        unit: "g",
         type: "slider",
         min: 0,
         max: 120,
@@ -22,7 +23,8 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       },
       {
         key: "carbStarch",
-        label: "Starch (g)",
+        label: "Starch",
+        unit: "g",
         type: "slider",
         min: 0,
         max: 150,
@@ -32,7 +34,8 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       },
       {
         key: "protein",
-        label: "Protein (g)",
+        label: "Protein",
+        unit: "g",
         type: "slider",
         min: 0,
         max: 80,
@@ -42,7 +45,8 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       },
       {
         key: "fat",
-        label: "Fat (g)",
+        label: "Fat",
+        unit: "g",
         type: "slider",
         min: 0,
         max: 70,
@@ -52,7 +56,8 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       },
       {
         key: "fiber",
-        label: "Fiber (g)",
+        label: "Fiber",
+        unit: "g",
         type: "slider",
         min: 0,
         max: 30,
@@ -64,6 +69,7 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       {
         key: "glycemicIndex",
         label: "Glycemic Index",
+        unit: "index",
         type: "slider",
         min: 20,
         max: 100,
@@ -73,7 +79,8 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       },
       {
         key: "waterMl",
-        label: "Water (mL)",
+        label: "Water",
+        unit: "ml",
         type: "slider",
         min: 0,
         max: 500,
@@ -84,6 +91,7 @@ export const FOOD_INTERVENTIONS: InterventionDef[] = [
       {
         key: "temperature",
         label: "Temperature",
+        unit: "°C",
         type: "select",
         options: [
           { value: "cold", label: "Cold" },

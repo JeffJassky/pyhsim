@@ -170,12 +170,11 @@ onMounted(scrollToBottom);
   line-height: 1.4;
   background: var(--color-bg-base);
   word-wrap: break-word;
+  color: var(--color-text-primary)
 }
 
 .message--user .message__content {
-  background: var(--color-bg-base);
-  color: var(--color-text-inverted);
-  border: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
   border-bottom-right-radius: 2px;
 }
 

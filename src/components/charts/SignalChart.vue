@@ -195,6 +195,28 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                       }}{{ (cond.value * 100).toFixed(0) }}%
                     </span>
                     <span
@@ -808,15 +830,15 @@ watch(
   display: flex;
   flex-direction: column;
   position: relative;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--color-bg-base);
   box-shadow: var(--shadow-large);
-  transition: opacity 0.2s ease, filter 0.2s ease, transform 0.5s ease-out;
+  transition: opacity 0.4s ease-out, filter 0.4s ease-out, transform 0.4s ease-out
 }
 
 .series-container.is-dimmed {
   opacity: 0.25;
-  filter: grayscale(1) brightness(0.5);
+  filter: grayscale(1);
   transform: scale(0.95);
 }
 
@@ -859,7 +881,6 @@ watch(
   display: flex;
   gap: 0;
   align-items: stretch;
-  border-radius: 8px;
 }
 
 .series-sidebar {
@@ -1115,7 +1136,7 @@ watch(
 
 .contributor-item {
   background: var(--color-bg-elevated);
-  border-radius: 6px;
+  border-radius: 5px;
   padding: 0.6rem 0.8rem;
   display: flex;
   flex-direction: column;
@@ -1195,7 +1216,7 @@ watch(
 
 .coupling-item {
   background: var(--color-bg-elevated);
-  border-radius: 6px;
+  border-radius: 5px;
   padding: 0.6rem 0.8rem;
 }
 
@@ -1251,7 +1272,7 @@ watch(
   bottom: 1px;
   height: auto;
   opacity: 0.35;
-  border-radius: 6px;
+  border-radius: 4px;
   background: var(--color-bg-elevated);
 }
 

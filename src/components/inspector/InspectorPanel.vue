@@ -1,59 +1,45 @@
 <template>
   <div v-if="item && def" class="inspector">
+    <h3 v-if="local.labelOverride" class="normal-title">{{ def.label }}</h3>
     <div class="header-row">
-      <h3>{{ props.def?.label }}</h3>
-      <span v-if="isFood" class="total-kcal">{{ totalKcal }} kcal</span>
-    </div>
-    <p v-if="def.notes" class="def-notes">{{ def.notes }}</p>
-
-    <!-- Title field -->
-    <div class="field">
-      <label class="field-label">Title</label>
       <input
         type="text"
-        class="field-input"
+        class="title-input seamless-input"
         :placeholder="def.label"
         :value="local.labelOverride"
         @input="updateLabelOverride(($event.target as HTMLInputElement).value)"
       />
+      <span v-if="isFood" class="total-kcal">{{ totalKcal }} kcal</span>
     </div>
+    <p v-if="def.notes" class="def-notes">{{ def.notes }}</p>
 
-    <!-- Time field -->
-    <div class="field">
-      <label class="field-label">Time</label>
-      <input
-        type="text"
-        class="field-input field-input--mono"
-        :value="timeDisplay"
-        :placeholder="'e.g. 2:30pm, 14:30'"
-        @blur="handleTimeBlur"
-        @keydown.enter="($event.target as HTMLInputElement).blur()"
-      />
-    </div>
-
-    <!-- Duration field (for continuous/infusion delivery types) -->
-    <div v-if="showDurationField" class="field">
-      <label class="field-label">Duration (minutes)</label>
-      <input
-        type="number"
-        class="field-input field-input--mono"
-        :value="durationMinutes"
-        min="5"
-        step="5"
-        @input="updateDuration(Number(($event.target as HTMLInputElement).value))"
-      />
-    </div>
-
-    <!-- User notes -->
-    <div class="field">
-      <label class="field-label">Notes</label>
-      <textarea
-        class="field-textarea"
-        :value="local.notes"
-        placeholder="Add your own notes about this item..."
-        rows="2"
-        @input="updateNotes(($event.target as HTMLTextAreaElement).value)"
-      ></textarea>
+    <!-- Meta row for Time and Duration -->
+    <div class="meta-section">
+      <div class="meta-field">
+        <label class="meta-label">Time</label>
+        <input
+          type="text"
+          class="seamless-input meta-input mono"
+          :value="timeDisplay"
+          :placeholder="'e.g. 2:30pm'"
+          @blur="handleTimeBlur"
+          @keydown.enter="($event.target as HTMLInputElement).blur()"
+        />
+      </div>
+      <div v-if="showDurationField" class="meta-field">
+        <label class="meta-label">Duration</label>
+        <div class="duration-control">
+          <input
+            type="number"
+            class="seamless-input meta-input mono duration-input"
+            :value="durationMinutes"
+            min="5"
+            step="5"
+            @input="updateDuration(Number(($event.target as HTMLInputElement).value))"
+          />
+          <span class="meta-unit">min</span>
+        </div>
+      </div>
     </div>
 
     <div v-if="isFood" class="macro-breakdown">
@@ -90,6 +76,19 @@
       :value="local.params[param.key] ?? param.default"
       @update="(val) => updateParam(param.key, val)"
     />
+
+    <!-- User notes -->
+    <div class="notes-field">
+      <label v-if="local.notes" class="notes-label">My Notes</label>
+      <textarea
+        ref="notesTextarea"
+        class="seamless-input notes-textarea"
+        :value="local.notes"
+        placeholder="Add notes..."
+        rows="1"
+        @input="updateNotes(($event.target as HTMLTextAreaElement).value)"
+      ></textarea>
+    </div>
 
     <div v-if="resolvedEffects.length" class="effects-section">
       <button
@@ -138,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, nextTick } from 'vue';
 import moment from 'moment';
 import type { InterventionDef, ParamValues, TimelineItem, Signal, PharmacologyDef } from '@/types';
 import ParamEditor from './ParamEditor.vue';
@@ -150,6 +149,7 @@ const props = defineProps<{ item?: TimelineItem; def?: InterventionDef; readonly
 const emit = defineEmits<{ change: [TimelineItem] }>();
 
 const showEffects = ref(false);
+const notesTextarea = ref<HTMLTextAreaElement | null>(null);
 
 const local = reactive<{
   params: ParamValues;
@@ -162,6 +162,17 @@ const local = reactive<{
 });
 
 const isFood = computed(() => props.def?.key === 'food');
+
+const adjustNotesHeight = () => {
+  if (notesTextarea.value) {
+    notesTextarea.value.style.height = 'auto';
+    notesTextarea.value.style.height = notesTextarea.value.scrollHeight + 'px';
+  }
+};
+
+watch(() => local.notes, () => {
+  nextTick(adjustNotesHeight);
+});
 
 const resolvedEffects = computed(() => {
   if (!props.def) return [];
@@ -363,18 +374,15 @@ const updateDuration = (minutes: number) => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  padding: 4px; /* Give room for outlines */
+  overflow: visible;
 }
 
 .header-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-}
-
-.header-row h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  color: var(--color-text-active);
+  gap: 0.5rem;
 }
 
 .total-kcal {
@@ -382,6 +390,7 @@ const updateDuration = (minutes: number) => {
   color: var(--color-text-active);
   font-size: 1.1rem;
   font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .macro-breakdown {
@@ -533,76 +542,140 @@ h4 {
 .def-notes {
   font-size: 0.85rem;
   color: var(--color-text-secondary);
-  margin: 0;
+  margin: 0 0 0.5rem;
   line-height: 1.4;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.field-label {
+.normal-title {
+  margin: 0;
   font-size: 0.7rem;
-  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+/* Seamless Input Base */
+.seamless-input {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin: -4px -6px; /* Align text with surrounding content */
   color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  transition: all 0.15s ease;
+  width: 100%;
 }
 
-.field-input {
+.seamless-input:hover,
+.seamless-input:focus {
   background: var(--color-bg-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9rem;
-  color: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-primary);
 }
 
-.field-input--mono {
+.seamless-input:focus {
+  outline: 1px solid var(--color-active);
+  background: var(--color-bg-active);
+  color: var(--color-text-primary);
+}
+
+.seamless-input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+}
+
+/* Specific Seamless Overrides */
+.title-input {
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.mono {
   font-family: var(--font-mono);
 }
 
-.field-input:hover {
-  border-color: var(--color-border-strong);
+/* Meta Section (Time/Duration) */
+.meta-section {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
 }
 
-.field-input:focus {
-  outline: none;
-  border-color: var(--color-active);
-  background: var(--color-bg-active);
+.meta-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.field-input::placeholder {
+.meta-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--color-text-muted);
 }
 
-.field-textarea {
-  background: var(--color-bg-subtle);
-  border: 1px solid var(--color-border-default);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+.meta-input {
+  font-size: 0.9rem;
+  width: 90px;
+}
+
+.duration-control {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.duration-input {
+  width: 40px;
+  text-align: left;
+}
+
+/* Chrome, Safari, Edge, Opera */
+.duration-input::-webkit-outer-spin-button,
+.duration-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.duration-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.meta-unit {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+/* Notes Field */
+.notes-field {
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.notes-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.notes-textarea {
   font-size: 0.85rem;
-  color: inherit;
-  resize: vertical;
-  min-height: 60px;
-  font-family: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.field-textarea:hover {
-  border-color: var(--color-border-strong);
-}
-
-.field-textarea:focus {
-  outline: none;
-  border-color: var(--color-active);
-  background: var(--color-bg-active);
-}
-
-.field-textarea::placeholder {
-  color: var(--color-text-muted);
+  line-height: 1.4;
+  resize: none;
+  min-height: 1.4em;
+  display: block;
+  overflow: hidden;
 }
 </style>

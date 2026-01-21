@@ -30,7 +30,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 0,
         max: 400,
@@ -53,9 +54,10 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
-        min: 0.3,
+        min: 0,
         max: 10,
         step: 0.5,
         default: 3,
@@ -75,7 +77,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 50,
         max: 400,
@@ -97,7 +100,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 0,
         max: 2000,
@@ -120,7 +124,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 0,
         max: 1000,
@@ -143,7 +148,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 0,
         max: 100,
@@ -167,7 +173,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 100,
         max: 600,
@@ -191,7 +198,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Total EPA+DHA (mg)",
+        label: "Total EPA+DHA",
+        unit: "mg",
         type: "slider",
         min: 500,
         max: 4000,
@@ -215,7 +223,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 150,
         max: 600,
@@ -239,7 +248,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 50,
         max: 300,
@@ -263,7 +273,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 150,
         max: 900,
@@ -287,7 +298,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "iu",
-        label: "Dose (IU)",
+        label: "Amount",
+        unit: "IU",
         type: "slider",
         min: 1000,
         max: 10000,
@@ -311,7 +323,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "grams",
-        label: "Dose (g)",
+        label: "Amount",
+        unit: "g",
         type: "slider",
         min: 1,
         max: 10,
@@ -335,7 +348,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 250,
         max: 3000,
@@ -362,7 +376,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 500,
         max: 18000,
@@ -384,7 +399,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 15,
         max: 50,
@@ -406,7 +422,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mg",
         type: "slider",
         min: 0.5,
         max: 3,
@@ -428,7 +445,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "b12_mcg",
-        label: "B12 (mcg)",
+        label: "Amount",
+        unit: "mcg",
         type: "slider",
         min: 100,
         max: 5000,
@@ -438,7 +456,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
       },
       {
         key: "folate_mcg",
-        label: "Folate (mcg)",
+        label: "Amount",
+        unit: "mcg",
         type: "slider",
         min: 100,
         max: 1000,
@@ -464,7 +483,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mcg",
-        label: "Dose (mcg)",
+        label: "Amount",
+        unit: "mcg",
         type: "slider",
         min: 100,
         max: 1000,
@@ -486,7 +506,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mcg",
         type: "slider",
         min: 100,
         max: 600,
@@ -508,7 +529,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mcg",
         type: "slider",
         min: 100,
         max: 500,
@@ -530,7 +552,8 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Amount",
+        unit: "mcg",
         type: "slider",
         min: 250,
         max: 2000,
@@ -553,6 +576,7 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
       {
         key: "units",
         label: "Servings",
+        unit: "servings",
         type: "slider",
         min: 1,
         max: 3,

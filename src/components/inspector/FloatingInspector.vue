@@ -60,10 +60,14 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   box-shadow: var(--shadow-large);
   backdrop-filter: blur(15px);
-  padding: 1.25rem;
   overflow: auto;
   max-height: calc(100vh - 260px);
   color: var(--color-text-primary);
+}
+
+.floating-inspector :deep(.panel__body) {
+
+  padding: 1.25rem;
 }
 
 .float-fade-enter-active,

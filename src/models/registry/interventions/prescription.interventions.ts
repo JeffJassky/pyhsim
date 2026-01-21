@@ -13,7 +13,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 0,
         max: 40,
@@ -34,7 +35,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 18,
         max: 72,
@@ -56,7 +58,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 5,
         max: 30,
@@ -78,7 +81,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 10,
         max: 70,
@@ -100,7 +104,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 1,
         max: 4,
@@ -126,7 +131,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 25,
         max: 200,
@@ -148,7 +154,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 10,
         max: 80,
@@ -170,7 +177,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 5,
         max: 20,
@@ -196,7 +204,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 37.5,
         max: 225,
@@ -218,7 +227,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 20,
         max: 120,
@@ -244,7 +254,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 75,
         max: 450,
@@ -270,7 +281,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 0.25,
         max: 2,
@@ -292,7 +304,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 0.5,
         max: 4,
@@ -314,7 +327,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 0.25,
         max: 2,
@@ -340,7 +354,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 5,
         max: 30,
@@ -362,7 +377,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 25,
         max: 100,
@@ -388,7 +404,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 50,
         max: 150,
@@ -410,7 +427,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mcg",
-        label: "Dose (µg)",
+        label: "Dose",
+        unit: "µg",
         type: "slider",
         min: 25,
         max: 200,
@@ -432,7 +450,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Psilocybin (mg)",
+        label: "Psilocybin",
+        unit: "mg",
         type: "slider",
         min: 5,
         max: 30,
@@ -454,7 +473,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "Dose (mg)",
+        label: "Dose",
+        unit: "mg",
         type: "slider",
         min: 25,
         max: 100,
@@ -481,7 +501,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "THC (mg)",
+        label: "THC",
+        unit: "mg",
         type: "slider",
         min: 2.5,
         max: 25,
@@ -503,7 +524,8 @@ export const PRESCRIPTION_INTERVENTIONS: InterventionDef[] = [
     params: [
       {
         key: "mg",
-        label: "THC (mg)",
+        label: "THC",
+        unit: "mg",
         type: "slider",
         min: 2.5,
         max: 50,

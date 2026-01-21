@@ -128,6 +128,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
       {
         key: "quality",
         label: "Refreshment",
+        unit: "index",
         type: "slider",
         min: 0,
         max: 2,
@@ -209,6 +210,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
       {
         key: "intensity",
         label: "Intensity",
+        unit: "x",
         type: "slider",
         min: 0.5,
         max: 1.5,
@@ -238,6 +240,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
       {
         key: "intensity",
         label: "Intensity",
+        unit: "x",
         type: "slider",
         min: 0.5,
         max: 1.5,
@@ -266,6 +269,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
       {
         key: "intensity",
         label: "Intensity",
+        unit: "x",
         type: "slider",
         min: 0.5,
         max: 1.5,
@@ -295,6 +299,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
       {
         key: "units",
         label: "Standard Units",
+        unit: "units",
         type: "slider",
         min: 0,
         max: 10,
@@ -470,6 +475,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
       {
         key: "intensity",
         label: "Intensity",
+        unit: "x",
         type: "slider",
         min: 0.5,
         max: 1.5,
@@ -496,6 +502,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         key: "type",
         label: "Type",
         type: "select",
+        unit: "x",
         options: [
           { value: "dry", label: "Dry Sauna (80-100°C)" },
           { value: "infrared", label: "Infrared (45-65°C)" },
@@ -513,21 +520,12 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
         default: 80,
         unit: "°C",
       },
-      {
-        key: "intensity",
-        label: "Intensity",
-        type: "slider",
-        min: 0.5,
-        max: 1.5,
-        step: 0.1,
-        default: 1.0,
-      },
     ],
     pharmacology: (params) =>
       Agents.HeatExposure(
         Number(params.temperature) ?? 80,
         (params.type as "dry" | "infrared" | "steam") ?? "dry",
-        Number(params.intensity) ?? 1.0,
+        1.0,
       ),
     group: "Wellness",
     categories: ["wellness"],
