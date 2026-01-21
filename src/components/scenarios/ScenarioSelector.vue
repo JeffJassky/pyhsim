@@ -55,8 +55,11 @@ const startEdit = (scenario: Scenario) => {
   editingId.value = scenario.id;
   editName.value = scenario.name;
   nextTick(() => {
-    editInput.value?.focus();
-    editInput.value?.select();
+    const el = Array.isArray(editInput.value) ? editInput.value[0] : editInput.value;
+    if (el) {
+      (el as HTMLInputElement).focus();
+      (el as HTMLInputElement).select();
+    }
   });
 };
 
@@ -130,14 +133,16 @@ const addNew = () => {
 }
 
 .scenario-input {
-  background: transparent;
+  background: var(--color-bg-elevated);
   border: none;
   color: inherit;
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
   width: 100%;
-  padding: 0;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 4px;
   outline: none;
 }
 

@@ -604,6 +604,11 @@ onMounted(() => {
   window.addEventListener('click', handleWindowClick);
   scenariosStore.init();
   window.addEventListener('keydown', handleTimelineDeleteShortcut);
+
+  // If the timeline only has the default sleep event, add the comprehensive day items
+  if (timeline.items.length === 1 && timeline.items[0].meta.key === 'sleep') {
+    addComprehensiveDay();
+  }
 });
 
 onBeforeUnmount(() => {

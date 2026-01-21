@@ -433,6 +433,13 @@ const uiStore = useUIStore();
 const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'display' | 'subscription'>('categories');
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen && uiStore.profileModalView) {
+    // @ts-ignore - view types match but strict check might fail
+    view.value = uiStore.profileModalView;
+  }
+});
+
 const subject = computed(() => userStore.subject);
 const conditionDefs = CONDITION_LIBRARY;
 const conditionState = computed(() => userStore.conditions);

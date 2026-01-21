@@ -170,7 +170,7 @@ onMounted(scrollToBottom);
   line-height: 1.4;
   background: var(--color-bg-base);
   word-wrap: break-word;
-  color: var(--color-text-primary)
+  color: var(--color-text-secondary)
 }
 
 .message--user .message__content {

@@ -60,7 +60,9 @@ function saveTheme(theme: UIState['theme']): void {
   }
 }
 
-interface UIStoreState extends UIState {}
+interface UIStoreState extends UIState {
+  profileModalView?: string;
+}
 
 export const useUIStore = defineStore('ui', {
   state: (): UIStoreState => ({
@@ -70,6 +72,7 @@ export const useUIStore = defineStore('ui', {
     theme: loadTheme(),
     compareScenarioId: undefined,
     profileModalOpen: false,
+    profileModalView: 'categories',
     targetsModalOpen: false,
     tourActive: false,
     tourStep: 0,
@@ -85,6 +88,10 @@ export const useUIStore = defineStore('ui', {
   actions: {
     setProfileModalOpen(open: boolean) {
       this.profileModalOpen = open;
+    },
+    openProfileModal(view: string = 'categories') {
+      this.profileModalView = view;
+      this.profileModalOpen = true;
     },
     setTargetsModalOpen(open: boolean) {
       this.targetsModalOpen = open;

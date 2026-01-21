@@ -560,11 +560,29 @@ const initTimeline = () => {
   setSelection(props.selectedIds || []);
 };
 
+const isEditableTarget = (target: EventTarget | null) => {
+  if (!target) return false;
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const editableTags = ['INPUT', 'TEXTAREA', 'SELECT'];
+  return editableTags.includes(target.tagName);
+};
+
+const handleKeyDown = (e: KeyboardEvent) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+    if (isEditableTarget(e.target)) return;
+    e.preventDefault();
+    emit('select', props.items.map((i) => i.id));
+  }
+};
+
 onMounted(() => {
   initTimeline();
+  window.addEventListener('keydown', handleKeyDown);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeyDown);
   if (hideTimeout) clearTimeout(hideTimeout);
   timeline?.destroy();
   timeline = null;

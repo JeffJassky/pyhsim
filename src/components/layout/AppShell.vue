@@ -20,6 +20,13 @@
         <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
           My Profile
         </button>
+        <button
+          v-if="userStore.subscriptionTier === 'free'"
+          class="upgrade-btn"
+          @click="uiStore.openProfileModal('subscription')"
+        >
+          Upgrade
+        </button>
         <label
           class="theme-switch"
           :title="'Theme: ' + uiStore.theme"
@@ -114,10 +121,12 @@ import { useRoute } from 'vue-router';
 import { Splitpanes, Pane } from 'splitpanes';
 import 'splitpanes/dist/splitpanes.css';
 import { useUIStore } from '@/stores/ui';
+import { useUserStore } from '@/stores/user';
 import DebugModal from '@/components/admin/DebugModal.vue';
 import ScienceModal from '@/components/layout/ScienceModal.vue';
 
 const uiStore = useUIStore();
+const userStore = useUserStore();
 const route = useRoute();
 const isOnboarding = computed(() => route.name === 'onboarding');
 const debugModalOpen = ref(false);
@@ -217,6 +226,23 @@ const handlePaneResize = (panes: { size: number }[]) => {
   font-size: 1rem;
   opacity: 0.9;
   color: var(--color-text-primary);
+}
+
+.upgrade-btn {
+  background: var(--color-active);
+  color: white;
+  border: none;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.upgrade-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .profile-link {
