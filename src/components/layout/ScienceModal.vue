@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
 import mk from 'markdown-it-katex';
-import { computed } from 'vue';
+import { computed, ref, nextTick } from 'vue';
 
 // Import KaTeX CSS
 import 'katex/dist/katex.min.css';
 
 // Import the markdown content as a raw string
-// Note: This works in Vite for files outside src as long as they are within the project root
 import reportContent from '../../../docs/science.md?raw';
 
 const props = defineProps<{
@@ -46,9 +45,47 @@ md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
   return defaultRender(tokens, idx, options, env, self);
 };
 
-const renderedContent = computed(() => {
-  return md.render(reportContent);
+interface TocItem {
+  id: string;
+  title: string;
+  level: number;
+}
+
+const parsedData = computed(() => {
+  const tokens = md.parse(reportContent, {});
+  const toc: TocItem[] = [];
+
+  tokens.forEach((token, index) => {
+    if (token.type === 'heading_open') {
+      const level = parseInt(token.tag.slice(1));
+      if (level >= 2 && level <= 3) {
+        const inline = tokens[index + 1];
+        if (inline && inline.content) {
+          const title = inline.content;
+          const slug = title
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-');
+          
+          token.attrSet('id', slug);
+          toc.push({ id: slug, title, level });
+        }
+      }
+    }
+  });
+
+  return {
+    html: md.renderer.render(tokens, md.options, {}),
+    toc
+  };
 });
+
+const scrollToId = (id: string) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
 
 const close = () => {
   emit('update:modelValue', false);
@@ -62,10 +99,30 @@ const close = () => {
         <div class="modal-content science-content">
           <button class="modal-close-btn" @click="close">✕</button>
 
-          <div
-            class="modal-body markdown-body selectable"
-            v-html="renderedContent"
-          ></div>
+          <div class="science-layout">
+            <aside class="science-toc">
+              <div class="toc-sticky">
+                <h4 class="toc-header">Contents</h4>
+                <nav class="toc-nav">
+                  <a
+                    v-for="item in parsedData.toc"
+                    :key="item.id"
+                    :href="`#${item.id}`"
+                    class="toc-link"
+                    :class="`toc-level-${item.level}`"
+                    @click.prevent="scrollToId(item.id)"
+                  >
+                    {{ item.title }}
+                  </a>
+                </nav>
+              </div>
+            </aside>
+
+            <div
+              class="modal-body markdown-body selectable"
+              v-html="parsedData.html"
+            ></div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -74,11 +131,73 @@ const close = () => {
 
 <style scoped>
 .science-content {
-  max-width: 900px;
+  max-width: 1100px; /* Increased width for sidebar */
+  height: 90vh; /* Fixed height for sticky behavior */
+}
+
+.science-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden; /* Prevent double scrollbars */
+}
+
+.science-toc {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--color-bg-subtle);
+  border-right: 1px solid var(--color-border-subtle);
+  overflow-y: auto;
+  padding: 3.5rem 1.5rem 2rem;
+  display: none; /* Hidden on mobile by default */
+}
+
+@media (min-width: 800px) {
+  .science-toc {
+    display: block;
+  }
+}
+
+.toc-header {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+  margin: 0 0 1rem 0;
+  font-weight: 800;
+}
+
+.toc-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.toc-link {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: 0.25rem 0;
+  border-left: 2px solid transparent;
+  padding-left: 0.75rem;
+  transition: all 0.2s;
+  line-height: 1.4;
+}
+
+.toc-link:hover {
+  color: var(--color-text-primary);
+  border-left-color: var(--color-border-default);
+}
+
+.toc-level-3 {
+  padding-left: 1.75rem;
+  font-size: 0.8rem;
+  opacity: 0.9;
 }
 
 .science-content :deep(.modal-body) {
   padding: 3.5rem 4rem 4rem;
+  flex: 1;
+  overflow-y: auto; /* Scrollable content area */
 }
 
 /* Markdown styling within the modal */
@@ -105,6 +224,7 @@ const close = () => {
   border-bottom: 1px solid var(--color-border-subtle);
   color: var(--color-accent);
   letter-spacing: -0.01em;
+  scroll-margin-top: 2rem; /* Spacing for scroll jump */
 }
 
 :deep(.markdown-body h3) {
@@ -113,6 +233,7 @@ const close = () => {
   margin-top: 2rem;
   margin-bottom: 1rem;
   color: var(--color-text-primary);
+  scroll-margin-top: 2rem;
 }
 
 :deep(.markdown-body p) {
@@ -212,7 +333,7 @@ const close = () => {
   font-size: 1.1em;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 800px) {
   .science-content :deep(.modal-body) {
     padding: 2.5rem 1.5rem 2rem;
   }
