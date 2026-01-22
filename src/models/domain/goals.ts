@@ -55,6 +55,14 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
         readout:
           "Mobilizes energy reserves and sets your circadian rhythm for the day.",
       },
+      {
+        key: "sunlight_viewing",
+        label: "Morning Sun",
+        icon: "☀️",
+        improvements: ["Melatonin suppression", "Cortisol pulse"],
+        readout:
+          "Directly signals wakefulness to the SCN and sets circadian rhythm.",
+      },
     ],
   },
   {
@@ -220,6 +228,13 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
           "Signals darkness to your master clock to initiate the sleep cycle.",
       },
       {
+        key: "sunlight_viewing",
+        label: "Morning Sun",
+        icon: "☀️",
+        improvements: ["Circadian Anchor", "Melatonin Timing"],
+        readout: "Viewing light early anchors your rhythm for better sleep tonight.",
+      },
+      {
         key: "magnesium",
         label: "Magnesium Glycinate",
         icon: "💎",
@@ -312,9 +327,9 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     signals: ["gaba", "serotonin", "oxytocin", "cortisol", "adrenaline"],
     recommendedInterventions: [
       {
-        key: "meditation",
-        label: "Breathwork",
-        icon: "🧘",
+        key: "breathwork",
+        label: "Resonance Breathing",
+        icon: "🌬️",
         improvements: ["Vagal tone", "Instant calm"],
         readout: "Directly activates the parasympathetic nervous system.",
       },

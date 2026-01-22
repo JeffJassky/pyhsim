@@ -671,7 +671,7 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
       ),
     group: "Lifestyle",
     categories: ["social", "wellness"],
-    goals: ["mood", "hormones", "calm"],
+    goals: ["mood", "recovery", "calm"],
   },
   {
     key: "tobacco",
