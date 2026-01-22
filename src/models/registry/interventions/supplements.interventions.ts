@@ -591,4 +591,51 @@ export const SUPPLEMENT_INTERVENTIONS: InterventionDef[] = [
     categories: ["supplements"],
     goals: ["recovery"],
   },
+  {
+    key: "electrolytes",
+    label: "Electrolytes",
+    icon: "⚡",
+    defaultDurationMin: 240,
+    params: [
+      {
+        key: "sodium",
+        label: "Sodium",
+        unit: "mg",
+        type: "slider",
+        min: 0,
+        max: 2000,
+        step: 100,
+        default: 500,
+      },
+      {
+        key: "potassium",
+        label: "Potassium",
+        unit: "mg",
+        type: "slider",
+        min: 0,
+        max: 1000,
+        step: 50,
+        default: 200,
+      },
+      {
+        key: "magnesium",
+        label: "Magnesium",
+        unit: "mg",
+        type: "slider",
+        min: 0,
+        max: 400,
+        step: 50,
+        default: 100,
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.Electrolytes(
+        Number(params.sodium) || 500,
+        Number(params.potassium) || 200,
+        Number(params.magnesium) || 100
+      ),
+    group: "Supplements",
+    categories: ["supplements"],
+    goals: ["energy", "recovery"],
+  },
 ];

@@ -4423,4 +4423,422 @@ export const Agents = {
       },
     ],
   }),
+
+  // =============================================================================
+  // NEW LIFESTYLE & SUBSTANCE AGENTS
+  // =============================================================================
+
+  /**
+   * SUNLIGHT VIEWING
+   * Circadian entrainment and mood support.
+   */
+  SunlightExposure: (
+    lux: number, // 10000+ for direct sun
+    timeOfDay: "sunrise" | "midday" | "sunset" = "midday"
+  ): PharmacologyDef => {
+    // Intensity factor (logarithmic scale approx)
+    const intensity = Math.min(1.5, Math.log10(lux + 1) / 4);
+
+    let melatoninSuppression = 0;
+    let cortisolPulse = 0;
+    let serotoninBoost = 0;
+
+    if (timeOfDay === "sunrise") {
+      melatoninSuppression = 100 * intensity; // Morning light clears melatonin
+      cortisolPulse = 15 * intensity; // Healthy CAR (Cortisol Awakening Response)
+      serotoninBoost = 20 * intensity;
+    } else if (timeOfDay === "midday") {
+      melatoninSuppression = 50 * intensity;
+      serotoninBoost = 30 * intensity; // Mood boost
+    } else if (timeOfDay === "sunset") {
+      // Sunset light (low blue, high red) protects melatonin
+      melatoninSuppression = 0;
+      serotoninBoost = 10 * intensity;
+    }
+
+    return {
+      molecule: { name: "Photons", molarMass: 0 },
+      pk: { model: "activity-dependent", delivery: "continuous" },
+      pd: [
+        {
+          target: "melatonin",
+          mechanism: "antagonist",
+          intrinsicEfficacy: melatoninSuppression,
+          unit: "pg/mL",
+          tau: 5,
+          description: "Bright light hits the retina and tells the SCN to shut down melatonin production, waking you up.",
+        },
+        {
+          target: "cortisol",
+          mechanism: "agonist",
+          intrinsicEfficacy: cortisolPulse,
+          unit: "µg/dL",
+          tau: 15,
+          description: "Morning sunlight triggers a healthy Cortisol Awakening Response, setting your circadian rhythm for the day.",
+        },
+        {
+          target: "serotonin",
+          mechanism: "agonist",
+          intrinsicEfficacy: serotoninBoost,
+          unit: "nM",
+          tau: 10,
+          description: "Bright light stimulates serotonin production, improving mood and focus.",
+        },
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: 5 * intensity,
+          unit: "nM",
+          tau: 10,
+          description: "Sunlight triggers mild dopamine release, contributing to motivation and well-being.",
+        },
+      ],
+    };
+  },
+
+  /**
+   * NICOTINE
+   * nAChR agonist with complex delivery kinetics.
+   */
+  Nicotine: (
+    mg: number,
+    delivery: "smoked" | "vaped" | "gum" | "patch" | "pouch"
+  ): PharmacologyDef => {
+    // Delivery determines PK
+    let pkModel: any = {
+      model: "1-compartment",
+      delivery: "bolus",
+      bioavailability: 0.0,
+      halfLifeMin: 120,
+      timeToPeakMin: 0,
+      volume: { kind: "weight", base_L_kg: 2.6 },
+    };
+
+    switch (delivery) {
+      case "smoked": // Fastest, highest spike
+        pkModel.bioavailability = 0.8;
+        pkModel.timeToPeakMin = 2; // Near instant
+        break;
+      case "vaped":
+        pkModel.bioavailability = 0.6;
+        pkModel.timeToPeakMin = 5;
+        break;
+      case "gum": // Slower, lower bio
+        pkModel.bioavailability = 0.5;
+        pkModel.timeToPeakMin = 30;
+        break;
+      case "pouch": // Buccal
+        pkModel.bioavailability = 0.6;
+        pkModel.timeToPeakMin = 20;
+        break;
+      case "patch": // Continuous
+        pkModel.delivery = "infusion";
+        pkModel.bioavailability = 0.7;
+        pkModel.timeToPeakMin = 120;
+        break;
+    }
+
+    return {
+      molecule: { name: "Nicotine", molarMass: 162.23 },
+      pk: pkModel,
+      pd: [
+        {
+          target: "acetylcholine",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 15.0, // Mimics ACh
+          unit: "nM",
+          tau: 10,
+          description: "Nicotine binds directly to acetylcholine receptors, sharpening focus and attention.",
+        },
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 5.0,
+          unit: "nM",
+          tau: 15,
+          description: "Triggers dopamine release in reward circuits—this drives the pleasure and addiction potential.",
+        },
+        {
+          target: "norepi",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 8.0,
+          unit: "pg/mL",
+          tau: 15,
+          description: "Stimulates the sympathetic nervous system, increasing alertness and heart rate.",
+        },
+        {
+          target: "cortisol",
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 1.5,
+          unit: "µg/dL",
+          tau: 20,
+          description: "Causes a stress hormone spike, which feels like 'energy' but depletes reserves over time.",
+        },
+        {
+          target: "endorphin", // Mild opioid effect
+          mechanism: "agonist",
+          intrinsicEfficacy: mg * 2.0,
+          unit: "nM",
+          tau: 15,
+          description: "Release of beta-endorphins contributes to the mild anxiety relief and calming effect.",
+        },
+      ],
+    };
+  },
+
+  /**
+   * ELECTROLYTES
+   * Sodium, Potassium, Magnesium balance.
+   */
+  Electrolytes: (
+    sodium_mg: number,
+    potassium_mg: number,
+    magnesium_mg: number
+  ): PharmacologyDef => {
+    return {
+      molecule: { name: "Electrolytes", molarMass: 0 },
+      pk: {
+        model: "1-compartment",
+        delivery: "bolus",
+        bioavailability: 0.9,
+        halfLifeMin: 240,
+        timeToPeakMin: 45,
+        volume: { kind: "tbw", fraction: 1.0 },
+      },
+      pd: [
+        // Hydration/Blood Pressure (Sodium)
+        {
+          target: "bloodPressure",
+          mechanism: "agonist",
+          intrinsicEfficacy: sodium_mg * 0.005,
+          unit: "mmHg",
+          tau: 60,
+          description: "Sodium helps retain fluid volume, supporting blood pressure and hydration.",
+        },
+        // Energy/Nerve function (Sodium/Potassium pump)
+        {
+          target: "energy",
+          mechanism: "agonist",
+          intrinsicEfficacy: (sodium_mg + potassium_mg) * 0.002,
+          unit: "index",
+          tau: 60,
+          description: "Proper electrolyte balance allows your nerves to fire efficiently, reducing fatigue.",
+        },
+        // Relaxation (Magnesium/Potassium)
+        {
+          target: "cortisol",
+          mechanism: "antagonist",
+          intrinsicEfficacy: (magnesium_mg * 0.01 + potassium_mg * 0.001),
+          unit: "µg/dL",
+          tau: 90,
+          description: "Magnesium and potassium help relax the nervous system and lower stress hormones.",
+        },
+        // Muscle function
+        {
+          target: "vagal", // Proxy for muscle relaxation
+          mechanism: "agonist",
+          intrinsicEfficacy: magnesium_mg * 0.001,
+          unit: "index",
+          tau: 60,
+          description: "Magnesium acts as a natural calcium blocker, helping muscles relax and preventing cramps.",
+        },
+      ],
+    };
+  },
+
+  /**
+   * BREATHWORK
+   * Conscious control of respiration to shift state.
+   */
+  Breathwork: (
+    type: "calm" | "balance" | "activation", // box/4-7-8 vs coherence vs wim hof
+    intensity: number = 1.0
+  ): PharmacologyDef => {
+    // Base vagal effect for all conscious breathing
+    let vagal = 0.5 * intensity;
+    let norepi = 0;
+    let cortisol = 0;
+    let description = "";
+
+    if (type === "calm") { // 4-7-8, slow breathing
+      vagal = 2.0 * intensity;
+      norepi = -20 * intensity; // Suppression
+      cortisol = -5 * intensity;
+      description = "Slow, prolonged exhalations directly stimulate the vagus nerve, rapidly lowering heart rate and anxiety.";
+    } else if (type === "balance") { // Box breathing, Coherence
+      vagal = 1.0 * intensity;
+      norepi = -5 * intensity; // Mild calming
+      description = "Rhythmic, balanced breathing synchronizes heart rate variability (HRV) and creates a state of alert calm.";
+    } else if (type === "activation") { // Wim Hof, Tummo, Fire
+      vagal = 0.2 * intensity; // Mild background vagal
+      norepi = 150 * intensity; // Huge sympathetic spike
+      cortisol = 10 * intensity; // Acute stress
+      description = "Hyperventilation triggers a controlled fight-or-flight response (adrenaline), followed by a deep calm retention phase.";
+    }
+
+    const pd: any[] = [
+      {
+        target: "vagal",
+        mechanism: "agonist",
+        intrinsicEfficacy: vagal,
+        unit: "index",
+        tau: 2, // Fast
+        description: "Direct modulation of the vagus nerve through respiratory sinus arrhythmia.",
+      },
+      {
+        target: "norepi",
+        mechanism: type === "activation" ? "agonist" : "antagonist",
+        intrinsicEfficacy: Math.abs(norepi),
+        unit: "pg/mL",
+        tau: 2,
+        description: description,
+      },
+      {
+        target: "cortisol",
+        mechanism: type === "activation" ? "agonist" : "antagonist",
+        intrinsicEfficacy: Math.abs(cortisol),
+        unit: "µg/dL",
+        tau: 15,
+        description: type === "activation" ? "Acute hormetic stress spike." : "Reduces stress hormones.",
+      },
+    ];
+
+    if (type === "activation") {
+      pd.push({
+        target: "dopamine",
+        mechanism: "agonist",
+        intrinsicEfficacy: 15 * intensity,
+        unit: "nM",
+        tau: 5,
+        description: "Intense breathing can trigger a dopamine rush and euphoria.",
+      });
+    }
+
+    return {
+      molecule: { name: "Breathwork", molarMass: 0 },
+      pk: { model: "activity-dependent", delivery: "continuous" },
+      pd,
+    };
+  },
+
+  /**
+   * SOCIAL MEDIA
+   * Digital stimuli effects.
+   */
+  SocialMedia: (
+    type: "entertainment" | "doomscrolling",
+    durationMin: number
+  ): PharmacologyDef => {
+    // Reward variability (slot machine effect)
+    const rewardVariability = 1.5; 
+
+    return {
+      molecule: { name: "Social Media", molarMass: 0 },
+      pk: { model: "activity-dependent", delivery: "continuous" },
+      pd: [
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          // Doomscrolling has higher 'seeking' dopamine but lower satisfaction
+          intrinsicEfficacy: type === "entertainment" ? 15 : 25, 
+          unit: "nM",
+          tau: 5,
+          description: "Variable reward schedules keep dopamine seeking high, often without fulfilling the drive.",
+        },
+        {
+          target: "cortisol",
+          mechanism: "agonist",
+          intrinsicEfficacy: type === "doomscrolling" ? 8.0 : 2.0,
+          unit: "µg/dL",
+          tau: 10,
+          description: type === "doomscrolling" 
+            ? "Negative content triggers threat detection circuits, raising stress."
+            : "Mild stimulation prevents full relaxation.",
+        },
+        {
+          target: "orexin",
+          mechanism: "agonist",
+          intrinsicEfficacy: 10,
+          unit: "pg/mL",
+          tau: 5,
+          description: "Blue light and constant novelty keep wakefulness signals high, suppressing sleep pressure.",
+        },
+        {
+          target: "serotonin",
+          mechanism: "antagonist",
+          intrinsicEfficacy: type === "doomscrolling" ? 5 : 0,
+          unit: "nM",
+          tau: 20,
+          description: "Social comparison and negative news can lower mood and serotonin tone.",
+        },
+      ],
+    };
+  },
+
+  /**
+   * SEXUAL ACTIVITY
+   * Hormonal and neurotransmitter cascade.
+   */
+  SexualActivity: (
+    type: "partnered" | "solo",
+    orgasm: boolean
+  ): PharmacologyDef => {
+    const partnerFactor = type === "partnered" ? 2.0 : 1.0;
+    const orgasmFactor = orgasm ? 1.0 : 0.2;
+
+    return {
+      molecule: { name: "Sexual Activity", molarMass: 0 },
+      pk: { model: "activity-dependent", delivery: "continuous" },
+      pd: [
+        {
+          target: "dopamine",
+          mechanism: "agonist",
+          intrinsicEfficacy: 30 * partnerFactor,
+          unit: "nM",
+          tau: 5,
+          description: "Intense activation of reward and motivation circuits.",
+        },
+        {
+          target: "oxytocin",
+          mechanism: "agonist",
+          intrinsicEfficacy: (type === "partnered" ? 50 : 10) * orgasmFactor,
+          unit: "pg/mL",
+          tau: 15,
+          description: "Massive release (especially if partnered) driving bonding, trust, and relaxation.",
+        },
+        {
+          target: "prolactin",
+          mechanism: "agonist",
+          intrinsicEfficacy: orgasm ? 40 : 5, // The "post-nut" hormone
+          unit: "ng/mL",
+          tau: 5, // Rapid post-orgasm spike
+          description: "The 'satiety' hormone responsible for the refractory period and post-orgasm relaxation.",
+        },
+        {
+          target: "testosterone",
+          mechanism: "agonist",
+          intrinsicEfficacy: 15 * partnerFactor, // Acute rise
+          unit: "ng/dL",
+          tau: 15,
+          description: "Acute arousal temporarily boosts testosterone and dominance signaling.",
+        },
+        {
+          target: "cortisol",
+          mechanism: "antagonist",
+          intrinsicEfficacy: 10 * orgasmFactor,
+          unit: "µg/dL",
+          tau: 30,
+          description: "Orgasm provides significant stress relief and lowering of tension.",
+        },
+        {
+          target: "endorphin",
+          mechanism: "agonist",
+          intrinsicEfficacy: 20 * orgasmFactor,
+          unit: "nM",
+          tau: 10,
+          description: "Natural pain relief and euphoria.",
+        },
+      ],
+    };
+  },
 };

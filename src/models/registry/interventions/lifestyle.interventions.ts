@@ -531,4 +531,187 @@ export const LIFESTYLE_INTERVENTIONS: InterventionDef[] = [
     categories: ["wellness"],
     goals: ["recovery", "longevity", "calm", "sleep"],
   },
+  {
+    key: "sunlight_viewing",
+    label: "Sunlight Viewing",
+    icon: "☀️",
+    defaultDurationMin: 20,
+    params: [
+      {
+        key: "time",
+        label: "Time of Day",
+        type: "select",
+        unit: "units",
+        options: [
+          { value: "sunrise", label: "Sunrise (Low Solar Angle)" },
+          { value: "midday", label: "Midday (High UV)" },
+          { value: "sunset", label: "Sunset" },
+        ],
+        default: "sunrise",
+      },
+      {
+        key: "lux",
+        label: "Intensity (Lux)",
+        unit: "units",
+        type: "slider",
+        min: 1000,
+        max: 100000,
+        step: 5000,
+        default: 10000,
+        hint: "10k = shade/morning, 100k = direct noon sun",
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.SunlightExposure(
+        Number(params.lux) || 10000,
+        (params.time as "sunrise" | "midday" | "sunset") || "sunrise"
+      ),
+    group: "Routine",
+    categories: ["environment"],
+    goals: ["sleep", "mood", "energy"],
+  },
+  {
+    key: "breathwork",
+    label: "Breathwork",
+    icon: "🌬️",
+    defaultDurationMin: 15,
+    params: [
+      {
+        key: "type",
+        label: "Style",
+        type: "select",
+        unit: "units",
+        options: [
+          { value: "calm", label: "Calming (4-7-8, Slow)" },
+          { value: "balance", label: "Balancing (Box, Coherence)" },
+          { value: "activation", label: "Activation (Wim Hof, Fire)" },
+        ],
+        default: "balance",
+      },
+      {
+        key: "intensity",
+        label: "Intensity",
+        unit: "x",
+        type: "slider",
+        min: 0.5,
+        max: 2.0,
+        step: 0.1,
+        default: 1.0,
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.Breathwork(
+        (params.type as "calm" | "balance" | "activation") || "balance",
+        Number(params.intensity) || 1.0
+      ),
+    group: "Wellness",
+    categories: ["wellness"],
+    goals: ["calm", "focus", "energy", "recovery"],
+  },
+  {
+    key: "social_media",
+    label: "Social Media",
+    icon: "📱",
+    defaultDurationMin: 30,
+    params: [
+      {
+        key: "type",
+        label: "Content Type",
+        type: "select",
+        unit: "units",
+        options: [
+          { value: "entertainment", label: "Entertainment / Joy" },
+          { value: "doomscrolling", label: "Doomscrolling / Anger" },
+        ],
+        default: "entertainment",
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.SocialMedia(
+        (params.type as "entertainment" | "doomscrolling") || "entertainment",
+        30
+      ),
+    group: "Lifestyle",
+    categories: ["social"],
+    goals: ["mood"],
+  },
+  {
+    key: "sexual_activity",
+    label: "Sexual Activity",
+    icon: "❤️",
+    defaultDurationMin: 20,
+    params: [
+      {
+        key: "type",
+        label: "Type",
+        type: "select",
+        unit: "units",
+        options: [
+          { value: "partnered", label: "Partnered" },
+          { value: "solo", label: "Solo / Masturbation" },
+        ],
+        default: "partnered",
+      },
+      {
+        key: "orgasm",
+        label: "Orgasm",
+        type: "select",
+        unit: "units",
+        options: [
+          { value: "yes", label: "Yes" },
+          { value: "no", label: "No" },
+        ],
+        default: "yes",
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.SexualActivity(
+        (params.type as "partnered" | "solo") || "partnered",
+        params.orgasm === "yes"
+      ),
+    group: "Lifestyle",
+    categories: ["social", "wellness"],
+    goals: ["mood", "hormones", "calm"],
+  },
+  {
+    key: "tobacco",
+    label: "Tobacco / Nicotine",
+    icon: "🚬",
+    defaultDurationMin: 15, // Short acute effect
+    params: [
+      {
+        key: "delivery",
+        label: "Method",
+        type: "select",
+        unit: "units",
+        options: [
+          { value: "smoked", label: "Cigarette (Smoked)" },
+          { value: "vaped", label: "Vape" },
+          { value: "pouch", label: "Pouch / Snus" },
+          { value: "gum", label: "Gum / Lozenge" },
+          { value: "patch", label: "Patch (Transdermal)" },
+        ],
+        default: "smoked",
+      },
+      {
+        key: "mg",
+        label: "Nicotine Amount",
+        unit: "mg",
+        type: "slider",
+        min: 1,
+        max: 20,
+        step: 1,
+        default: 2,
+        hint: "Cigarette ≈ 1-2mg absorbed, Pouch ≈ 3-6mg",
+      },
+    ],
+    pharmacology: (params) =>
+      Agents.Nicotine(
+        Number(params.mg) || 2,
+        (params.delivery as any) || "smoked"
+      ),
+    group: "Lifestyle",
+    categories: ["substances"],
+    goals: ["focus", "energy", "calm"],
+  },
 ];
