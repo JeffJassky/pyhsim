@@ -237,23 +237,7 @@ export type ParamDef =
 
 export type ParamValues = Record<string, number | string | boolean>;
 
-export type InterventionKey =
-  | "food"
-  | "caffeine"
-  | "walk"
-  | "resistance"
-  | "blueLight"
-  | "sunlight"
-  | "nap"
-  | "sleep"
-  | "sex"
-  | "electrolytes"
-  | "meditation"
-  | "coldExposure"
-  | "heatSauna"
-  | "social"
-  | "supplement"
-  | (string & {}); // allow extensions
+export type InterventionKey = string;
 
 /**
  * Kernel function signature (Worker-side).

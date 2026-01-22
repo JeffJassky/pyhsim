@@ -1,12 +1,20 @@
-import { defineStore } from 'pinia';
-import type { ConditionKey, ConditionStateSnapshot } from '@/models/registry/conditions';
-import { CONDITION_LIBRARY } from '@/models';
-import { getAllUnifiedDefinitions } from '@/models/engine';
-import { DEFAULT_SUBJECT, DEFAULT_NUTRITION_TARGETS, type Subject, type NutritionTargets } from '@/models/domain/subject';
-import { GOAL_CATEGORIES } from '@/models/domain/goals';
-import { SIGNALS_ALL, type Signal, type Goal } from '@/types';
+import { defineStore } from "pinia";
+import type {
+  ConditionKey,
+  ConditionStateSnapshot,
+} from "@/models/registry/conditions";
+import { CONDITION_LIBRARY } from "@/models";
+import { getAllUnifiedDefinitions } from "@/models/engine";
+import {
+  DEFAULT_SUBJECT,
+  DEFAULT_NUTRITION_TARGETS,
+  type Subject,
+  type NutritionTargets,
+} from "@/models/domain/subject";
+import { GOAL_CATEGORIES } from "@/models/domain/goals";
+import { SIGNALS_ALL, type Signal, type Goal } from "@/types";
 
-const STORAGE_KEY = 'physim:user';
+const STORAGE_KEY = "physim:user";
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
 export interface UserStoreState {
@@ -16,11 +24,11 @@ export interface UserStoreState {
   selectedGoals: Goal[];
   enabledSignals: Record<Signal, boolean>;
   signalOrder: Signal[];
-  subscriptionTier: 'free' | 'premium';
+  subscriptionTier: "free" | "premium";
 }
 
 const loadPersisted = (): Partial<UserStoreState> | null => {
-  if (typeof localStorage === 'undefined') return null;
+  if (typeof localStorage === "undefined") return null;
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return null;
   try {
@@ -32,18 +40,23 @@ const loadPersisted = (): Partial<UserStoreState> | null => {
 
 const persisted = loadPersisted();
 
-export const useUserStore = defineStore('user', {
+export const useUserStore = defineStore("user", {
   state: (): UserStoreState => ({
-    conditions: CONDITION_LIBRARY.reduce((acc, condition) => {
-      acc[condition.key] = {
-        enabled: persisted?.conditions?.[condition.key]?.enabled ?? false,
-        params: {
-          ...Object.fromEntries(condition.params.map((p) => [p.key, p.default])),
-          ...(persisted?.conditions?.[condition.key]?.params || {}),
-        },
-      };
-      return acc;
-    }, {} as Record<ConditionKey, ConditionStateSnapshot>),
+    conditions: CONDITION_LIBRARY.reduce(
+      (acc, condition) => {
+        acc[condition.key] = {
+          enabled: persisted?.conditions?.[condition.key]?.enabled ?? false,
+          params: {
+            ...Object.fromEntries(
+              condition.params.map((p) => [p.key, p.default]),
+            ),
+            ...(persisted?.conditions?.[condition.key]?.params || {}),
+          },
+        };
+        return acc;
+      },
+      {} as Record<ConditionKey, ConditionStateSnapshot>,
+    ),
     subject: { ...DEFAULT_SUBJECT, ...(persisted?.subject || {}) },
     nutritionTargets: {
       ...DEFAULT_NUTRITION_TARGETS,
@@ -54,18 +67,21 @@ export const useUserStore = defineStore('user', {
       },
     },
     selectedGoals: persisted?.selectedGoals || [],
-    enabledSignals: SIGNALS_ALL.reduce((acc, sig) => {
-      const def = UNIFIED_DEFS[sig];
-      const defaultEnabled = def ? !def.isPremium : true;
-      acc[sig] = persisted?.enabledSignals?.[sig] ?? defaultEnabled;
-      return acc;
-    }, {} as Record<Signal, boolean>),
+    enabledSignals: SIGNALS_ALL.reduce(
+      (acc, sig) => {
+        const def = UNIFIED_DEFS[sig];
+        const defaultEnabled = def ? !def.isPremium : true;
+        acc[sig] = persisted?.enabledSignals?.[sig] ?? defaultEnabled;
+        return acc;
+      },
+      {} as Record<Signal, boolean>,
+    ),
     signalOrder: [...(persisted?.signalOrder || SIGNALS_ALL)],
-    subscriptionTier: persisted?.subscriptionTier ?? 'free',
+    subscriptionTier: persisted?.subscriptionTier ?? "premium",
   }),
   actions: {
     persist() {
-      if (typeof localStorage === 'undefined') return;
+      if (typeof localStorage === "undefined") return;
       const payload = {
         conditions: this.conditions,
         subject: this.subject,
@@ -77,14 +93,14 @@ export const useUserStore = defineStore('user', {
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     },
-    setSubscriptionTier(tier: 'free' | 'premium') {
+    setSubscriptionTier(tier: "free" | "premium") {
       this.subscriptionTier = tier;
       this.persist();
     },
     updateSignalOrder(newOrder: Signal[]) {
       // Merge new order with any missing signals to ensure SIGNALS_ALL is covered
       const orderSet = new Set(newOrder);
-      const missing = SIGNALS_ALL.filter(s => !orderSet.has(s));
+      const missing = SIGNALS_ALL.filter((s) => !orderSet.has(s));
       this.signalOrder = [...newOrder, ...missing];
       this.persist();
     },
@@ -100,8 +116,8 @@ export const useUserStore = defineStore('user', {
 
       // Sync signals: enable if goal added, disable if goal removed (and not needed elsewhere)
       const nextEnabled = { ...this.enabledSignals };
-      
-      const goalCategory = GOAL_CATEGORIES.find(g => g.id === goalId);
+
+      const goalCategory = GOAL_CATEGORIES.find((g) => g.id === goalId);
       const signalsToToggle = goalCategory?.signals || [];
 
       signalsToToggle.forEach((sig) => {
@@ -109,13 +125,13 @@ export const useUserStore = defineStore('user', {
           nextEnabled[sig] = true;
         } else {
           // Check if this signal is needed by ANY other selected goal
-          const neededByOther = this.selectedGoals.some(otherGoalId => {
-            const otherCat = GOAL_CATEGORIES.find(g => g.id === otherGoalId);
+          const neededByOther = this.selectedGoals.some((otherGoalId) => {
+            const otherCat = GOAL_CATEGORIES.find((g) => g.id === otherGoalId);
             return otherCat?.signals.includes(sig);
           });
-          
+
           if (!neededByOther) {
-            // Also check if it's "manually" enabled? 
+            // Also check if it's "manually" enabled?
             // For now, we assume if it was only enabled by this goal, we disable it.
             // A smarter system might track "manual override" vs "goal implied".
             // But preserving previous behavior:
@@ -158,4 +174,3 @@ export const useUserStore = defineStore('user', {
     },
   },
 });
-
