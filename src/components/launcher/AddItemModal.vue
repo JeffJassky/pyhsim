@@ -23,7 +23,7 @@
               ← Back
             </button>
 
-            <div class="search-wrapper">
+            <div class="search-wrapper" :class="{ 'search-wrapper--food': view === 'food' }">
               <input
                 ref="searchInput"
                 v-model="search"
@@ -33,7 +33,15 @@
                 @input="handleSearchInput"
                 @keydown.enter="handleEnterKey"
               />
-              <div v-if="loading" class="search-loader" />
+              <button
+                v-if="view === 'food'"
+                class="search-submit-btn"
+                :disabled="!search.trim() || loading"
+                @click="performFoodSearch"
+              >
+                {{ loading ? 'Searching...' : 'Search' }}
+              </button>
+              <div v-if="loading && view !== 'food'" class="search-loader" />
             </div>
           </header>
 
@@ -160,7 +168,12 @@
             </div>
 
             <div v-if="foodList.length === 0 && !loading" class="empty-state">
-              {{ search ? 'No foods found' : 'Search for a food to begin' }}
+              <template v-if="search">
+                <span v-if="hasSearched">No foods found matching "{{ search }}"</span>
+              </template>
+              <template v-else>
+                Search for a food to begin
+              </template>
             </div>
                       </div>
                     </div>
@@ -203,6 +216,7 @@ const searchInput = ref<HTMLInputElement | null>(null);
 // Food specific state
 const foodResults = ref<FoodSearchHit[]>([]);
 const loading = ref(false);
+const hasSearched = ref(false);
 const expandedFoodId = ref<string | null>(null);
 const foodQty = ref(1);
 
@@ -219,6 +233,7 @@ const selectCategory = (cat: Category, type: 'type' | 'goal' = 'type') => {
   selectedCategory.value = cat;
   view.value = cat.id === 'food' ? 'food' : 'items';
   search.value = '';
+  hasSearched.value = false;
   nextTick(() => {
     searchInput.value?.focus();
   });
@@ -227,6 +242,9 @@ const selectCategory = (cat: Category, type: 'type' | 'goal' = 'type') => {
 const handleSearchInput = () => {
   if (search.value && view.value === 'categories') {
     view.value = 'items';
+  }
+  if (view.value === 'food') {
+    hasSearched.value = false;
   }
 };
 
@@ -239,6 +257,7 @@ const handleEnterKey = () => {
 const performFoodSearch = async () => {
   if (!search.value.trim()) return;
   loading.value = true;
+  hasSearched.value = true;
   try {
     const { hits } = await searchFoods(search.value, 1, 20);
     foodResults.value = hits;
@@ -270,11 +289,13 @@ const backToCategories = () => {
   categoryType.value = null;
   search.value = '';
   foodResults.value = [];
+  hasSearched.value = false;
 };
 
 const clearSearch = () => {
   search.value = '';
   foodResults.value = [];
+  hasSearched.value = false;
   if (!selectedCategory.value) {
     view.value = 'categories';
   }
@@ -287,6 +308,7 @@ const close = () => {
     search.value = '';
     selectedCategory.value = null;
     foodResults.value = [];
+    hasSearched.value = false;
     expandedFoodId.value = null;
   }, 300);
 };
@@ -348,11 +370,13 @@ watch(() => props.modelValue, (val) => {
     selectedCategory.value = null;
     categoryType.value = null;
     foodResults.value = [];
+    hasSearched.value = false;
   } else {
     // Cleanup on close
     view.value = 'categories';
     search.value = '';
     foodResults.value = [];
+    hasSearched.value = false;
   }
 });
 </script>
@@ -452,6 +476,11 @@ watch(() => props.modelValue, (val) => {
   position: relative;
 }
 
+.search-wrapper--food {
+  display: flex;
+  gap: 0.75rem;
+}
+
 .search-input {
   width: 100%;
   background: var(--color-bg-subtle);
@@ -462,6 +491,30 @@ watch(() => props.modelValue, (val) => {
   font-size: 1.1rem;
   outline: none;
   transition: all 0.2s;
+  flex: 1;
+}
+
+.search-submit-btn {
+  background: var(--color-active);
+  color: var(--color-text-inverted);
+  border: none;
+  border-radius: 12px;
+  padding: 0 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.search-submit-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.search-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 .search-input:focus {
