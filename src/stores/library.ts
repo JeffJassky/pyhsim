@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { InterventionDef, InterventionKey } from '@/types';
-import { INTERVENTIONS } from '@/models';
+import { INTERVENTIONS } from '@physim/core';
 
 interface LibraryState {
   defs: InterventionDef[];

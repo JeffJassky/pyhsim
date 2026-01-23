@@ -62,7 +62,7 @@ import { useOnboardingStore } from '@/stores/onboarding';
 import { useTimelineStore } from '@/stores/timeline';
 import { useLibraryStore } from '@/stores/library';
 import { GOAL_CATEGORIES, type RecommendedIntervention } from '@/models/domain/goals';
-import { minuteToISO, toMinute } from '@/utils/time';
+import { toMinuteISO, toMinute } from '@/utils/time';
 
 const emit = defineEmits(['next']);
 const onboarding = useOnboardingStore();
@@ -103,7 +103,7 @@ function confirm() {
       // Stagger items starting at 8:00 AM
       const startMin = toMinute(480 + offset); 
       const endMin = toMinute(480 + offset + def.defaultDurationMin);
-      timeline.addItem(minuteToISO(startMin), minuteToISO(endMin), {
+      timeline.addItem(toMinuteISO(startMin), toMinuteISO(endMin), {
         key: def.key,
         params: {},
         intensity: 1,

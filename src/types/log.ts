@@ -1,33 +1,6 @@
-import type { UUID } from './neurostate';
+import type { UUID, TrackedNutrients } from './neurostate';
 
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
-
-export interface MacroRange {
-  min: number;
-  max: number;
-}
-
-export interface MacroTargets {
-  carbs: MacroRange;
-  fat: MacroRange;
-  protein: MacroRange;
-}
-
-export interface LogTargets {
-  calories: number;
-  macrosEnabled: boolean;
-  macros: MacroTargets;
-}
-
-export interface TrackedNutrients {
-  calories: number;
-  protein: number;
-  fat: number;
-  carbs: number;
-  fiber?: number;
-  sugar?: number;
-  sodium?: number;
-}
 
 export interface FoodSearchHit {
   id: string;

@@ -1,4 +1,4 @@
-import type { Minute } from '@/types';
+import type { Minute } from '@physim/core';
 
 export const MINUTES_IN_DAY = 24 * 60;
 
@@ -25,7 +25,7 @@ export const rangeMinutes = (step: number, durationMinutes: number = MINUTES_IN_
   return arr;
 };
 
-export const minuteToISO = (minute: Minute, day = new Date()): string => {
+export const toMinuteISO = (minute: Minute, day = new Date()): string => {
   const date = new Date(day);
   const hours = Math.floor(minute / 60);
   const minutes = minute % 60;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { minuteToLabel, minuteToISO, rangeMinutes, snapMinute, toMinute } from '@/utils/time';
+import { minuteToLabel, toMinuteISO, rangeMinutes, snapMinute, toMinute } from '@/utils/time';
 
 describe('time utils', () => {
   it('converts hour + minute to absolute minute', () => {
@@ -20,7 +20,7 @@ describe('time utils', () => {
   });
 
   it('builds ISO strings from minute offsets', () => {
-    const iso = minuteToISO(60 as any);
+    const iso = toMinuteISO(60 as any);
     const local = new Date(iso);
     expect(local.getHours() * 60 + local.getMinutes()).toBe(60);
   });

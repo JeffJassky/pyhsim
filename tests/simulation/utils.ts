@@ -9,19 +9,19 @@ import type {
 } from '@/types';
 import { SIGNALS_ALL } from '@/types';
 import { rangeMinutes } from '@/utils/time';
-import { buildInterventionLibrary } from '@/models/registry/interventions';
-import { buildConditionAdjustments, type ConditionKey, type ConditionStateSnapshot } from '@/models/registry/conditions';
-import { derivePhysiology, type Subject as SubjectType } from '@/models/domain/subject';
+import { buildInterventionLibrary } from '@physim/core';
+import { buildConditionAdjustments, type ConditionKey, type ConditionStateSnapshot, derivePhysiology, type Subject as SubjectType } from '@physim/core';
 import {
   integrateStep,
   createInitialState,
   getAllUnifiedDefinitions,
   AUXILIARY_DEFINITIONS,
   SIGNAL_DEFINITIONS,
-  type ConditionAdjustments,
-} from "@/models/engine";
+  isReceptor,
+  getReceptorSignals
+} from "@physim/core";
 import type { SimulationState, DynamicsContext, ActiveIntervention } from '@/types/unified';
-import { runOptimizedV2 } from '@/models/engine/solvers/optimized-v2';
+import { runOptimizedV2 } from '@physim/core';
 
 // --- Types ---
 
@@ -216,7 +216,14 @@ async function computeEngineSync(
   request: WorkerComputeRequest,
   includeSignals: readonly Signal[]
 ): Promise<Record<Signal, Float32Array>> {
-  const response = runOptimizedV2(request);
+  const system = {
+    signals: includeSignals,
+    signalDefinitions: getAllUnifiedDefinitions(),
+    auxDefinitions: AUXILIARY_DEFINITIONS,
+    resolver: { isReceptor, getReceptorSignals },
+    createInitialState
+  };
+  const response = runOptimizedV2(request, system as any);
   return response.series;
 }
 

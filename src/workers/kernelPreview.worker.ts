@@ -6,8 +6,8 @@ import {
   SIGNAL_DEFINITIONS, 
   AUXILIARY_DEFINITIONS, 
   getAllUnifiedDefinitions 
-} from '@/models/engine';
-import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
+} from '@physim/core';
+import { DEFAULT_SUBJECT, derivePhysiology } from '@physim/core';
 
 self.onmessage = (event: MessageEvent<{ 
   intervention: any; 
@@ -20,7 +20,7 @@ self.onmessage = (event: MessageEvent<{
   
   const unifiedDefs = getAllUnifiedDefinitions();
   
-  let state = createInitialState(unifiedDefs, AUXILIARY_DEFINITIONS, {
+  let state = createInitialState({
     subject,
     physiology,
     isAsleep: false

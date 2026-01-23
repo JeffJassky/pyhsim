@@ -166,8 +166,8 @@
                     <label class="switch">
                       <input
                         type="checkbox"
-                        :checked="enabledSignals[sig.key]"
-                        @change="userStore.toggleSignal(sig.key, ($event.target as HTMLInputElement).checked)"
+                        :checked="enabledSignals[sig.key as Signal]"
+                        @change="userStore.toggleSignal(sig.key as Signal, ($event.target as HTMLInputElement).checked)"
                       />
                       <span class="slider" />
                     </label>
@@ -413,11 +413,11 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { useUIStore } from '@/stores/ui';
 import { CONDITION_LIBRARY } from '@/models';
-import { getAllUnifiedDefinitions } from '@/models/engine';
+import { Signal, getAllUnifiedDefinitions } from '@physim/core';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
-import type { ConditionKey } from '@/models/registry/conditions';
-import type { Subject } from '@/models/domain/subject';
-import type { Signal, Goal } from '@/types';
+import type { ConditionKey } from '@physim/core';
+import type { Subject } from '@/types';
+import type { Goal } from '@/types';
 import Sortable from 'sortablejs';
 
 const props = defineProps<{
@@ -480,8 +480,8 @@ const getSignalsByGoal = (goalId: Goal) => {
     if (!a.isPremium && b.isPremium) return -1;
 
     // Secondary: User custom order from signalOrder
-    const aIdx = orderMap.get(a.key) ?? 999;
-    const bIdx = orderMap.get(b.key) ?? 999;
+    const aIdx = orderMap.get(a.key as Signal) ?? 999;
+    const bIdx = orderMap.get(b.key as Signal) ?? 999;
     return aIdx - bIdx;
   });
 };
@@ -513,8 +513,8 @@ const initSortables = () => {
         const otherIdsInNewLocal = newLocalOrder.filter(id => id !== movedId);
 
         // Find where to insert movedId in the global order relative to its siblings in the current group
-        const firstSiblingIdx = currentOrder.findIndex(id => otherIdsInNewLocal.includes(id));
-        const lastSiblingIdx = [...currentOrder].reverse().findIndex(id => otherIdsInNewLocal.includes(id));
+        const firstSiblingIdx = currentOrder.findIndex(id => otherIdsInNewLocal.includes(id as Signal));
+        const lastSiblingIdx = [...currentOrder].reverse().findIndex(id => otherIdsInNewLocal.includes(id as Signal));
         const actualLastIdx = currentOrder.length - 1 - lastSiblingIdx;
 
         // Remove from old pos

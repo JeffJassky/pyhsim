@@ -2,17 +2,18 @@ import { defineStore } from "pinia";
 import type {
   ConditionKey,
   ConditionStateSnapshot,
-} from "@/models/registry/conditions";
-import { CONDITION_LIBRARY } from "@/models";
-import { getAllUnifiedDefinitions } from "@/models/engine";
+} from "@physim/core";
+import { CONDITION_LIBRARY } from "@physim/core";
+import { getAllUnifiedDefinitions, SIGNALS_ALL } from "@physim/core";
 import {
   DEFAULT_SUBJECT,
   DEFAULT_NUTRITION_TARGETS,
   type Subject,
   type NutritionTargets,
-} from "@/models/domain/subject";
+  type Goal,
+  type Signal
+} from "@physim/core";
 import { GOAL_CATEGORIES } from "@/models/domain/goals";
-import { SIGNALS_ALL, type Signal, type Goal } from "@/types";
 
 const STORAGE_KEY = "physim:user";
 const UNIFIED_DEFS = getAllUnifiedDefinitions();

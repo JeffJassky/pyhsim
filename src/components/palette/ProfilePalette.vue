@@ -137,8 +137,8 @@
 import { computed } from 'vue';
 import { CONDITION_LIBRARY } from '@/models';
 import { useUserStore } from '@/stores/user';
-import type { ConditionKey } from '@/models/registry/conditions';
-import type { Subject } from '@/models/domain/subject';
+import type { ConditionKey } from '@physim/core';
+import type { Subject } from '@/types';
 
 const userStore = useUserStore();
 const conditions = CONDITION_LIBRARY;

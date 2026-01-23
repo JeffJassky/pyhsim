@@ -5,9 +5,8 @@ import {
   SIGNAL_DEFINITIONS,
   AUXILIARY_DEFINITIONS,
   getAllUnifiedDefinitions,
-} from "@/models/engine";
-import { DEFAULT_SUBJECT } from "@/models/domain/subject";
-import { derivePhysiology } from "@/models/domain/subject";
+} from "@physim/core";
+import { DEFAULT_SUBJECT, derivePhysiology } from "@physim/core";
 import type {
   DynamicsContext,
   SimulationState,
@@ -53,15 +52,11 @@ describe("Unified ODE Architecture", () => {
   }
 
   it("should initialize state correctly", () => {
-    const state = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject,
-        physiology,
-        isAsleep: false,
-      },
-    );
+    const state = createInitialState({
+      subject,
+      physiology,
+      isAsleep: false,
+    });
 
     expect(state.signals.glucose).toBe(90);
     expect(state.signals.insulin).toBe(8);
@@ -69,7 +64,7 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should respond to high glucose by increasing insulin", () => {
-    let state = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
+    let state = createInitialState({
       subject,
       physiology,
       isAsleep: false,
@@ -87,7 +82,7 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should decrease glucose when insulin is high (via insulinAction)", () => {
-    let state = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
+    let state = createInitialState({
       subject,
       physiology,
       isAsleep: false,
@@ -104,7 +99,7 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should accumulate adenosine pressure while awake", () => {
-    let state = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
+    let state = createInitialState({
       subject,
       physiology,
       isAsleep: false,
@@ -118,7 +113,7 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should decrease adenosine pressure while asleep", () => {
-    let state = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
+    let state = createInitialState({
       subject,
       physiology,
       isAsleep: false,
@@ -132,15 +127,11 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should respond to interventions as forcing functions", () => {
-    const state = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject: {} as any,
-        physiology: {} as any,
-        isAsleep: false,
-      },
-    );
+    const state = createInitialState({
+      subject: {} as any,
+      physiology: {} as any,
+      isAsleep: false,
+    });
 
     const definitions = getAllUnifiedDefinitions();
     const ctx: DynamicsContext = {
@@ -185,15 +176,11 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should respond to mechanistic pharmacology (PK/PD)", () => {
-    const state = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject: {} as any,
-        physiology: {} as any,
-        isAsleep: false,
-      },
-    );
+    const state = createInitialState({
+      subject: {} as any,
+      physiology: {} as any,
+      isAsleep: false,
+    });
 
     const ctx: DynamicsContext = {
       minuteOfDay: 600,
@@ -251,15 +238,11 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should respond to activity-dependent interventions (sleep)", () => {
-    const state = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject: {} as any,
-        physiology: {} as any,
-        isAsleep: false,
-      },
-    );
+    const state = createInitialState({
+      subject: {} as any,
+      physiology: {} as any,
+      isAsleep: false,
+    });
 
     const ctx: DynamicsContext = {
       minuteOfDay: 0, // Midnight
@@ -335,15 +318,11 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should respond to caffeine intervention with proper dosing", () => {
-    const state = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject: {} as any,
-        physiology: {} as any,
-        isAsleep: false,
-      },
-    );
+    const state = createInitialState({
+      subject: {} as any,
+      physiology: {} as any,
+      isAsleep: false,
+    });
 
     const ctx: DynamicsContext = {
       minuteOfDay: 420, // 7 AM
@@ -420,15 +399,11 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should respond to DAT inhibition by increasing dopamine", () => {
-    const state = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject: {} as any,
-        physiology: {} as any,
-        isAsleep: false,
-      },
-    );
+    const state = createInitialState({
+      subject: {} as any,
+      physiology: {} as any,
+      isAsleep: false,
+    });
 
     const ctx: DynamicsContext = {
       minuteOfDay: 600,
@@ -493,15 +468,11 @@ describe("Unified ODE Architecture", () => {
   });
 
   it("should respond to Caffeine (Adenosine antagonist) by increasing Dopamine via disinhibition", () => {
-    const state = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject: {} as any,
-        physiology: {} as any,
-        isAsleep: false,
-      },
-    );
+    const state = createInitialState({
+      subject: {} as any,
+      physiology: {} as any,
+      isAsleep: false,
+    });
 
     const ctx: DynamicsContext = {
       minuteOfDay: 600,

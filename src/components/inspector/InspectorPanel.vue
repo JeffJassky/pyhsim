@@ -183,11 +183,14 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch, nextTick } from 'vue';
 import moment from 'moment';
-import type { InterventionDef, ParamValues, TimelineItem, Signal, PharmacologyDef } from '@/types';
+import type { InterventionDef, ParamValues, TimelineItem, PharmacologyDef } from '@/types';
+import type { Signal } from '@physim/core';
 import ParamEditor from './ParamEditor.vue';
-import { KCAL_PER_GRAM_CARB, KCAL_PER_GRAM_FAT, KCAL_PER_GRAM_PROTEIN } from '@/models/physiology/constants/nutrients';
-import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@/models/engine/signal-units';
-import { getTargetDescription, getTargetLabel } from '@/models/physiology/pharmacology/registry';
+const KCAL_PER_GRAM_CARB = 4;
+const KCAL_PER_GRAM_PROTEIN = 4;
+const KCAL_PER_GRAM_FAT = 9;
+import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@physim/core';
+import { getTargetDescription, getTargetLabel } from '@physim/core';
 
 const props = defineProps<{
   item?: TimelineItem;

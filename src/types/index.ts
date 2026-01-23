@@ -1,3 +1,3 @@
 export * from './neurostate';
 export * from './log';
-export * from './unified';
+// Explicitly re-export to resolve ambiguity if any remain, but neurostate is now our primary bridge.

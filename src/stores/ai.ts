@@ -4,12 +4,12 @@ import { useTimelineStore } from "@/stores/timeline";
 import { useUserStore } from "@/stores/user";
 import { useLibraryStore } from "@/stores/library";
 import { useMetersStore } from "@/stores/meters";
-import { minuteToISO } from "@/utils/time";
+import { toMinuteISO } from "@/utils/time";
 import type { Minute, InterventionKey, Goal, Signal } from "@/types";
-import { CONDITION_LIBRARY } from "@/models";
-import { SIGNALS_ALL } from "@/types";
-import type { ConditionKey } from "@/models/registry/conditions";
-import { META_TAG_ID } from "@/models/physiology/constants/meta";
+import { CONDITION_LIBRARY } from "@physim/core";
+import { SIGNALS_ALL } from "@physim/core";
+import type { ConditionKey } from "@physim/core";
+const META_TAG_ID = "aG9GMlNuZzFybWdhaUFjZ0dwRVNiOGdfdjJXWlZnWjVaRjdkdmJwZGxiTVBUN1l5TXJrd0g2M2JLcUlTNC1zQQ==";
 import { DEFAULT_CONFIG_TOKEN } from "@/core/sys_config";
 import { LEGACY_HASH_MAP } from "@/utils/data_utils";
 
@@ -288,8 +288,8 @@ export const useAIStore = defineStore("ai", () => {
         if (!def) return `Error: Intervention '${key}' not found in library.`;
 
         const dur = duration_minutes ?? def.defaultDurationMin ?? 30;
-        const startISO = minuteToISO(startMin);
-        const endISO = minuteToISO((startMin + dur) as Minute);
+        const startISO = toMinuteISO(startMin);
+        const endISO = toMinuteISO((startMin + dur) as Minute);
 
         // Merge default params with provided params
         const finalParams = {
@@ -322,7 +322,7 @@ export const useAIStore = defineStore("ai", () => {
           if (time) {
             const [h, m] = time.split(":").map(Number);
             startMin = h * 60 + m;
-            updates.start = minuteToISO(startMin as Minute);
+            updates.start = toMinuteISO(startMin as Minute);
           }
 
           if (duration_minutes || time) {
@@ -331,7 +331,7 @@ export const useAIStore = defineStore("ai", () => {
               (new Date(item.end).getTime() - new Date(item.start).getTime()) /
               60000;
             const dur = duration_minutes ?? currentDur;
-            updates.end = minuteToISO((startMin + dur) as Minute);
+            updates.end = toMinuteISO((startMin + dur) as Minute);
           }
         }
 

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { v4 as uuid } from 'uuid';
 import type { InterventionKey, Minute, TimelineItem, TimelineItemMeta, UUID, TrackedNutrients } from '@/types';
-import { minuteToISO } from '@/utils/time';
+import { toMinuteISO } from '@/utils/time';
 import { createFoodTimelineItem } from '@/utils/food';
 
 interface TimelineStoreState {
@@ -15,8 +15,8 @@ const DEFAULT_SLEEP_START_MINUTE: Minute = (23 * 60) as Minute;
 const DEFAULT_SLEEP_DURATION_MIN = 8 * 60;
 
 const createRoutineItem = (key: InterventionKey, startMin: number, durationMin: number): TimelineItem => {
-  const start = minuteToISO(startMin as Minute);
-  const end = minuteToISO((startMin + durationMin) as Minute);
+  const start = toMinuteISO(startMin as Minute);
+  const end = toMinuteISO((startMin + durationMin) as Minute);
   return {
     id: uuid() as UUID,
     start,

@@ -4,8 +4,8 @@ import {
   createInitialState,
   SIGNAL_DEFINITIONS,
   AUXILIARY_DEFINITIONS,
-} from "@/models/engine";
-import { DEFAULT_SUBJECT, derivePhysiology } from "@/models/domain/subject";
+} from "@physim/core";
+import { DEFAULT_SUBJECT, derivePhysiology } from "@physim/core";
 import type {
   DynamicsContext,
   SimulationState,
@@ -27,7 +27,7 @@ describe("PK/PD Regression Tests", () => {
   });
 
   beforeEach(() => {
-    state = createInitialState(SIGNAL_DEFINITIONS, AUXILIARY_DEFINITIONS, {
+    state = createInitialState({
       subject,
       physiology,
       isAsleep: false,

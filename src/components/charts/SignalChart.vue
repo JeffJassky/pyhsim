@@ -342,8 +342,8 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import type { ChartSeriesSpec, ResponseSpec, Signal, Minute } from '@/types';
-import { getAllUnifiedDefinitions } from '@/models/engine';
-import { getDisplayValue, SIGNAL_UNITS } from '@/models/engine/signal-units';
+import { getAllUnifiedDefinitions } from '@physim/core';
+import { getDisplayValue, SIGNAL_UNITS } from '@physim/core';
 import Sortable from 'sortablejs';
 import { useUserStore } from '@/stores/user';
 import { useTimelineStore } from '@/stores/timeline';
@@ -351,10 +351,10 @@ import { useLibraryStore } from '@/stores/library';
 import {
   isReceptor, isTransporter, isEnzyme,
   RECEPTORS, TRANSPORTERS, ENZYMES
-} from '@/models/physiology/pharmacology/registry';
-import { CONDITION_LIBRARY, RECEPTOR_SIGNAL_MAP, RECEPTOR_SENSITIVITY_GAIN } from '@/models/registry/conditions';
-import { UNIT_CONVERSIONS } from '@/models/engine/signal-units';
-import { EnzymeTarget, ReceptorTarget, TransporterTarget } from '@/models/physiology/pharmacology';
+} from '@physim/core';
+import { CONDITION_LIBRARY, RECEPTOR_SIGNAL_MAP, RECEPTOR_SENSITIVITY_GAIN } from '@physim/core';
+import { UNIT_CONVERSIONS } from '@physim/core';
+import { EnzymeKey, ReceptorKey, TransporterKey, ProductionTerm, DynamicCoupling } from '@physim/core';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
@@ -430,7 +430,7 @@ const getSignalConditions = (signalKey: string) => {
 
     // 2. Check transporter modifiers
     for (const mod of condition.transporterModifiers ?? []) {
-      if (TRANSPORTERS[mod.transporter as TransporterTarget]?.primarySignal === targetSignal) {
+      if (TRANSPORTERS[mod.transporter as TransporterKey]?.primarySignal === targetSignal) {
         // Transporters handle signal levels dynamically, but for educational purposes
         // we can describe the intended effect on the baseline.
         mechanisms.push(`${mod.transporter} activity`);
@@ -439,7 +439,7 @@ const getSignalConditions = (signalKey: string) => {
 
     // 3. Check enzyme modifiers
     for (const mod of condition.enzymeModifiers ?? []) {
-      if (ENZYMES[mod.enzyme as EnzymeTarget]?.substrates.includes(targetSignal)) {
+      if (ENZYMES[mod.enzyme as EnzymeKey]?.substrates.includes(targetSignal)) {
         mechanisms.push(`${mod.enzyme} activity`);
       }
     }
@@ -471,18 +471,18 @@ const getSignalConditions = (signalKey: string) => {
 const getSignalContributors = (signalKey: string) => {
   const contributors = [];
   const targetSignal = signalKey as Signal;
-  const signalDef = UNIFIED_DEFS[targetSignal];
+  const signalDef = UNIFIED_DEFS[targetSignal as Signal];
 
   // Identify signals that directly drive this one via production terms or couplings
   const upstreamSignals = new Set<Signal>();
   if (signalDef) {
-    signalDef.dynamics.production.forEach(p => {
+    signalDef.dynamics.production.forEach((p: ProductionTerm) => {
       if (typeof p.source === 'string' && p.source !== 'constant' && p.source !== 'circadian') {
         upstreamSignals.add(p.source as Signal);
       }
     });
-    signalDef.dynamics.couplings.forEach(c => {
-      upstreamSignals.add(c.source);
+    signalDef.dynamics.couplings.forEach((c: DynamicCoupling) => {
+      upstreamSignals.add(c.source as Signal);
     });
   }
 
@@ -509,18 +509,18 @@ const getSignalContributors = (signalKey: string) => {
         if (effect.target === signalKey) {
           affects = true;
         } else if (isReceptor(effect.target)) {
-          const coupling = RECEPTORS[effect.target as ReceptorTarget].couplings.find((c) => c.signal === signalKey);
+          const coupling = RECEPTORS[effect.target as ReceptorKey].couplings.find((c) => c.signal === signalKey);
           if (coupling) {
             affects = true;
             sign = coupling.sign;
           }
         } else if (isTransporter(effect.target)) {
-          if (TRANSPORTERS[effect.target as TransporterTarget].primarySignal === signalKey) {
+          if (TRANSPORTERS[effect.target as TransporterKey].primarySignal === signalKey) {
             affects = true;
             sign = -1;
           }
         } else if (isEnzyme(effect.target)) {
-          if (ENZYMES[effect.target as EnzymeTarget].substrates.includes(targetSignal)) {
+          if (ENZYMES[effect.target as EnzymeKey].substrates.includes(targetSignal)) {
             affects = true;
             sign = -1;
           }
@@ -534,7 +534,7 @@ const getSignalContributors = (signalKey: string) => {
             isIndirect = true;
             via = UNIFIED_DEFS[directTarget]?.label || directTarget;
           } else if (isReceptor(effect.target)) {
-            const upCouplings = RECEPTORS[effect.target as ReceptorTarget].couplings;
+            const upCouplings = RECEPTORS[effect.target as ReceptorKey].couplings;
             const match = upCouplings.find(c => upstreamSignals.has(c.signal));
             if (match) {
               affects = true;
@@ -566,7 +566,7 @@ const getSignalContributors = (signalKey: string) => {
             icon: def.icon,
             mechanism: effect.mechanism,
             value: magnitude * scale,
-            unit: SIGNAL_UNITS[targetSignal]?.unit || '',
+            unit: SIGNAL_UNITS[targetSignal as Signal]?.unit || '',
             isIndirect,
             via
           });
@@ -816,7 +816,8 @@ const hideSignal = (key: string) => {
 const describeMapping = (spec: ResponseSpec): string => {
   switch (spec.kind) {
     case 'linear':
-      return `linear (${spec.gain >= 0 ? '+' : ''}${spec.gain.toFixed(2)})`;
+      const gain = spec.gain ?? 0;
+      return `linear (${gain >= 0 ? '+' : ''}${gain.toFixed(2)})`;
     case 'hill':
       return `hill (Emax ${spec.Emax}, EC50 ${spec.EC50}, n ${spec.n})`;
     case 'ihill':

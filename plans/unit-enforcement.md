@@ -89,7 +89,7 @@ These multipliers will apply directly to the new physical constants in the ODE s
 ### Phase 1: Type System (Done)
 
 - Created `src/types/units.ts`.
-- Updated `UnifiedSignalDefinition` to use `PhysiologicalUnit`.
+- Updated `SignalDefinition` to use `PhysiologicalUnit`.
 
 ### Phase 2: Signal Documentation & Conversion Logic (Immediate)
 
@@ -116,7 +116,7 @@ These multipliers will apply directly to the new physical constants in the ODE s
 
 ## Risk Mitigation: The "Dual-Mode" Solver
 
-During Phase 4, we can add a flag to `UnifiedSignalDefinition`: `isPhysical: boolean`.
+During Phase 4, we can add a flag to `SignalDefinition`: `isPhysical: boolean`.
 
 - If `true`, the solver treats values as physical (nM).
 - If `false`, it treats them as arbitrary (0-100).

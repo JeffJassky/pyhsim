@@ -735,8 +735,7 @@ export function totalNutrientAppearance(t: number, p: NutrientParams): number {
 
 // --- Generators ---
 
-import type { PharmacologyDef } from "@/types";
-import type { Physiology, Subject } from "../domain/subject";
+import type { PharmacologyDef, Physiology, Subject } from "@/types";
 
 /**
  * Default Volume of Distribution estimates by drug class (L/kg)

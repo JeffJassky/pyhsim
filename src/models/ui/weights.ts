@@ -2,7 +2,7 @@ import type {
   ArousalWeights,
   MeterMap,
   OrganWeightMap,
-} from '@/types';
+} from '@/types/neurostate';
 
 export const ORGAN_WEIGHTS: OrganWeightMap = {
   adrenals: {

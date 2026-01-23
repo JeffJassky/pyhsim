@@ -1,4 +1,5 @@
-import type { Goal, InterventionKey, Signal } from "@/types";
+import type { Goal, InterventionKey } from "@/types";
+import type { Signal } from "@physim/core";
 
 export interface RecommendedIntervention {
   key: InterventionKey;

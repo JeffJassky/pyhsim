@@ -17,8 +17,8 @@ import {
   SIGNAL_DEFINITIONS,
   AUXILIARY_DEFINITIONS,
   getAllUnifiedDefinitions,
-} from "@/models/engine";
-import { DEFAULT_SUBJECT, derivePhysiology } from "@/models/domain/subject";
+} from "@physim/core";
+import { DEFAULT_SUBJECT, derivePhysiology } from "@physim/core";
 import type {
   DynamicsContext,
   SimulationState,
@@ -32,15 +32,11 @@ describe("Intervention Processing Regressions", () => {
   const physiology = derivePhysiology(subject);
 
   beforeEach(() => {
-    initialState = createInitialState(
-      SIGNAL_DEFINITIONS,
-      AUXILIARY_DEFINITIONS,
-      {
-        subject,
-        physiology,
-        isAsleep: false,
-      },
-    );
+    initialState = createInitialState({
+      subject,
+      physiology,
+      isAsleep: false,
+    });
     ctx = {
       minuteOfDay: 480, // 8 AM
       circadianMinuteOfDay: 480, // 8 AM

@@ -32,7 +32,7 @@
         v-for="sig in filteredSignals"
         :key="sig.key"
         class="signal-item"
-        @click="userStore.toggleSignal(sig.key, !userStore.enabledSignals[sig.key])"
+        @click="userStore.toggleSignal(sig.key as Signal, !userStore.enabledSignals[sig.key as Signal])"
       >
         <div class="signal-item__info">
           <div class="signal-item__label">
@@ -50,8 +50,8 @@
         <label class="switch" @click.stop>
           <input
             type="checkbox"
-            :checked="userStore.enabledSignals[sig.key]"
-            @change="userStore.toggleSignal(sig.key, ($event.target as HTMLInputElement).checked)"
+            :checked="userStore.enabledSignals[sig.key as Signal]"
+            @change="userStore.toggleSignal(sig.key as Signal, ($event.target as HTMLInputElement).checked)"
           />
           <span class="slider" />
         </label>
@@ -67,9 +67,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { getAllUnifiedDefinitions } from '@/models/engine';
-import { BIOLOGICAL_SYSTEMS } from '@/models/physiology/systems';
-import type { Signal } from '@/types';
+import { Signal, getAllUnifiedDefinitions } from '@physim/core';
+import { BIOLOGICAL_SYSTEMS } from '@physim/core';
 
 const userStore = useUserStore();
 const searchQuery = ref('');

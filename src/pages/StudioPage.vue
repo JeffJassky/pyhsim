@@ -9,6 +9,7 @@
     <Splitpanes
       horizontal
       class="studio-splitpanes"
+      :key="showChat ? 'chat-open' : 'chat-closed'"
       @resized="handleStudioPanesResize"
     >
       <Pane :size="timelinePaneSize" :min-size="15" :max-size="50">
@@ -326,7 +327,7 @@
           class="studio-fab studio-fab--secondary"
           type="button"
           title="Chat with AI"
-          @click="showChat = !showChat"
+          @click.stop="showChat = !showChat"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -393,8 +394,8 @@ import { useArousal } from '@/composables/useArousal';
 import { useArousalStore } from '@/stores/arousal';
 import { useHeatmapStore } from '@/stores/heatmap';
 import { useHeatmap } from '@/composables/useHeatmap';
-import { BIOLOGICAL_SYSTEMS } from '@/models/physiology/systems';
-import type { BioSystemDef } from '@/models/physiology/systems';
+import { BIOLOGICAL_SYSTEMS } from '@physim/core';
+import type { BioSystemDef, DynamicCoupling } from '@physim/core';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
 import type { GoalCategory } from '@/models/domain/goals';
 import type {
@@ -405,15 +406,15 @@ import type {
   MeterKey,
   Minute,
   OrganKey,
+  ParamValues,
+  PharmacologyDef,
   Signal,
   TimelineItem,
   UUID,
-  PharmacologyDef,
-  ParamValues,
 } from '@/types';
-import { minuteToISO } from '@/utils/time';
+import { toMinuteISO } from '@/utils/time';
 import { toMinuteOfDay } from '@/core/serialization';
-import { getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS } from '@/models/engine';
+import { getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS } from '@physim/core';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
@@ -516,7 +517,7 @@ const scrollTimelineIntoView = () => {
 const handleCreate = (def: InterventionDef) => {
   const startMin = minute.value as Minute;
   const endMin = (startMin + def.defaultDurationMin) as Minute;
-  timeline.addItem(minuteToISO(startMin), minuteToISO(endMin), {
+  timeline.addItem(toMinuteISO(startMin), toMinuteISO(endMin), {
     key: def.key,
     params: defaultParams(def),
     intensity: 1,
@@ -571,8 +572,8 @@ const addComprehensiveDay = () => {
   ];
 
   interventions.forEach(iv => {
-    const start = minuteToISO(iv.start as Minute, date);
-    const end = minuteToISO((iv.start + iv.duration) as Minute, date);
+    const start = toMinuteISO(iv.start as Minute, date);
+    const end = toMinuteISO((iv.start + iv.duration) as Minute, date);
     timeline.addItem(start, end, {
       key: iv.key as any,
       params: iv.params as ParamValues,
@@ -657,8 +658,8 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
           idealTendency: def.idealTendency,
           info: {
             description: def.description,
-            couplings: def.dynamics.couplings?.map((c) => ({
-              source: UNIFIED_DEFS[c.source]?.label ?? c.source,
+            couplings: def.dynamics.couplings?.map((c: DynamicCoupling) => ({
+              source: UNIFIED_DEFS[c.source as Signal]?.label ?? c.source,
               mapping: { kind: 'linear', gain: c.strength }, // Approximate for display
               description: `${c.effect} (strength ${c.strength})`,
             })),
@@ -789,7 +790,7 @@ interface RootTabOption {
   info: string;
 }
 
-import { getReceptorSignals } from '@/models/physiology/pharmacology';
+import { getReceptorSignals } from '@physim/core';
 
 const chartFilter = ref<'auto' | 'goals' | 'all'>('goals');
 const chartGroupBy = ref<'none' | 'system' | 'goals'>('system');
@@ -843,9 +844,9 @@ const resolveSignalsForItems = (items: TimelineItem[]): Set<Signal> => {
 
   Object.values(UNIFIED_DEFS).forEach((def) => {
     if (!def.dynamics.couplings) return;
-    const isCoupled = def.dynamics.couplings.some((c) => directSignals.has(c.source));
+    const isCoupled = def.dynamics.couplings.some((c) => directSignals.has(c.source as Signal));
     if (isCoupled) {
-      signalsToShow.add(def.key);
+      signalsToShow.add(def.key as Signal);
     }
   });
 

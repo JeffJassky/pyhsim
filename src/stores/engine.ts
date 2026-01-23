@@ -9,11 +9,11 @@ import type {
   HomeostasisStateSnapshot,
   HomeostasisSeries,
 } from "@/types";
-import { SIGNALS_ALL } from "@/types";
+import { SIGNALS_ALL } from "@physim/core";
 import { rangeMinutes, toMinuteOfDay } from "@/utils/time";
-import { buildInterventionLibrary } from "@/models/registry/interventions";
-import { buildConditionAdjustments } from "@/models/registry/conditions";
-import { derivePhysiology } from "@/models/domain/subject";
+import { buildInterventionLibrary } from "@physim/core";
+import { buildConditionAdjustments } from "@physim/core";
+import { derivePhysiology } from "@physim/core";
 import { useTimelineStore } from "./timeline";
 import { useUserStore } from "./user";
 import { buildWorkerRequest } from "@/core/serialization";
@@ -123,7 +123,7 @@ export const useEngineStore = defineStore("engine", {
 
           // ... (validation check remains) ...
 
-          this.series = series;
+          this.series = series as Record<Signal, Float32Array>;
           this.auxiliarySeries = auxiliarySeries;
           this.finalHomeostasisState = finalHomeostasisState;
           this.homeostasisSeries = homeostasisSeries;

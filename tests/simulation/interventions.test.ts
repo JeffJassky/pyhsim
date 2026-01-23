@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { INTERVENTIONS } from '@/models/registry/interventions';
-import { validateInterventionLibrary } from '@/models/physiology/pharmacology/validation';
+import { INTERVENTIONS } from '@physim/core';
+import { validateInterventionLibrary } from '@physim/core';
 
 describe('Intervention Unit Integrity', () => {
   it('should have matching units for all pharmacological effects', () => {

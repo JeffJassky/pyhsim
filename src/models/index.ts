@@ -1,5 +1,36 @@
 export * from "./ui/weights";
-export * from "./registry/interventions";
-export * from "./registry/conditions";
-export * from "./domain/subject";
-export * from "./engine/pharmacokinetics";
+
+// Resolve ambiguities explicitly by preferring registry for Subject entities
+export type {
+  BiologicalSex,
+  MenstrualHormones,
+  Physiology,
+  Subject
+} from "@physim/core";
+
+export {
+  DEFAULT_SUBJECT,
+  derivePhysiology,
+  INTERVENTIONS,
+  INTERVENTION_MAP,
+  CONDITION_LIBRARY,
+  buildConditionAdjustments,
+  Agents
+} from "@physim/core";
+
+// Export physiology-bound versions
+export {
+  initializeZeroState,
+  createInitialState,
+  integrateStep,
+  computeDerivatives,
+  SIGNALS_ALL,
+  SIGNAL_DEFINITIONS,
+  AUXILIARY_DEFINITIONS,
+  HUMAN_RESOLVER,
+  getAllUnifiedDefinitions,
+  getMenstrualHormones
+} from "@physim/core";
+
+// Export everything else from core
+export * from "@physim/core";

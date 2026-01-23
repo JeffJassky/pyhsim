@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { computeDerivatives } from '@/models/engine';
-import { initializeZeroState } from '@/models/engine/state';
-import { dopamine } from '@/models/engine/signal-definitions/neurotransmitters';
-import { DEFAULT_SUBJECT, derivePhysiology } from '@/models/domain/subject';
+import { computeDerivatives, initializeZeroState } from '@physim/core';
+import { dopamine } from '@physim/core';
+import { DEFAULT_SUBJECT, derivePhysiology } from '@physim/core';
 import type { ActiveIntervention, DynamicsContext } from '@/types';
 
 describe('Intervention Toggle (Optimized V2)', () => {

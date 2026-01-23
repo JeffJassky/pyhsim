@@ -323,7 +323,7 @@ const toVisItems = (items: TimelineItem[]) => {
 
             let displayValue = value;
             if (p.type === 'select') {
-              const option = p.options.find((o) => o.value === value);
+              const option = p.options?.find((o) => o.value === value);
               if (option) displayValue = option.label;
             } else if (p.type === 'switch') {
               displayValue = value ? 'On' : 'Off';

@@ -9,8 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { CONDITION_LIBRARY, buildConditionAdjustments } from '@/models/registry/conditions';
-import type { ConditionKey, ConditionStateSnapshot } from '@/models/registry/conditions';
+import { CONDITION_LIBRARY, buildConditionAdjustments } from '@physim/core';
+import type { ConditionKey, ConditionStateSnapshot } from '@physim/core';
 
 // Helper to create condition state
 function createConditionState(

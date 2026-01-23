@@ -60,7 +60,7 @@ function saveTheme(theme: UIState['theme']): void {
   }
 }
 
-interface UIStoreState extends UIState {
+export interface UIStoreState extends UIState {
   profileModalView?: string;
 }
 

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "target": "ESNext",
+    "downlevelIteration": true,
+    "paths": {}
+  },
+  "include": ["src/**/*"],
+  "references": []
+}
