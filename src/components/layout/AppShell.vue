@@ -5,7 +5,7 @@
   >
     <header class="app-shell__header" v-if="!isOnboarding">
       <div class="header-left">
-        <span class="logo">PhySim</span>
+        <span class="logo">KYNETIC</span>
       </div>
       <div class="header-center">
         <slot name="header-center" />
@@ -27,10 +27,7 @@
         >
           Upgrade
         </button>
-        <label
-          class="theme-switch"
-          :title="'Theme: ' + uiStore.theme"
-        >
+        <label class="theme-switch" :title="'Theme: ' + uiStore.theme">
           <input
             type="checkbox"
             :checked="uiStore.resolvedTheme === 'dark'"
