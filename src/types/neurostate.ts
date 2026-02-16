@@ -90,6 +90,7 @@ export type {
   PharmacologicalTarget,
   IdealTendency,
   ResponseSpec,
+  MonitorResult,
 } from "@kyneticbio/core";
 
 // Specific UI State Types (Moved from core)
