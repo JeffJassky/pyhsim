@@ -513,7 +513,7 @@ import { useArousalStore } from '@/stores/arousal';
 import { useHeatmapStore } from '@/stores/heatmap';
 import { useHeatmap } from '@/composables/useHeatmap';
 import { BIOLOGICAL_SYSTEMS } from '@kyneticbio/core';
-import type { BioSystemDef, DynamicCoupling } from '@kyneticbio/core';
+import type { BioSystemDef, DynamicCoupling, MonitorResult } from '@kyneticbio/core';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
 import type { GoalCategory } from '@/models/domain/goals';
 import type {
