@@ -2,9 +2,9 @@ import { defineStore } from "pinia";
 import type {
   ConditionKey,
   ConditionStateSnapshot,
-} from "@physim/core";
-import { CONDITION_LIBRARY } from "@physim/core";
-import { getAllUnifiedDefinitions, SIGNALS_ALL } from "@physim/core";
+} from "@kyneticbio/core";
+import { CONDITION_LIBRARY } from "@kyneticbio/core";
+import { getAllUnifiedDefinitions, SIGNALS_ALL } from "@kyneticbio/core";
 import {
   DEFAULT_SUBJECT,
   DEFAULT_NUTRITION_TARGETS,
@@ -12,7 +12,7 @@ import {
   type NutritionTargets,
   type Goal,
   type Signal
-} from "@physim/core";
+} from "@kyneticbio/core";
 import { GOAL_CATEGORIES } from "@/models/domain/goals";
 
 const STORAGE_KEY = "physim:user";

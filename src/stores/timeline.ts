@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { v4 as uuid } from 'uuid';
 import type { InterventionKey, Minute, TimelineItem, TimelineItemMeta, UUID, TrackedNutrients } from '@/types';
-import { toMinuteISO } from '@/utils/time';
+import { toMinuteISO } from '@kyneticbio/core';
 import { createFoodTimelineItem } from '@/utils/food';
 
 interface TimelineStoreState {

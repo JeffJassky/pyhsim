@@ -2,7 +2,7 @@ import {
   type WorkerComputeRequest,
   type WorkerComputeResponse,
   runOptimizedV2,
-} from "@physim/core";
+} from "@kyneticbio/core";
 import {
   SIGNALS_ALL,
   AUXILIARY_DEFINITIONS,
@@ -10,7 +10,7 @@ import {
   getAllUnifiedDefinitions,
   createInitialState,
   type Signal
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
   const startTime = performance.now();

@@ -67,8 +67,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { Signal, getAllUnifiedDefinitions } from '@physim/core';
-import { BIOLOGICAL_SYSTEMS } from '@physim/core';
+import { Signal, getAllUnifiedDefinitions } from '@kyneticbio/core';
+import { BIOLOGICAL_SYSTEMS } from '@kyneticbio/core';
 
 const userStore = useUserStore();
 const searchQuery = ref('');

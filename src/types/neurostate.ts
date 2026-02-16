@@ -1,8 +1,8 @@
 // Master Neurostate Types (Bridge to Packages)
 
-import * as core from "@physim/core";
-import * as physiology from "@physim/core";
-import * as registry from "@physim/core";
+import * as core from "@kyneticbio/core";
+import * as physiology from "@kyneticbio/core";
+import * as registry from "@kyneticbio/core";
 
 // Resolve ambiguities explicitly (Hormones/Signals)
 export type {
@@ -20,7 +20,7 @@ export type {
   EnzymeKey,
   AuxiliaryKey,
   MenstrualHormones,
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 // Resolve Domain/Content types explicitly from Registry
 export type {
@@ -56,7 +56,7 @@ export type {
   LogTargets,
   MacroTargets,
   MacroRange,
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 export {
   DEFAULT_SUBJECT,
@@ -67,10 +67,10 @@ export {
   INTERVENTION_MAP,
   Agents,
   validateInterventionLibrary, // Moved to Registry
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 // Export everything from physiology (human specific)
-export * from "@physim/core";
+export * from "@kyneticbio/core";
 
 // Re-export specific generic types from core
 export type {
@@ -90,7 +90,7 @@ export type {
   PharmacologicalTarget,
   IdealTendency,
   ResponseSpec,
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 // Specific UI State Types (Moved from core)
 export type {

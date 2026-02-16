@@ -132,65 +132,64 @@
 
               <div class="chart-header-row-right">
                 <div class="layout-toggle">
-                <button
-                  class="layout-toggle__btn"
-                  :class="{ 'is-active': chartLayout === 'list' }"
-                  title="List View"
-                  v-tooltip="'View charts as a list'"
-                  @click="chartLayout = 'list'"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                  <button
+                    class="layout-toggle__btn"
+                    :class="{ 'is-active': chartLayout === 'list' }"
+                    title="List View"
+                    v-tooltip="'View charts as a list'"
+                    @click="chartLayout = 'list'"
                   >
-                    <line x1="8" y1="6" x2="21" y2="6"></line>
-                    <line x1="8" y1="12" x2="21" y2="12"></line>
-                    <line x1="8" y1="18" x2="21" y2="18"></line>
-                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                  </svg>
-                </button>
-                <button
-                  class="layout-toggle__btn"
-                  :class="{ 'is-active': chartLayout === 'grid' }"
-                  title="Grid View"
-                  v-tooltip="'View charts as grid'"
-                  @click="chartLayout = 'grid'"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <line x1="8" y1="6" x2="21" y2="6"></line>
+                      <line x1="8" y1="12" x2="21" y2="12"></line>
+                      <line x1="8" y1="18" x2="21" y2="18"></line>
+                      <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                      <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                      <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                  </button>
+                  <button
+                    class="layout-toggle__btn"
+                    :class="{ 'is-active': chartLayout === 'grid' }"
+                    title="Grid View"
+                    v-tooltip="'View charts as grid'"
+                    @click="chartLayout = 'grid'"
                   >
-                    <rect x="3" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="3" width="7" height="7"></rect>
-                    <rect x="14" y="14" width="7" height="7"></rect>
-                    <rect x="3" y="14" width="7" height="7"></rect>
-                  </svg>
-                </button>
-              </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect x="3" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="3" width="7" height="7"></rect>
+                      <rect x="14" y="14" width="7" height="7"></rect>
+                      <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                  </button>
+                </div>
 
-              <!-- Signal Manager -->
-              <div class="control-group" ref="signalMenuBtnRef" style="position: relative;">
+                <!-- Monitor Alerts Toggle -->
                 <button
-                  class="icon-btn"
-                  :class="{ 'is-active': showSignalMenu }"
-                  @click="showSignalMenu = !showSignalMenu"
-                  v-tooltip="'Manage available signals'"
+                  class="icon-btn monitor-alerts-btn"
+                  :class="{ 'is-active': showMonitorPanel, 'has-alerts': totalAlerts > 0 }"
+                  @click="showMonitorPanel = !showMonitorPanel"
+                  v-tooltip="showMonitorPanel ? 'Hide active alerts' : 'Show active alerts'"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -203,22 +202,140 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                   >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                      d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                    ></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
                   </svg>
+                  <span v-if="totalAlerts > 0" class="alert-badge">{{ totalAlerts }}</span>
                 </button>
-                <Transition name="fade">
-                  <div
-                    v-if="showSignalMenu"
-                    class="signal-menu-wrapper"
-                    ref="signalMenuRef"
+
+                <!-- Signal Manager -->
+                <div
+                  class="control-group"
+                  ref="signalMenuBtnRef"
+                  style="position: relative;"
+                >
+                  <button
+                    class="icon-btn"
+                    :class="{ 'is-active': showSignalMenu }"
+                    @click="showSignalMenu = !showSignalMenu"
+                    v-tooltip="'Manage available signals'"
                   >
-                    <SignalToggleMenu />
-                  </div>
-                </Transition>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+                      ></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                  <Transition name="fade">
+                    <div
+                      v-if="showSignalMenu"
+                      class="signal-menu-wrapper"
+                      ref="signalMenuRef"
+                    >
+                      <SignalToggleMenu />
+                    </div>
+                  </Transition>
+                </div>
               </div>
             </div>
-            </div>
+
+            <Transition name="expand">
+              <div v-if="showMonitorPanel" class="monitor-panel">
+                <div class="monitor-panel__header">
+                  <h3>Active Physiological Monitors</h3>
+                  <p v-if="totalAlerts === 0" class="no-alerts-msg">No active alerts detected in the current simulation.</p>
+                </div>
+
+                <div v-if="groupedMonitors.critical.length" class="monitor-category">
+                  <h4 class="category-title category-title--critical">Critical</h4>
+                  <TransitionGroup name="list-shift" tag="div" class="monitors-grid">
+                    <div
+                      v-for="res in groupedMonitors.critical"
+                      :key="res.monitor.id"
+                      class="monitor-item monitor-item--critical"
+                    >
+                      <div class="monitor-signal-tag">{{ formatMonitorResult(res).signalLabel }}</div>
+                      <div class="monitor-main">
+                        <span class="monitor-icon">🚨</span>
+                        <span class="monitor-label">{{ res.monitor.message }}</span>
+                      </div>
+                      <div class="monitor-value-row">
+                        <span class="value-number">{{ formatMonitorResult(res).formattedValue }}</span>
+                        <span class="value-unit">{{ formatMonitorResult(res).unit }}</span>
+                        <span class="value-time">at {{ formatMonitorResult(res).detectedAtTime }}</span>
+                      </div>
+                      <div v-if="res.monitor.description" class="monitor-desc">
+                        {{ res.monitor.description }}
+                      </div>
+                    </div>
+                  </TransitionGroup>
+                </div>
+
+                <div v-if="groupedMonitors.warning.length" class="monitor-category">
+                  <h4 class="category-title category-title--warning">Warnings</h4>
+                  <TransitionGroup name="list-shift" tag="div" class="monitors-grid">
+                    <div
+                      v-for="res in groupedMonitors.warning"
+                      :key="res.monitor.id"
+                      class="monitor-item monitor-item--warning"
+                    >
+                      <div class="monitor-signal-tag">{{ formatMonitorResult(res).signalLabel }}</div>
+                      <div class="monitor-main">
+                        <span class="monitor-icon">⚠️</span>
+                        <span class="monitor-label">{{ res.monitor.message }}</span>
+                      </div>
+                      <div class="monitor-value-row">
+                        <span class="value-number">{{ formatMonitorResult(res).formattedValue }}</span>
+                        <span class="value-unit">{{ formatMonitorResult(res).unit }}</span>
+                        <span class="value-time">at {{ formatMonitorResult(res).detectedAtTime }}</span>
+                      </div>
+                      <div v-if="res.monitor.description" class="monitor-desc">
+                        {{ res.monitor.description }}
+                      </div>
+                    </div>
+                  </TransitionGroup>
+                </div>
+
+                <div v-if="groupedMonitors.win.length" class="monitor-category">
+                  <h4 class="category-title category-title--win">Positive Markers</h4>
+                  <TransitionGroup name="list-shift" tag="div" class="monitors-grid">
+                    <div
+                      v-for="res in groupedMonitors.win"
+                      :key="res.monitor.id"
+                      class="monitor-item monitor-item--win"
+                    >
+                      <div class="monitor-signal-tag">{{ formatMonitorResult(res).signalLabel }}</div>
+                      <div class="monitor-main">
+                        <span class="monitor-icon">✅</span>
+                        <span class="monitor-label">{{ res.monitor.message }}</span>
+                      </div>
+                      <div class="monitor-value-row">
+                        <span class="value-number">{{ formatMonitorResult(res).formattedValue }}</span>
+                        <span class="value-unit">{{ formatMonitorResult(res).unit }}</span>
+                        <span class="value-time">at {{ formatMonitorResult(res).detectedAtTime }}</span>
+                      </div>
+                      <div v-if="res.monitor.description" class="monitor-desc">
+                        {{ res.monitor.description }}
+                      </div>
+                    </div>
+                  </TransitionGroup>
+                </div>
+              </div>
+            </Transition>
 
             <div class="grouped-charts">
               <div
@@ -278,6 +395,7 @@
                   :layout="chartLayout"
                   :highlighted-keys="highlightedSignalKeys"
                   :selected-keys="selectedSignalKeys"
+                  :monitor-results="monitorResults"
                   @playhead="(val: number) => setMinute(val as Minute)"
                 />
               </div>
@@ -394,8 +512,8 @@ import { useArousal } from '@/composables/useArousal';
 import { useArousalStore } from '@/stores/arousal';
 import { useHeatmapStore } from '@/stores/heatmap';
 import { useHeatmap } from '@/composables/useHeatmap';
-import { BIOLOGICAL_SYSTEMS } from '@physim/core';
-import type { BioSystemDef, DynamicCoupling } from '@physim/core';
+import { BIOLOGICAL_SYSTEMS } from '@kyneticbio/core';
+import type { BioSystemDef, DynamicCoupling } from '@kyneticbio/core';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
 import type { GoalCategory } from '@/models/domain/goals';
 import type {
@@ -412,11 +530,37 @@ import type {
   TimelineItem,
   UUID,
 } from '@/types';
-import { toMinuteISO } from '@/utils/time';
+import { toMinuteISO, getDisplayValue, minuteToLabel } from '@kyneticbio/core';
 import { toMinuteOfDay } from '@/core/serialization';
-import { getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS } from '@physim/core';
+import { getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS } from '@kyneticbio/core';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
+
+const formatMonitorResult = (res: MonitorResult) => {
+  let formattedValue = '';
+  let unit = '';
+
+  // triggerValue can be number or number[]
+  if (Array.isArray(res.triggerValue)) {
+    const v1 = getDisplayValue(res.monitor.signal as Signal, res.triggerValue[0]);
+    const v2 = getDisplayValue(res.monitor.signal as Signal, res.triggerValue[res.triggerValue.length - 1]);
+    formattedValue = `${v1.value.toFixed(1)} → ${v2.value.toFixed(1)}`;
+    unit = v1.unit;
+  } else {
+    const v = getDisplayValue(res.monitor.signal as Signal, res.triggerValue);
+    formattedValue = v.value.toFixed(v.value < 1 ? 2 : 1);
+    unit = v.unit;
+  }
+
+  const signalLabel = UNIFIED_DEFS[res.monitor.signal as Signal]?.label || res.monitor.signal;
+
+  return {
+    formattedValue,
+    unit,
+    signalLabel,
+    detectedAtTime: minuteToLabel(res.detectedAt as Minute)
+  };
+};
 
 const library = useLibraryStore();
 const timeline = useTimelineStore();
@@ -472,11 +616,25 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 };
 
 const engine = useEngine();
-const { gridMins, series, busy } = engine;
+const { gridMins, series, busy, monitorResults } = engine;
 const { minute, setMinute } = usePlayhead();
 useMeters();
 useHeatmap();
 useArousal();
+
+const showMonitorPanel = ref(false);
+
+const groupedMonitors = computed(() => {
+  if (!monitorResults.value) return { critical: [], warning: [], win: [] };
+
+  return {
+    critical: monitorResults.value.filter((r) => r.monitor.outcome === 'critical'),
+    warning: monitorResults.value.filter((r) => r.monitor.outcome === 'warning'),
+    win: monitorResults.value.filter((r) => r.monitor.outcome === 'win'),
+  };
+});
+
+const totalAlerts = computed(() => monitorResults.value?.length || 0);
 
 const timelinePanelRef = ref<ComponentPublicInstance | null>(null);
 
@@ -790,7 +948,7 @@ interface RootTabOption {
   info: string;
 }
 
-import { getReceptorSignals } from '@physim/core';
+import { getReceptorSignals } from '@kyneticbio/core';
 
 const chartFilter = ref<'auto' | 'goals' | 'all'>('goals');
 const chartGroupBy = ref<'none' | 'system' | 'goals'>('system');
@@ -801,8 +959,8 @@ const signalMenuRef = ref<HTMLElement | null>(null);
 const signalMenuBtnRef = ref<HTMLElement | null>(null);
 
 const handleWindowClick = (e: MouseEvent) => {
-  if (showSignalMenu.value && 
-      signalMenuRef.value && 
+  if (showSignalMenu.value &&
+      signalMenuRef.value &&
       !signalMenuRef.value.contains(e.target as Node) &&
       !signalMenuBtnRef.value?.contains(e.target as Node)) {
     showSignalMenu.value = false;
@@ -1534,5 +1692,199 @@ background: var(--color-active);
   height: 20px;
   background: var(--color-border-subtle);
   margin: 0 0.5rem;
+}
+
+.monitor-alerts-btn {
+  position: relative;
+}
+
+.monitor-alerts-btn.has-alerts {
+  color: var(--color-warning);
+}
+
+.alert-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--color-danger);
+  color: white;
+  font-size: 0.6rem;
+  font-weight: 800;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  box-shadow: 0 0 0 2px var(--color-bg-base);
+}
+
+.monitor-panel {
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-medium);
+  overflow: hidden;
+}
+
+.monitor-panel__header {
+  margin-bottom: 1.25rem;
+}
+
+.monitor-panel__header h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: var(--color-text-primary);
+}
+
+.no-alerts-msg {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+.monitor-category {
+  margin-bottom: 1.5rem;
+}
+
+.monitor-category:last-child {
+  margin-bottom: 0;
+}
+
+.category-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.75rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.category-title--critical { color: var(--color-danger); }
+.category-title--warning { color: var(--color-warning); }
+.category-title--win { color: var(--color-success); }
+
+.monitors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.monitor-item {
+  background: var(--color-bg-elevated);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-left: 4px solid var(--color-text-muted);
+  transition: transform 0.2s ease;
+}
+
+.monitor-item:hover {
+  transform: translateY(-1px);
+}
+
+.monitor-item--critical {
+  border-left-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 5%, var(--color-bg-elevated));
+}
+
+.monitor-item--warning {
+  border-left-color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 5%, var(--color-bg-elevated));
+}
+
+.monitor-item--win {
+  border-left-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 5%, var(--color-bg-elevated));
+}
+
+.monitor-signal-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.15rem;
+}
+
+.monitor-main {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.monitor-icon {
+  font-size: 1.1rem;
+}
+
+.monitor-label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.monitor-value-row {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--color-bg-subtle);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  align-self: flex-start;
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  border: 1px solid var(--color-border-subtle);
+  font-weight: 700;
+  margin: 0.25rem 0;
+}
+
+.value-number {
+  color: var(--color-metric-primary);
+}
+
+.value-unit {
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+}
+
+.value-time {
+  color: var(--color-text-secondary);
+  margin-left: 0.25rem;
+  font-size: 0.65rem;
+}
+
+.monitor-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* List Shift Transition */
+.list-shift-enter-active,
+.list-shift-leave-active {
+  transition: all 0.4s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.list-shift-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+}
+
+.list-shift-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* Ensure smooth movement of other items */
+.list-shift-move {
+  transition: transform 0.4s ease;
 }
 </style>

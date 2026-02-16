@@ -6,7 +6,7 @@ export type {
   MenstrualHormones,
   Physiology,
   Subject
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 export {
   DEFAULT_SUBJECT,
@@ -16,7 +16,7 @@ export {
   CONDITION_LIBRARY,
   buildConditionAdjustments,
   Agents
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 // Export physiology-bound versions
 export {
@@ -30,7 +30,7 @@ export {
   HUMAN_RESOLVER,
   getAllUnifiedDefinitions,
   getMenstrualHormones
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 // Export everything else from core
-export * from "@physim/core";
+export * from "@kyneticbio/core";

@@ -10,11 +10,11 @@ export type {
   DynamicCoupling,
   IdealTendency,
   ActiveIntervention,
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 export type {
   InterventionDef,
   ParamDef,
   ParamType,
   ParamValues,
-} from "@physim/core";
+} from "@kyneticbio/core";

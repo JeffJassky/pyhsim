@@ -1,5 +1,5 @@
 import type { Goal, InterventionKey } from "@/types";
-import type { Signal } from "@physim/core";
+import type { Signal } from "@kyneticbio/core";
 
 export interface RecommendedIntervention {
   key: InterventionKey;
@@ -101,7 +101,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: "weightLoss",
     label: "Weight Management",
     icon: "⚖️",
-    signals: ["insulin", "glucagon", "leptin", "ghrelin", "glp1", "ketone"],
+    signals: ["insulin", "glucagon", "leptin", "ghrelin", "glp1", "ketone", "burnRate", "weight"],
     recommendedInterventions: [
       {
         key: "exercise_hiit",
@@ -125,7 +125,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
     id: "mood",
     label: "Mood",
     icon: "🎭",
-    signals: ["serotonin", "dopamine", "oxytocin", "endocannabinoid", "bdnf"],
+    signals: ["serotonin", "dopamine", "oxytocin", "endocannabinoid", "bdnf", "neuroplasticityScore"],
     recommendedInterventions: [
       {
         key: "exercise_cardio",
@@ -187,6 +187,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
       "mtor",
       "inflammation",
       "cortisol",
+      "strengthReadiness",
     ],
     recommendedInterventions: [
       {

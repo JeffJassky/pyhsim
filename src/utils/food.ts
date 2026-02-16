@@ -17,7 +17,7 @@ export interface FoodInterventionParams {
 }
 
 /**
- * Estimate glycemic index from macronutrient composition
+ * Estimate glycemic index (%) from macronutrient composition
  * Higher sugar:starch ratio and lower fiber = higher GI
  */
 function estimateGI(nutrients: TrackedNutrients): number {

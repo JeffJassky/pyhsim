@@ -4,8 +4,7 @@
     "composite": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@physim/core": ["packages/core/src/index.ts"]
+      "@/*": ["./src/*"]
     },
     "types": ["node", "vite/client", "hammerjs"],
     "allowJs": true,
@@ -17,12 +16,11 @@
     "src/**/*.d.ts",
     "src/**/*.tsx",
     "src/**/*.vue",
-    "packages/**/*.ts",
     "tests/**/*.ts",
     "env.d.ts"
   ],
   "references": [
     { "path": "./tsconfig.node.json" },
-    { "path": "./packages/core" }
+    { "path": "../core" }
   ]
 }

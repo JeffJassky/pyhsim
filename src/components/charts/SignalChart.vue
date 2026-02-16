@@ -150,6 +150,39 @@
             </Transition>
 
             <div class="series__playhead" :style="{ left: playheadPercent }" />
+
+            <!-- Monitor Dots -->
+            <VDropdown
+              v-for="dot in getMonitorDots(spec)"
+              :key="dot.id"
+              class="monitor-dot-wrapper"
+              :style="{ left: dot.x + '%', top: dot.y + '%' }"
+              :triggers="['hover']"
+              placement="top"
+              :distance="10"
+            >
+              <div class="monitor-dot" :class="`monitor-dot--${dot.outcome}`" />
+
+              <template #popper>
+                <div class="monitor-popover">
+                  <div class="monitor-popover__header">
+                    <span class="monitor-popover__icon">{{ dot.icon }}</span>
+                    <span
+                      class="monitor-popover__title"
+                      >{{ dot.message }}</span
+                    >
+                  </div>
+                  <div class="monitor-popover__value">
+                    <span class="value-number">{{ dot.formattedValue }}</span>
+                    <span class="value-unit">{{ dot.unit }}</span>
+                    <span class="value-time">at {{ dot.detectedAtTime }}</span>
+                  </div>
+                  <div v-if="dot.description" class="monitor-popover__desc">
+                    {{ dot.description }}
+                  </div>
+                </div>
+              </template>
+            </VDropdown>
           </div>
         </div>
       </div>
@@ -165,6 +198,31 @@
               <div class="info-section">
                 <h4>{{  spec.label  }}</h4>
                 <p>{{ spec.info.description }}</p>
+              </div>
+            </div>
+
+            <div
+              class="series__monitors"
+              v-if="getSignalMonitors(spec.key).length"
+            >
+              <h4>MONITOR ALERTS</h4>
+              <div class="monitors-list">
+                <div
+                  v-for="res in getSignalMonitors(spec.key)"
+                  :key="res.monitor.id"
+                  class="monitor-item"
+                  :class="`monitor-item--${res.monitor.outcome}`"
+                >
+                  <div class="monitor-main">
+                    <span class="monitor-icon">
+                      {{ res.monitor.outcome === 'critical' ? '🚨' : res.monitor.outcome === 'warning' ? '⚠️' : '✅' }}
+                    </span>
+                    <span class="monitor-label">{{ res.monitor.message }}</span>
+                  </div>
+                  <div v-if="res.monitor.description" class="monitor-desc">
+                    {{ res.monitor.description }}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -189,6 +247,10 @@
                   <div class="contributor-effect">
                     <span v-if="cond.value !== 0" class="contributor-value">
                       {{ cond.value > 0 ? '+' : ''
+
+
+
+
 
 
 
@@ -341,9 +403,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import type { ChartSeriesSpec, ResponseSpec, Signal, Minute } from '@/types';
-import { getAllUnifiedDefinitions } from '@physim/core';
-import { getDisplayValue, SIGNAL_UNITS } from '@physim/core';
+import { Dropdown as VDropdown } from 'floating-vue';
+import type { ChartSeriesSpec, ResponseSpec, Signal, Minute, MonitorResult } from '@/types';
+import { getAllUnifiedDefinitions } from '@kyneticbio/core';
+import { getDisplayValue, SIGNAL_UNITS, minuteToLabel } from '@kyneticbio/core';
 import Sortable from 'sortablejs';
 import { useUserStore } from '@/stores/user';
 import { useTimelineStore } from '@/stores/timeline';
@@ -351,10 +414,10 @@ import { useLibraryStore } from '@/stores/library';
 import {
   isReceptor, isTransporter, isEnzyme,
   RECEPTORS, TRANSPORTERS, ENZYMES
-} from '@physim/core';
-import { CONDITION_LIBRARY, RECEPTOR_SIGNAL_MAP, RECEPTOR_SENSITIVITY_GAIN } from '@physim/core';
-import { UNIT_CONVERSIONS } from '@physim/core';
-import { EnzymeKey, ReceptorKey, TransporterKey, ProductionTerm, DynamicCoupling } from '@physim/core';
+} from '@kyneticbio/core';
+import { CONDITION_LIBRARY, RECEPTOR_SIGNAL_MAP, RECEPTOR_SENSITIVITY_GAIN } from '@kyneticbio/core';
+import { UNIT_CONVERSIONS } from '@kyneticbio/core';
+import { EnzymeKey, ReceptorKey, TransporterKey, ProductionTerm, DynamicCoupling } from '@kyneticbio/core';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
@@ -375,6 +438,7 @@ interface Props {
   layout?: 'list' | 'grid';
   highlightedKeys?: string[];
   selectedKeys?: string[];
+  monitorResults?: MonitorResult[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -389,6 +453,82 @@ const libraryStore = useLibraryStore();
 const isSelected = (key: string) => props.selectedKeys?.includes(key);
 const isDimmed = (key: string) => (props.highlightedKeys?.length && !props.highlightedKeys.includes(key)) || (props.selectedKeys?.length && !props.selectedKeys.includes(key));
 const isHighlighted = (key: string) => props.highlightedKeys?.includes(key);
+
+const getSignalMonitors = (key: string) => {
+  if (!props.monitorResults) return [];
+  // Sort by outcome severity: critical > warning > win
+  const severity = { critical: 3, warning: 2, win: 1 };
+  return props.monitorResults
+    .filter(r => r.monitor.signal === key)
+    .sort((a, b) => severity[b.monitor.outcome] - severity[a.monitor.outcome]);
+};
+
+const getMonitorDots = (spec: ChartSeriesSpec) => {
+  const results = getSignalMonitors(spec.key);
+  const dots: Array<{
+    id: string;
+    x: number;
+    y: number;
+    outcome: string;
+    message: string;
+    description?: string;
+	formattedValue: string;
+	detectedAtTime: string;
+    unit: string;
+    icon: string;
+  }> = [];
+
+  for (const res of results) {
+    if (res.detectedAt < props.dayStartMin || res.detectedAt > props.dayStartMin + props.viewMinutes) continue;
+
+    // Find the closest index in grid to detectedAt
+    const idx = props.grid.findIndex(m => Math.abs(m - res.detectedAt) < 1);
+    if (idx === -1) continue;
+
+    const val = props.seriesData[spec.key]?.[idx];
+    if (val === undefined) continue;
+
+    const norm = normalize(val, spec);
+    const x = minToPercent(res.detectedAt);
+
+    // Y position calculation matching points() logic: 28 - norm * 22
+    // This is in SVG units (0-30). Convert to percentage for CSS top.
+    const yPosSvg = 28 - norm * 22;
+    const y = (yPosSvg / 30) * 100;
+
+    // Format trigger value
+    let formattedValue = '';
+    let unit = '';
+
+    // triggerValue can be number or number[]
+    if (Array.isArray(res.triggerValue)) {
+        const v1 = getDisplayValue(spec.key as Signal, res.triggerValue[0]);
+        const v2 = getDisplayValue(spec.key as Signal, res.triggerValue[res.triggerValue.length - 1]);
+        formattedValue = `${v1.value.toFixed(1)} → ${v2.value.toFixed(1)}`;
+        unit = v1.unit;
+    } else {
+        const v = getDisplayValue(spec.key as Signal, res.triggerValue);
+        formattedValue = v.value.toFixed(v.value < 1 ? 2 : 1);
+        unit = v.unit;
+    }
+
+    const icon = res.monitor.outcome === 'critical' ? '🚨' : res.monitor.outcome === 'warning' ? '⚠️' : '✅';
+
+    dots.push({
+      id: res.monitor.id + '_' + res.detectedAt,
+      x,
+      y,
+      outcome: res.monitor.outcome,
+      message: res.monitor.message,
+      description: res.monitor.description,
+      formattedValue,
+      unit,
+      icon,
+      detectedAtTime: minuteToLabel(res.detectedAt as Minute)
+    });
+  }
+  return dots;
+};
 
 const getSignalConditions = (signalKey: string) => {
   const contributors = [];
@@ -622,7 +762,7 @@ const latestValue = (key: string) => {
 };
 
 const getUnit = (key: string) => {
-  return SIGNAL_UNITS[key as Signal]?.unit ?? 'index';
+  return SIGNAL_UNITS[key as Signal]?.unit ?? 'x';
 };
 
 const normalize = (val: number, spec: ChartSeriesSpec) => {
@@ -869,6 +1009,26 @@ watch(
   { deep: true }
 );
 </script>
+
+<style>
+/* Override Floating Vue theme with our design tokens */
+.v-popper--theme-dropdown .v-popper__inner {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  border-radius: 6px;
+  box-shadow: var(--shadow-large);
+  padding: 0; /* Let our content handle padding */
+}
+
+.v-popper--theme-dropdown .v-popper__arrow-inner {
+  border-color: var(--color-bg-elevated);
+}
+
+.v-popper--theme-dropdown .v-popper__arrow-outer {
+  border-color: var(--color-border-subtle);
+}
+</style>
 
 <style scoped>
 .chart {
@@ -1176,7 +1336,8 @@ watch(
 }
 
 .series__contributors h4,
-.series__couplings h4 {
+.series__couplings h4,
+.series__monitors h4 {
   font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -1185,11 +1346,61 @@ watch(
   margin: 0 0 0.75rem 0;
 }
 
-.contributors-list {
+.contributors-list,
+.monitors-list {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
+}
+
+.monitor-item {
+  background: var(--color-bg-elevated);
+  border-radius: 5px;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  border-left: 3px solid var(--color-text-muted);
+}
+
+.monitor-item--critical {
+  border-left-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-bg-elevated));
+}
+
+.monitor-item--warning {
+  border-left-color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-bg-elevated));
+}
+
+.monitor-item--win {
+  border-left-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-bg-elevated));
+}
+
+.monitor-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.monitor-icon {
+  font-size: 1rem;
+}
+
+.monitor-label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-text-primary);
+}
+
+.monitor-desc {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin-top: 0.2rem;
 }
 
 .contributor-item {
@@ -1437,5 +1648,86 @@ watch(
 .sortable-ghost {
   opacity: 0.2;
   background: rgba(143, 191, 95, 0.1);
+}
+
+.monitor-dot-wrapper {
+  position: absolute;
+  z-index: 20;
+  transform: translate(-50%, -50%);
+  line-height: 0;
+}
+
+.monitor-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  cursor: help;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+}
+
+.monitor-dot--critical {
+  background: var(--color-danger);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+.monitor-dot--warning {
+  background: var(--color-warning);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+
+.monitor-dot--win {
+  background: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+
+.monitor-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 260px;
+  padding: 0.75rem;
+}
+
+.monitor-popover__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+.monitor-popover__value {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: var(--color-bg-subtle);
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  align-self: flex-start;
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  border: 1px solid var(--color-border-subtle);
+  font-weight: 700;
+}
+
+.value-number {
+  color: var(--color-metric-primary);
+}
+
+.value-unit {
+  color: var(--color-text-muted);
+}
+
+.value-time {
+  color: var(--color-text-secondary);
+  margin-left: 0.25rem;
+}
+
+.monitor-popover__desc {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 </style>

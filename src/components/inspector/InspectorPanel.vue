@@ -184,13 +184,13 @@
 import { computed, reactive, ref, watch, nextTick } from 'vue';
 import moment from 'moment';
 import type { InterventionDef, ParamValues, TimelineItem, PharmacologyDef } from '@/types';
-import type { Signal } from '@physim/core';
+import type { Signal } from '@kyneticbio/core';
 import ParamEditor from './ParamEditor.vue';
 const KCAL_PER_GRAM_CARB = 4;
 const KCAL_PER_GRAM_PROTEIN = 4;
 const KCAL_PER_GRAM_FAT = 9;
-import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@physim/core';
-import { getTargetDescription, getTargetLabel } from '@physim/core';
+import { UNIT_CONVERSIONS, SIGNAL_UNITS } from '@kyneticbio/core';
+import { getTargetDescription, getTargetLabel } from '@kyneticbio/core';
 
 const props = defineProps<{
   item?: TimelineItem;

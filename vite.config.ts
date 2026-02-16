@@ -8,9 +8,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
-      "@physim/core": fileURLToPath(new URL("./packages/core/src/index.ts", import.meta.url)),
-      "@physim/physiology": fileURLToPath(new URL("./packages/physiology/src/index.ts", import.meta.url)),
-      "@physim/registry": fileURLToPath(new URL("./packages/registry/src/index.ts", import.meta.url)),
+      "@kyneticbio/core": fileURLToPath(
+        new URL("../core/src/index.ts", import.meta.url),
+      ),
     },
   },
   server: {

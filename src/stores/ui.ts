@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import type { Minute, PanelSizes, UIState, UUID } from '@/types';
-import { toMinute } from '@/utils/time';
+import { toMinute } from '@kyneticbio/core';
 
 const PANEL_LAYOUT_KEY = 'physim-panel-layout';
 const THEME_KEY = 'physim-theme';

@@ -4,11 +4,13 @@ import { useTimelineStore } from "@/stores/timeline";
 import { useUserStore } from "@/stores/user";
 import { useLibraryStore } from "@/stores/library";
 import { useMetersStore } from "@/stores/meters";
-import { toMinuteISO } from "@/utils/time";
 import type { Minute, InterventionKey, Goal, Signal } from "@/types";
-import { CONDITION_LIBRARY } from "@physim/core";
-import { SIGNALS_ALL } from "@physim/core";
-import type { ConditionKey } from "@physim/core";
+import { 
+  CONDITION_LIBRARY, 
+  SIGNALS_ALL, 
+  toMinuteISO,
+  type ConditionKey 
+} from "@kyneticbio/core";
 const META_TAG_ID = "aG9GMlNuZzFybWdhaUFjZ0dwRVNiOGdfdjJXWlZnWjVaRjdkdmJwZGxiTVBUN1l5TXJrd0g2M2JLcUlTNC1zQQ==";
 import { DEFAULT_CONFIG_TOKEN } from "@/core/sys_config";
 import { LEGACY_HASH_MAP } from "@/utils/data_utils";

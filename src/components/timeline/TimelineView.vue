@@ -63,7 +63,7 @@ import { Timeline as VisTimeline, type TimelineOptions } from 'vis-timeline/stan
 import { VTooltip } from 'floating-vue';
 import '@/assets/vis-timeline.css';
 import type { Minute, TimelineItem, UUID } from '@/types';
-import { minuteToLabel } from '@/utils/time';
+import { minuteToLabel } from '@kyneticbio/core';
 import { useLibraryStore } from '@/stores/library';
 import { useEngineStore } from '@/stores/engine';
 import { INTERVENTION_CATEGORIES } from '@/models/ui/categories';
@@ -304,8 +304,22 @@ const toVisItems = (items: TimelineItem[]) => {
         return mapped;
       };
 
-      const startMapped = mapTime(item.start);
+      let startMapped = mapTime(item.start);
       let endMapped = mapTime(item.end);
+
+      // Calculate the item's start time as minute-of-day
+      const itemStartTime = new Date(item.start);
+      const itemStartMin = itemStartTime.getHours() * 60 + itemStartTime.getMinutes();
+
+      // Items in the "late night" zone (start time before dayStartMin)
+      // should be shifted forward by 24h to appear at the end of the
+      // logical day cycle. This fixes the bug where items dragged past
+      // midnight disappear from view because they fall before the visible
+      // window which starts at dayStartMin.
+      if (itemStartMin < props.dayStartMin) {
+        startMapped = new Date(startMapped.getTime() + 24 * 60 * 60 * 1000);
+        endMapped = new Date(endMapped.getTime() + 24 * 60 * 60 * 1000);
+      }
 
       // Handle wrap around end time if it was originally overnight
       if (endMapped < startMapped) {

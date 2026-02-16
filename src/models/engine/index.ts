@@ -3,9 +3,9 @@
  * This file maintains backward compatibility while delegating to the new monorepo packages.
  */
 
-import * as core from "@physim/core";
-import * as physiology from "@physim/core";
-import * as registry from "@physim/core";
+import * as core from "@kyneticbio/core";
+import * as physiology from "@kyneticbio/core";
+import * as registry from "@kyneticbio/core";
 
 // Resolve ambiguities by preferring physiology-bound versions
 export const {
@@ -21,7 +21,7 @@ export const {
 } = physiology;
 
 // Export everything else from core
-export * from "@physim/core";
+export * from "@kyneticbio/core";
 
 // Re-export specific registry items
-export { INTERVENTIONS, INTERVENTION_MAP } from "@physim/core";
+export { INTERVENTIONS, INTERVENTION_MAP } from "@kyneticbio/core";

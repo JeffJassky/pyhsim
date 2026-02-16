@@ -8,12 +8,16 @@ import type {
   WorkerComputeResponse,
   HomeostasisStateSnapshot,
   HomeostasisSeries,
+  MonitorResult,
 } from "@/types";
-import { SIGNALS_ALL } from "@physim/core";
-import { rangeMinutes, toMinuteOfDay } from "@/utils/time";
-import { buildInterventionLibrary } from "@physim/core";
-import { buildConditionAdjustments } from "@physim/core";
-import { derivePhysiology } from "@physim/core";
+import { 
+  SIGNALS_ALL, 
+  buildInterventionLibrary, 
+  buildConditionAdjustments, 
+  derivePhysiology,
+  rangeMinutes,
+  toMinuteOfDay
+} from "@kyneticbio/core";
 import { useTimelineStore } from "./timeline";
 import { useUserStore } from "./user";
 import { buildWorkerRequest } from "@/core/serialization";
@@ -35,6 +39,7 @@ interface EngineStoreState extends EngineState {
   };
   finalHomeostasisState?: HomeostasisStateSnapshot;
   homeostasisSeries?: HomeostasisSeries;
+  monitorResults: MonitorResult[];
 }
 
 const defaultGridStep = 5;
@@ -71,6 +76,7 @@ export const useEngineStore = defineStore("engine", {
     },
     finalHomeostasisState: undefined,
     homeostasisSeries: undefined,
+    monitorResults: [],
   }),
   actions: {
     setGridStep(step: number) {
@@ -113,6 +119,7 @@ export const useEngineStore = defineStore("engine", {
             finalHomeostasisState,
             homeostasisSeries,
             computeTimeMs,
+            monitorResults,
           } = event.data;
           console.debug(
             "[EngineStore] Received series from worker. Keys:",
@@ -128,6 +135,7 @@ export const useEngineStore = defineStore("engine", {
           this.finalHomeostasisState = finalHomeostasisState;
           this.homeostasisSeries = homeostasisSeries;
           this.computeTimeMs = computeTimeMs;
+          this.monitorResults = monitorResults || [];
           this.busy = false;
           this.lastComputedAt = Date.now();
         };

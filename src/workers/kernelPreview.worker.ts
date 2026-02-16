@@ -6,8 +6,8 @@ import {
   SIGNAL_DEFINITIONS, 
   AUXILIARY_DEFINITIONS, 
   getAllUnifiedDefinitions 
-} from '@physim/core';
-import { DEFAULT_SUBJECT, derivePhysiology } from '@physim/core';
+} from '@kyneticbio/core';
+import { DEFAULT_SUBJECT, derivePhysiology } from '@kyneticbio/core';
 
 self.onmessage = (event: MessageEvent<{ 
   intervention: any; 

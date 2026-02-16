@@ -62,7 +62,7 @@ import { useOnboardingStore } from '@/stores/onboarding';
 import { useTimelineStore } from '@/stores/timeline';
 import { useLibraryStore } from '@/stores/library';
 import { GOAL_CATEGORIES, type RecommendedIntervention } from '@/models/domain/goals';
-import { toMinuteISO, toMinute } from '@/utils/time';
+import { toMinuteISO, toMinute } from '@kyneticbio/core';
 
 const emit = defineEmits(['next']);
 const onboarding = useOnboardingStore();

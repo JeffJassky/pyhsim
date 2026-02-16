@@ -4,7 +4,7 @@ import type {
   UUID, 
   IdealTendency, 
   ResponseSpec 
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 import type {
   OrganKey,
@@ -16,7 +16,7 @@ import type {
   ArousalComponents,
   ArousalComponentKey,
   ArousalWeights
-} from "@physim/core";
+} from "@kyneticbio/core";
 
 export interface EngineState {
   gridStepMin: number;

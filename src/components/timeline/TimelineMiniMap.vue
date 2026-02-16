@@ -16,7 +16,7 @@
 
 <script setup lang="ts">
 import type { TimelineItem } from '@/types';
-import { MINUTES_IN_DAY } from '@/utils/time';
+import { MINUTES_IN_DAY } from '@kyneticbio/core';
 import { toMinuteOfDay } from '@/core/serialization';
 
 const props = defineProps<{ items: TimelineItem[] }>();

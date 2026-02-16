@@ -24,8 +24,8 @@ export type VolumeUnit = "ml" | "L" | "floz" | "cup" | "pint" | "qt" | "gal";
 
 export type TimeUnit = "ms" | "sec" | "min" | "hr";
 export type PressureUnit = "mmHg";
-export type RatioUnit = "fold-change" | "ratio" | "relative" | "a.u.";
-export type CompositeUnit = "index" | "units" | "IU" | "servings" | "x"; // Explicitly marks as computed index, not a measurement
+export type RatioUnit = "fold-change" | "ratio" | "relative" | "a.u." | "x";
+export type CompositeUnit = "units" | "IU" | "servings" | "score"; // Explicitly marks as computed index, not a measurement
 export type PercentUnit = "% baseline" | "%"; // For legacy/transitional support
 
 export type PhysiologicalUnit =

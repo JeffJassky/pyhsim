@@ -137,7 +137,7 @@
 import { computed } from 'vue';
 import { CONDITION_LIBRARY } from '@/models';
 import { useUserStore } from '@/stores/user';
-import type { ConditionKey } from '@physim/core';
+import type { ConditionKey } from '@kyneticbio/core';
 import type { Subject } from '@/types';
 
 const userStore = useUserStore();
