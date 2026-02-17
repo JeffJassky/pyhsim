@@ -48,7 +48,7 @@ The primary interface (`StudioPage.vue`) is a split-pane view dividing the scree
   - **Visualization:** Real-time line charts showing the trajectory of signals over 24+ hours.
   - **Grouping & Filtering:** Users can organize charts by **Biological System** (e.g., Nervous, Endocrine), **Goal** (e.g., Energy, Calm), or view a flat list. Filtering options allow focusing on "My Goals" or "Active" signals (only those currently being modified by interventions).
   - **Layouts:** Supports both a dense **Grid View** for high-level patterns and a **List View** for detailed analysis.
-  - **Deep Dive:** Clicking a chart expands it to reveal **"Active Contributors"**—a breakdown showing exactly which interventions (e.g., "Coffee") or conditions (e.g., "ADHD") are driving the signal's current value, including the mechanism (e.g., "Adenosine antagonism").
+  - **Deep Dive:** Clicking a chart expands it to reveal **"Active Contributors"**-a breakdown showing exactly which interventions (e.g., "Coffee") or conditions (e.g., "ADHD") are driving the signal's current value, including the mechanism (e.g., "Adenosine antagonism").
 
 ### 2. The Launcher (Add Item Modal)
 

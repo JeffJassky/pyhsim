@@ -18,8 +18,8 @@
       </div>
 
       <div class="track-area">
-        <div class="track-line"></div>
-        <div class="track-fill" :style="{ width: handlePercent + '%' }"></div>
+        <div class="track-line" :style="trackBackgroundStyle"></div>
+        <div class="track-fill" :style="{ width: handlePercent + '%', background: statusColor || 'var(--color-active)' }"></div>
       </div>
 
       <input
@@ -34,8 +34,8 @@
       />
 
       <div class="custom-handle" :style="{ left: handlePercent + '%' }">
-        <div class="handle-arrow"></div>
-        <div class="handle-line"></div>
+        <div class="handle-arrow" :style="{ 'border-bottom-color': statusColor || 'var(--color-active)' }"></div>
+        <div class="handle-line" :style="{ background: statusColor || 'var(--color-active)' }"></div>
       </div>
     </div>
   </div>
@@ -50,6 +50,10 @@ const props = defineProps<{
   max: number;
   step?: number | 'any';
   unit?: string;
+  statusColor?: string; // New prop for range indication color
+  refMin?: number; // New prop for reference range minimum
+  refMax?: number; // New prop for reference range maximum
+  showRangeBand?: boolean; // New prop to enable/disable static range display
 }>();
 
 const emit = defineEmits<{
@@ -62,6 +66,48 @@ const handlePercent = computed(() => {
   if (range <= 0) return 0;
   return Math.max(0, Math.min(100, ((props.value - props.min) / range) * 100));
 });
+
+const trackBackgroundStyle = computed(() => {
+  if (!props.showRangeBand || props.refMin === undefined || props.refMax === undefined) {
+    return {}; // No custom background
+  }
+
+  const min = props.min;
+  const max = props.max;
+  const refMin = props.refMin;
+  const refMax = props.refMax;
+
+  // Calculate percentages for each zone
+  const toPercent = (val: number) => ((val - min) / (max - min)) * 100;
+
+  const pRefMin = toPercent(refMin);
+  const pRefMax = toPercent(refMax);
+
+  // Define warning zones (e.g., 20% of the reference range outside)
+  const refRange = refMax - refMin;
+  const warnZoneFactor = 0.2; // 20%
+  const pWarnLow = toPercent(Math.max(min, refMin - refRange * warnZoneFactor));
+  const pWarnHigh = toPercent(Math.min(max, refMax + refRange * warnZoneFactor));
+
+  // Ensure colors are properly positioned. Use clamp for percentages.
+  const clampP = (p: number) => Math.max(0, Math.min(100, p));
+
+  const colors = [
+    `var(--color-danger) ${clampP(pWarnLow)}%`, // Before low warning
+    `var(--color-warning) ${clampP(pWarnLow)}%`,
+    `var(--color-warning) ${clampP(pRefMin)}%`, // Before green
+    `var(--color-success) ${clampP(pRefMin)}%`,
+    `var(--color-success) ${clampP(pRefMax)}%`, // Before high warning
+    `var(--color-warning) ${clampP(pRefMax)}%`,
+    `var(--color-warning) ${clampP(pWarnHigh)}%`, // Before high danger
+    `var(--color-danger) ${clampP(pWarnHigh)}%`,
+  ];
+
+  return {
+    background: `linear-gradient(to right, ${colors.join(', ')})`,
+  };
+});
+
 
 const ticks = computed(() => {
   const range = props.max - props.min;

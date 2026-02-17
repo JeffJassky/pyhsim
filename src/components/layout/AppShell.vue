@@ -17,6 +17,7 @@
         <button class="profile-link" @click="scienceModalOpen = true">
           Science
         </button>
+        <a class="profile-link" href="https://discord.gg/yZQE4DPB" target="_blank" rel="noopener noreferrer">Discord</a>
         <button class="profile-link" @click="uiStore.setProfileModalOpen(true)">
           My Profile
         </button>
@@ -249,6 +250,7 @@ const handlePaneResize = (panes: { size: number }[]) => {
   font-size: 0.9rem;
   background: transparent;
   border: none;
+  text-decoration: none;
   cursor: pointer;
   transition: opacity 0.2s;
 }

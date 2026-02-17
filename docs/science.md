@@ -26,11 +26,12 @@ PhySim organizes physiological signals into distinct but interconnected systems:
 | System             | Description                                       | Key Signals                                                                                   |
 | :----------------- | :------------------------------------------------ | :-------------------------------------------------------------------------------------------- |
 | **Nervous**        | Synaptic health and neurotransmitter balance.     | Dopamine, Serotonin, GABA, Glutamate, Acetylcholine, Norepinephrine, BDNF, Histamine, Orexin. |
-| **Endocrine**      | Hormonal regulation of stress, sleep, and growth. | Cortisol, Adrenaline, Melatonin, Growth Hormone, Oxytocin, Prolactin, Thyroid.                |
+| **Endocrine**      | Hormonal regulation of stress, sleep, and growth. | Cortisol, Adrenaline, Melatonin, Growth Hormone, Oxytocin, Prolactin, Thyroid, TSH.           |
 | **Metabolic**      | Energy production, fuel storage, and utilization. | Glucose, Insulin, Glucagon, Ketones, GLP-1, Leptin, Ghrelin, mTOR, AMPK.                      |
 | **Reproductive**   | Sex hormones and menstrual cycle dynamics.        | Testosterone, Estrogen, Progesterone, LH, FSH, SHBG.                                          |
 | **Cardiovascular** | Autonomic balance and circulatory stress.         | Blood Pressure, HRV, Vagal Tone, Oxygen Saturation.                                           |
-| **Organ Health**   | Filtration, detoxification, and systemic stress.  | ALT, AST, eGFR (Kidney), Ethanol, Acetaldehyde, Inflammation.                                 |
+| **Organ Health**   | Filtration, detoxification, and systemic stress.  | ALT, AST, eGFR, Albumin, Creatinine, Bilirubin, Potassium, hs-CRP, Inflammation.             |
+| **Hematology**     | Blood cell counts and oxygen-carrying capacity.   | Hemoglobin, Hematocrit, Platelets, WBC.                                                       |
 | **Nutritional**    | Micronutrient cofactors and mineral status.       | Magnesium, Ferritin, Vitamin D3, Zinc, B12, Folate, Iron, Choline.                            |
 
 ---
@@ -65,6 +66,7 @@ The engine models enzymatic breakdown using linear and saturable kinetics:
 
 - **MAO-A/B:** Degrades Monoamines (Serotonin, Dopamine, NE).
 - **COMT:** Degrades Catecholamines, particularly in the prefrontal cortex.
+- **MTHFR:** Converts folate to methylfolate for BH4 regeneration and neurotransmitter synthesis.
 - **AChE:** Rapidly degrades Acetylcholine.
 - **DAO:** Metabolizes Histamine.
 
@@ -87,6 +89,16 @@ PhySim uses a library of standard and advanced PK models:
 - **2-Compartment Models:** Models distribution into peripheral tissues (e.g., Methylphenidate).
 - **Michaelis-Menten Kinetics:** For saturable elimination where $\frac{dC}{dt} = -\frac{V_{max} \cdot C}{K_m + C}$ (e.g., Alcohol).
 - **Bateman Equation:** Analytical solutions for first-order absorption and elimination.
+
+### Subject-Specific PK Adjustments
+
+When a subject provides bloodwork data, the engine adjusts PK parameters to reflect their actual organ function rather than relying on population averages:
+
+- **Renal Clearance Scaling:** For drugs with a renal clearance component, the elimination rate constant ($k_e$) is scaled by the ratio of the subject's eGFR to the population normal (100 mL/min). A subject with eGFR = 50 will clear renally-eliminated drugs at roughly half the normal rate, effectively doubling their half-life.
+- **Hepatic Clearance Scaling:** For drugs with hepatic clearance, elevated ALT (above 40 U/L) progressively reduces $k_e$ to model impaired hepatic metabolism, with a floor at 30% of normal capacity.
+- **Albumin-Dependent Volume of Distribution:** Low serum albumin (below 3.5 g/dL) increases the effective volume of distribution for protein-bound drugs, since less albumin means a higher free drug fraction in plasma.
+
+These adjustments happen automatically when bloodwork is present on the subject. When bloodwork is absent, all PK parameters use standard population values.
 
 ---
 
@@ -130,3 +142,13 @@ The engine scales all constants to the individual user:
 - **Metabolic Rate (BMR):** Uses Mifflin-St Jeor to scale metabolic clearance.
 - **Fluid Volumes:** Uses Watson formula for Total Body Water (TBW) to determine drug concentrations ($C = \text{Dose} / V_d$).
 - **Menstrual Cycle:** Uses a 28-day mathematical model (Gaussian pulses) to simulate Estrogen, Progesterone, LH, and FSH phases.
+
+### Bloodwork Integration
+
+Subjects can optionally provide real lab results via the bloodwork property on their profile. When present, bloodwork values are used in two ways:
+
+1. **Signal Initialization & Setpoints:** Signals with bloodwork counterparts (glucose, ALT, AST, eGFR, ferritin, cortisol, and all hematology/organ-health markers) initialize at the subject's measured value and equilibrate around it as their homeostatic setpoint. This means a subject with fasting glucose of 110 mg/dL will see their simulation start and center at 110 rather than the population default of 90.
+
+2. **PK Parameter Adjustment:** Drug clearance rates are scaled based on organ function markers (eGFR for renal clearance, ALT for hepatic clearance) and protein binding is adjusted based on serum albumin. See [PK Adjustments](#subject-specific-pk-adjustments) above.
+
+All bloodwork fields are optional. When a value is not provided, the engine falls back to population averages. This design ensures backward compatibility: existing simulations without bloodwork produce identical results.

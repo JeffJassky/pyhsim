@@ -249,7 +249,7 @@ const resolvedEffects = computed(() => {
   }
 
   // Aggregate all PD effects from all agents
-  return pharms.flatMap(p => p.pd || []);
+  return (pharms as any[]).flatMap(p => p.pd || []);
 });
 
 const totalKcal = computed(() => {

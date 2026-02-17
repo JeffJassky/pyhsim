@@ -26,8 +26,10 @@
           <line
             v-for="(line, i) in networkLines"
             :key="i"
-            :x1="line.x1" :y1="line.y1"
-            :x2="line.x2" :y2="line.y2"
+            :x1="line.x1"
+            :y1="line.y1"
+            :x2="line.x2"
+            :y2="line.y2"
             stroke="rgba(0, 212, 255, 0.15)"
             stroke-width="1"
             class="hook__line"
@@ -56,22 +58,21 @@
     <div class="hook__text">
       <transition name="text-reveal" mode="out-in">
         <h1 v-if="phase >= 3" class="hook__headline" key="headline">
-          Understand your body.<br/>
-          <span class="hook__headline-accent">Minute by minute.</span>
+          See what happens<br />
+          <span class="hook__headline-accent">before you try it.</span>
         </h1>
       </transition>
 
       <transition name="text-fade">
         <p v-if="phase >= 4" class="hook__subline" key="subline">
-          Real-time simulation of your biology.
+          Simulate how supplements, meds, and habits affect your biology - hour
+          by hour.
         </p>
       </transition>
     </div>
 
     <!-- Skip control -->
-    <button class="hook__skip" @click.stop="$emit('next')">
-      Skip
-    </button>
+    <button class="hook__skip" @click.stop="$emit('next')">Skip</button>
 
     <!-- Tap hint -->
     <transition name="fade">

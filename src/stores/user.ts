@@ -14,6 +14,7 @@ import {
   type Signal
 } from "@kyneticbio/core";
 import { GOAL_CATEGORIES } from "@/models/domain/goals";
+import type { SimulationPreset } from '@/types/simulationPreset';
 
 const STORAGE_KEY = "physim:user";
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
@@ -171,6 +172,44 @@ export const useUserStore = defineStore("user", {
           ...(patch.macros || {}),
         },
       };
+      this.persist();
+    },
+    loadProfile(profile: SimulationPreset['userProfile']) {
+      if (profile.subject) {
+        this.updateSubject(profile.subject);
+      }
+      if (profile.conditions) {
+        for (const key in profile.conditions) {
+          if (Object.prototype.hasOwnProperty.call(profile.conditions, key)) {
+            const patch = profile.conditions[key as ConditionKey];
+            if (patch?.enabled !== undefined) {
+              this.toggleCondition(key as ConditionKey, patch.enabled);
+            }
+            if (patch?.params) {
+              for (const paramKey in patch.params) {
+                if (Object.prototype.hasOwnProperty.call(patch.params, paramKey)) {
+                  this.updateParam(key as ConditionKey, paramKey, patch.params[paramKey]);
+                }
+              }
+            }
+          }
+        }
+      }
+      if (profile.selectedGoals) {
+        // Clear existing goals and add new ones
+        this.selectedGoals = [];
+        profile.selectedGoals.forEach(goal => this.toggleGoal(goal));
+      }
+      if (profile.enabledSignals) {
+        for (const signal in profile.enabledSignals) {
+          if (Object.prototype.hasOwnProperty.call(profile.enabledSignals, signal)) {
+            this.toggleSignal(signal as Signal, profile.enabledSignals[signal as Signal] ?? true);
+          }
+        }
+      }
+      if (profile.signalOrder) {
+        this.updateSignalOrder(profile.signalOrder);
+      }
       this.persist();
     },
   },

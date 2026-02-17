@@ -174,7 +174,7 @@
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
 "@kyneticbio/core@file:../core":
-  version "1.0.0"
+  version "1.1.7"
   resolved "file:../core"
 
 "@nodelib/fs.scandir@2.1.5":

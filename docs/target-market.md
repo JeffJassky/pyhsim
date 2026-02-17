@@ -30,7 +30,7 @@ This is the core "Biohacker" market. These users are already invested in expensi
 This is a high-need market where the application provides a "manual for the brain."
 
 - **Sub-markets:** Adults with ADHD, parents of children on the spectrum, and individuals managing the "Neuro-Trifecta" (comorbid EDS, POTS, and MCAS).
-- **The Problem:** "Executive Dysfunction" and "Autonomic Instability." Understanding how medication (like Adderall) interacts with sleep, food, and stress—and how those in turn trigger POTS flares or MCAS reactions—is life-changing.
+- **The Problem:** "Executive Dysfunction" and "Autonomic Instability." Understanding how medication (like Adderall) interacts with sleep, food, and stress-and how those in turn trigger POTS flares or MCAS reactions-is life-changing.
 - **Why they pay:** For **Predictability and Stability**. If the app can predict a "crash" at 4:00 PM due to a medication/food interaction or a POTS-induced energy drop from dehydration, the user can intervene before it happens.
 
 **Gap Analysis & Future Roadmap:**

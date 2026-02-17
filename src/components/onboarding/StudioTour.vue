@@ -71,8 +71,8 @@ const tourSteps: TourStep[] = [
     id: 'timeline',
     onboardingState: OnboardingState.TIMELINE_TUTORIAL,
     target: '.tour-timeline-panel',
-    title: 'Your Day Planner',
-    text: `You'll add your foods, supplements, exercieses and activities here.`,
+    title: 'Build Your Protocol',
+    text: 'Drag supplements, meals, exercise, and sleep onto the timeline. The simulation runs in real time as you add them.',
     btnText: 'Next',
     position: 'right',
     skip: true,
@@ -82,8 +82,8 @@ const tourSteps: TourStep[] = [
     id: 'charts',
     onboardingState: OnboardingState.TIMELINE_TUTORIAL,
     target: '.tour-charts-panel',
-    title: 'See the Effects',
-    text: 'Watch how your biology responds throughout the day.',
+    title: 'Watch Your Biology Respond',
+    text: 'Every signal - dopamine, cortisol, glucose, melatonin - updates live as you change your protocol. This is where you see what\'s actually happening.',
     btnText: 'Next',
     position: 'left',
     shape: 'rect'
@@ -92,8 +92,8 @@ const tourSteps: TourStep[] = [
     id: 'ai',
     onboardingState: OnboardingState.AI_INTRODUCTION,
     target: '.tour-ai-panel', // AI Chat Panel
-    title: 'AI Copilot',
-    text: 'Get suggestions, explanations, and let AI manage your day.',
+    title: 'Ask the AI',
+    text: 'Not sure what\'s happening? Ask it. "Why did my dopamine drop?" or "What should I take for focus?" It reads your simulation and gives specific answers.',
     btnText: 'Got it',
     position: 'left',
     shape: 'rect'
@@ -102,8 +102,8 @@ const tourSteps: TourStep[] = [
     id: 'finish',
     onboardingState: OnboardingState.SOFT_LANDING,
     target: 'center', // Center screen
-    title: "You're All Set!",
-    text: "",
+    title: "You're ready.",
+    text: 'Start by adding what you took today. The simulation will show you what happened - and what to try next.',
     btnText: 'Start Building My Day',
     position: 'center'
   }

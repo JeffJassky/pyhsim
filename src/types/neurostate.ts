@@ -24,9 +24,6 @@ export type {
 
 // Resolve Domain/Content types explicitly from Registry
 export type {
-  Subject,
-  Physiology,
-  BiologicalSex,
   ConditionKey,
   ConditionDef,
   ConditionStateSnapshot,
@@ -56,6 +53,8 @@ export type {
   LogTargets,
   MacroTargets,
   MacroRange,
+  BiologicalSex,
+  Physiology,
 } from "@kyneticbio/core";
 
 export {

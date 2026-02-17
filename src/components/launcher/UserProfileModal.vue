@@ -20,395 +20,470 @@
           <div class="modal-body profile-modal-body">
             <!-- Category View -->
             <div v-if="view === 'categories'" class="view-categories">
-            <div class="grid">
-              <button class="launcher-card" @click="view = 'goals'">
-                <span class="card-icon">⚡</span>
-                <span class="card-label">My Goals</span>
-              </button>
-              <button class="launcher-card" @click="view = 'physiology'">
-                <span class="card-icon">🫁</span>
-                <span class="card-label">Physiology</span>
-              </button>
-              <button class="launcher-card" @click="view = 'conditions'">
-                <span class="card-icon">🧠</span>
-                <span class="card-label">My Conditions</span>
-              </button>
-              <button class="launcher-card" @click="view = 'nutrition'">
-                <span class="card-icon">🎯</span>
-                <span class="card-label">Nutrient Targets</span>
-              </button>
-              <button class="launcher-card" @click="view = 'display'">
-                <span class="card-icon">🌗</span>
-                <span class="card-label">Display</span>
-              </button>
-              <button class="launcher-card" @click="view = 'subscription'">
-                <span class="card-icon">⭐</span>
-                <span class="card-label">Subscription</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Subscription View -->
-          <div v-else-if="view === 'subscription'" class="view-items">
-            <div class="subscription-card">
-              <div class="subscription-card__header">
-                <div class="card-icon">⭐</div>
-                <h3 class="subscription-card__title">Choose your plan</h3>
-                <p class="subscription-card__desc">
-                  Unlock high-fidelity physiological signals and advanced
-                  biomarkers.
-                </p>
-              </div>
-
-              <div class="tier-toggle">
-                <button
-                  class="tier-toggle__btn"
-                  :class="{ 'is-active': subscriptionTier === 'free' }"
-                  @click="handleSetTier('free')"
-                >
-                  Free
+              <div class="grid">
+                <button class="launcher-card" @click="view = 'goals'">
+                  <span class="card-icon">⚡</span>
+                  <span class="card-label">My Goals</span>
                 </button>
-                <button
-                  class="tier-toggle__btn tier-toggle__btn--premium"
-                  :class="{ 'is-active': subscriptionTier === 'premium' }"
-                  @click="handleSetTier('premium')"
-                >
-                  Premium
+                <button class="launcher-card" @click="view = 'physiology'">
+                  <span class="card-icon">🫁</span>
+                  <span class="card-label">Physiology</span>
+                </button>
+                <button class="launcher-card" @click="view = 'conditions'">
+                  <span class="card-icon">🧠</span>
+                  <span class="card-label">My Conditions</span>
+                </button>
+                <button class="launcher-card" @click="view = 'nutrition'">
+                  <span class="card-icon">🎯</span>
+                  <span class="card-label">Nutrient Targets</span>
+                </button>
+                <button class="launcher-card" @click="view = 'display'">
+                  <span class="card-icon">🌗</span>
+                  <span class="card-label">Display</span>
+                </button>
+                <button class="launcher-card" @click="view = 'subscription'">
+                  <span class="card-icon">⭐</span>
+                  <span class="card-label">Subscription</span>
+                </button>
+                <button class="launcher-card" @click="view = 'bloodwork'">
+                  <span class="card-icon">🩸</span>
+                  <span class="card-label">Bloodwork</span>
                 </button>
               </div>
-
-              <ul class="benefit-list">
-                <li>
-                  {{ subscriptionTier === 'premium' ? '✓' : '✓' }} Basic
-                  circadian signals (Melatonin, Cortisol)
-                </li>
-                <li>
-                  {{ subscriptionTier === 'premium' ? '✓' : '✓' }} Metabolic
-                  proxies (Glucose, Energy)
-                </li>
-                <li :class="{ 'is-locked': subscriptionTier === 'free' }">
-                  {{ subscriptionTier === 'premium' ? '✓' : '🔒' }}
-                  Neurotransmitters (Dopamine, Serotonin)
-                </li>
-                <li :class="{ 'is-locked': subscriptionTier === 'free' }">
-                  {{ subscriptionTier === 'premium' ? '✓' : '🔒' }} Advanced
-                  Hormones (LH, FSH, Growth Hormone)
-                </li>
-                <li :class="{ 'is-locked': subscriptionTier === 'free' }">
-                  {{ subscriptionTier === 'premium' ? '✓' : '🔒' }} Organ
-                  Biomarkers (ALT, AST, eGFR)
-                </li>
-              </ul>
             </div>
-          </div>
 
-          <!-- Display View -->
-          <div v-else-if="view === 'display'" class="view-items">
-            <div class="settings-grid">
-              <div class="setting-group">
-                <label>Appearance</label>
+            <!-- Subscription View -->
+            <div v-else-if="view === 'subscription'" class="view-items">
+              <div class="subscription-card">
+                <div class="subscription-card__header">
+                  <div class="card-icon">⭐</div>
+                  <h3 class="subscription-card__title">Choose your plan</h3>
+                  <p class="subscription-card__desc">
+                    Unlock high-fidelity physiological signals and advanced
+                    biomarkers.
+                  </p>
+                </div>
+
                 <div class="tier-toggle">
                   <button
                     class="tier-toggle__btn"
-                    :class="{ 'is-active': uiStore.theme === 'system' }"
-                    @click="uiStore.setTheme('system')"
+                    :class="{ 'is-active': subscriptionTier === 'free' }"
+                    @click="handleSetTier('free')"
                   >
-                    System
+                    Free
                   </button>
                   <button
-                    class="tier-toggle__btn"
-                    :class="{ 'is-active': uiStore.theme === 'light' }"
-                    @click="uiStore.setTheme('light')"
+                    class="tier-toggle__btn tier-toggle__btn--premium"
+                    :class="{ 'is-active': subscriptionTier === 'premium' }"
+                    @click="handleSetTier('premium')"
                   >
-                    Light
+                    Premium
                   </button>
+                </div>
+
+                <ul class="benefit-list">
+                  <li>
+                    {{ subscriptionTier === 'premium' ? '✓' : '✓' }} Basic
+                    circadian signals (Melatonin, Cortisol)
+                  </li>
+                  <li>
+                    {{ subscriptionTier === 'premium' ? '✓' : '✓' }} Metabolic
+                    proxies (Glucose, Energy)
+                  </li>
+                  <li :class="{ 'is-locked': subscriptionTier === 'free' }">
+                    {{ subscriptionTier === 'premium' ? '✓' : '🔒' }}
+                    Neurotransmitters (Dopamine, Serotonin)
+                  </li>
+                  <li :class="{ 'is-locked': subscriptionTier === 'free' }">
+                    {{ subscriptionTier === 'premium' ? '✓' : '🔒' }} Advanced
+                    Hormones (LH, FSH, Growth Hormone)
+                  </li>
+                  <li :class="{ 'is-locked': subscriptionTier === 'free' }">
+                    {{ subscriptionTier === 'premium' ? '✓' : '🔒' }} Organ
+                    Biomarkers (ALT, AST, eGFR)
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Display View -->
+            <div v-else-if="view === 'display'" class="view-items">
+              <div class="settings-grid">
+                <div class="setting-group">
+                  <label>Appearance</label>
+                  <div class="tier-toggle">
+                    <button
+                      class="tier-toggle__btn"
+                      :class="{ 'is-active': uiStore.theme === 'system' }"
+                      @click="uiStore.setTheme('system')"
+                    >
+                      System
+                    </button>
+                    <button
+                      class="tier-toggle__btn"
+                      :class="{ 'is-active': uiStore.theme === 'light' }"
+                      @click="uiStore.setTheme('light')"
+                    >
+                      Light
+                    </button>
+                    <button
+                      class="tier-toggle__btn"
+                      :class="{ 'is-active': uiStore.theme === 'dark' }"
+                      @click="uiStore.setTheme('dark')"
+                    >
+                      Dark
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="items-grid">
+                <div
+                  v-for="goal in goalCategories"
+                  :key="goal.id"
+                  class="goal-group"
+                >
+                  <h3 class="group-label">{{ goal.label }} Signals</h3>
+                  <div class="signals-list" :data-goal-id="goal.id">
+                    <div
+                      v-for="sig in getSignalsByGoal(goal.id)"
+                      :key="sig.key"
+                      class="signal-toggle-item"
+                      :data-id="sig.key"
+                    >
+                      <div class="signal-toggle-item__drag">☰</div>
+                      <div class="signal-toggle-item__info">
+                        <div class="signal-toggle-item__label">
+                          {{ sig.label }}
+                          <span
+                            v-if="sig.isPremium && subscriptionTier !== 'premium'"
+                            class="premium-tag"
+                          >
+                            <span class="premium-tag__icon">🔒</span>
+                            PREMIUM
+                          </span>
+                        </div>
+                        <div class="signal-toggle-item__group">
+                          {{ sig.group }}
+                        </div>
+                      </div>
+                      <label class="switch">
+                        <input
+                          type="checkbox"
+                          :checked="enabledSignals[sig.key as Signal]"
+                          @change="userStore.toggleSignal(sig.key as Signal, ($event.target as HTMLInputElement).checked)"
+                        />
+                        <span class="slider" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Goals View -->
+            <div v-else-if="view === 'goals'" class="view-items">
+              <div class="category-group">
+                <h3 class="group-label">Select your focus areas</h3>
+                <div class="grid">
                   <button
-                    class="tier-toggle__btn"
-                    :class="{ 'is-active': uiStore.theme === 'dark' }"
-                    @click="uiStore.setTheme('dark')"
+                    v-for="cat in goalCategories"
+                    :key="cat.id"
+                    class="launcher-card card--goal"
+                    :class="{ 'is-selected': selectedGoals.includes(cat.id) }"
+                    @click="userStore.toggleGoal(cat.id)"
                   >
-                    Dark
+                    <span class="card-icon">{{ cat.icon }}</span>
+                    <span class="card-label">{{ cat.label }}</span>
+                    <div
+                      v-if="selectedGoals.includes(cat.id)"
+                      class="checkmark"
+                    >
+                      ✓
+                    </div>
                   </button>
                 </div>
               </div>
             </div>
 
-            <div class="items-grid">
-              <div
-                v-for="goal in goalCategories"
-                :key="goal.id"
-                class="goal-group"
-              >
-                <h3 class="group-label">{{ goal.label }} Signals</h3>
-                <div class="signals-list" :data-goal-id="goal.id">
-                  <div
-                    v-for="sig in getSignalsByGoal(goal.id)"
-                    :key="sig.key"
-                    class="signal-toggle-item"
-                    :data-id="sig.key"
-                  >
-                    <div class="signal-toggle-item__drag">☰</div>
-                    <div class="signal-toggle-item__info">
-                      <div class="signal-toggle-item__label">
-                        {{ sig.label }}
-                        <span
-                          v-if="sig.isPremium && subscriptionTier !== 'premium'"
-                          class="premium-tag"
-                        >
-                          <span class="premium-tag__icon">🔒</span>
-                          PREMIUM
-                        </span>
+            <!-- Physiology View -->
+            <div v-else-if="view === 'physiology'" class="view-items">
+              <div class="settings-grid">
+                <div class="setting-group">
+                  <label>Biological Sex</label>
+                  <div class="select-wrapper">
+                    <select
+                      :value="subject.sex"
+                      @change="updateSubject('sex', $event)"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="setting-group">
+                  <div class="setting-header">
+                    <label>Age</label>
+                    <span class="setting-value">{{ subject.age }} yr</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="18"
+                    max="90"
+                    :value="subject.age"
+                    @input="updateSubject('age', $event)"
+                  />
+                </div>
+
+                <div class="setting-group">
+                  <div class="setting-header">
+                    <label>Weight</label>
+                    <span class="setting-value">{{ subject.weight }} kg</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="40"
+                    max="150"
+                    :value="subject.weight"
+                    @input="updateSubject('weight', $event)"
+                  />
+                </div>
+
+                <template v-if="subject.sex === 'female'">
+                  <div class="setting-group">
+                    <div class="setting-header">
+                      <label>Cycle Length</label>
+                      <span class="setting-value"
+                        >{{ subject.cycleLength }} days</span
+                      >
+                    </div>
+                    <input
+                      type="range"
+                      min="21"
+                      max="35"
+                      :value="subject.cycleLength"
+                      @input="updateSubject('cycleLength', $event)"
+                    />
+                  </div>
+                  <div class="setting-group">
+                    <div class="setting-header">
+                      <label>Current Day</label>
+                      <span class="setting-value"
+                        >Day {{ subject.cycleDay }}</span
+                      >
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      :max="subject.cycleLength"
+                      :value="subject.cycleDay"
+                      @input="updateSubject('cycleDay', $event)"
+                    />
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Conditions View -->
+            <div v-else-if="view === 'conditions'" class="view-items">
+              <div class="items-grid">
+                <div
+                  v-for="condition in conditionDefs"
+                  :key="condition.key"
+                  class="profile-item"
+                >
+                  <div class="profile-item__main">
+                    <div class="profile-item__info">
+                      <div class="profile-item__title">
+                        {{ condition.label }}
                       </div>
-                      <div class="signal-toggle-item__group">
-                        {{ sig.group }}
+                      <div class="profile-item__desc">
+                        {{ condition.description.physiology }}
                       </div>
                     </div>
                     <label class="switch">
                       <input
                         type="checkbox"
-                        :checked="enabledSignals[sig.key as Signal]"
-                        @change="userStore.toggleSignal(sig.key as Signal, ($event.target as HTMLInputElement).checked)"
+                        :checked="conditionState[condition.key].enabled"
+                        @change="toggleCondition(condition.key, $event)"
                       />
                       <span class="slider" />
                     </label>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <!-- Goals View -->
-          <div v-else-if="view === 'goals'" class="view-items">
-            <div class="category-group">
-              <h3 class="group-label">Select your focus areas</h3>
-              <div class="grid">
-                <button
-                  v-for="cat in goalCategories"
-                  :key="cat.id"
-                  class="launcher-card card--goal"
-                  :class="{ 'is-selected': selectedGoals.includes(cat.id) }"
-                  @click="userStore.toggleGoal(cat.id)"
-                >
-                  <span class="card-icon">{{ cat.icon }}</span>
-                  <span class="card-label">{{ cat.label }}</span>
-                  <div v-if="selectedGoals.includes(cat.id)" class="checkmark">
-                    ✓
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Physiology View -->
-          <div v-else-if="view === 'physiology'" class="view-items">
-            <div class="settings-grid">
-              <div class="setting-group">
-                <label>Biological Sex</label>
-                <div class="select-wrapper">
-                  <select
-                    :value="subject.sex"
-                    @change="updateSubject('sex', $event)"
+                  <div
+                    v-if="conditionState[condition.key].enabled && condition.params.length"
+                    class="profile-item__params"
                   >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="setting-group">
-                <div class="setting-header">
-                  <label>Age</label>
-                  <span class="setting-value">{{ subject.age }} yr</span>
-                </div>
-                <input
-                  type="range"
-                  min="18"
-                  max="90"
-                  :value="subject.age"
-                  @input="updateSubject('age', $event)"
-                />
-              </div>
-
-              <div class="setting-group">
-                <div class="setting-header">
-                  <label>Weight</label>
-                  <span class="setting-value">{{ subject.weight }} kg</span>
-                </div>
-                <input
-                  type="range"
-                  min="40"
-                  max="150"
-                  :value="subject.weight"
-                  @input="updateSubject('weight', $event)"
-                />
-              </div>
-
-              <template v-if="subject.sex === 'female'">
-                <div class="setting-group">
-                  <div class="setting-header">
-                    <label>Cycle Length</label>
-                    <span class="setting-value"
-                      >{{ subject.cycleLength }} days</span
+                    <div
+                      v-for="param in condition.params"
+                      :key="param.key"
+                      class="setting-group"
                     >
-                  </div>
-                  <input
-                    type="range"
-                    min="21"
-                    max="35"
-                    :value="subject.cycleLength"
-                    @input="updateSubject('cycleLength', $event)"
-                  />
-                </div>
-                <div class="setting-group">
-                  <div class="setting-header">
-                    <label>Current Day</label>
-                    <span class="setting-value"
-                      >Day {{ subject.cycleDay }}</span
-                    >
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    :max="subject.cycleLength"
-                    :value="subject.cycleDay"
-                    @input="updateSubject('cycleDay', $event)"
-                  />
-                </div>
-              </template>
-            </div>
-          </div>
-
-          <!-- Conditions View -->
-          <div v-else-if="view === 'conditions'" class="view-items">
-            <div class="items-grid">
-              <div
-                v-for="condition in conditionDefs"
-                :key="condition.key"
-                class="profile-item"
-              >
-                <div class="profile-item__main">
-                  <div class="profile-item__info">
-                    <div class="profile-item__title">{{ condition.label }}</div>
-                    <div class="profile-item__desc">
-                      {{ condition.description.physiology }}
+                      <div class="setting-header">
+                        <label>{{ param.label }}</label>
+                        <span
+                          class="setting-value"
+                          >{{ conditionState[condition.key].params[param.key].toFixed(2) }}</span
+                        >
+                      </div>
+                      <input
+                        type="range"
+                        :min="param.min"
+                        :max="param.max"
+                        :step="param.step"
+                        :value="conditionState[condition.key].params[param.key]"
+                        @input="updateConditionParam(condition.key, param.key, $event)"
+                      />
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nutrient Targets View -->
+            <div v-else-if="view === 'nutrition'" class="view-items">
+              <div class="settings-grid">
+                <div class="setting-group">
+                  <div class="setting-header">
+                    <label>Daily calories</label>
+                    <span class="setting-value"
+                      >{{ nutritionTargets.calories }} kcal</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    min="1200"
+                    max="4000"
+                    step="50"
+                    :value="nutritionTargets.calories"
+                    @input="(e) => updateNutritionTargets({ calories: Number((e.target as HTMLInputElement).value) })"
+                  />
+                </div>
+
+                <div class="setting-group setting-group--switch">
+                  <label>Enable macro ranges</label>
                   <label class="switch">
                     <input
                       type="checkbox"
-                      :checked="conditionState[condition.key].enabled"
-                      @change="toggleCondition(condition.key, $event)"
+                      :checked="nutritionTargets.macrosEnabled"
+                      @change="(e) => updateNutritionTargets({ macrosEnabled: (e.target as HTMLInputElement).checked })"
                     />
                     <span class="slider" />
                   </label>
                 </div>
 
                 <div
-                  v-if="conditionState[condition.key].enabled && condition.params.length"
-                  class="profile-item__params"
+                  class="macro-grid"
+                  :class="{ disabled: !nutritionTargets.macrosEnabled }"
                 >
                   <div
-                    v-for="param in condition.params"
-                    :key="param.key"
-                    class="setting-group"
+                    v-for="macro in macroFields"
+                    :key="macro.key"
+                    class="macro-card"
                   >
-                    <div class="setting-header">
-                      <label>{{ param.label }}</label>
-                      <span
-                        class="setting-value"
-                        >{{ conditionState[condition.key].params[param.key].toFixed(2) }}</span
-                      >
+                    <div
+                      class="macro-card__label"
+                      :style="{ color: macro.color }"
+                    >
+                      {{ macro.label }}
                     </div>
-                    <input
-                      type="range"
-                      :min="param.min"
-                      :max="param.max"
-                      :step="param.step"
-                      :value="conditionState[condition.key].params[param.key]"
-                      @input="updateConditionParam(condition.key, param.key, $event)"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Nutrient Targets View -->
-          <div v-else-if="view === 'nutrition'" class="view-items">
-            <div class="settings-grid">
-              <div class="setting-group">
-                <div class="setting-header">
-                  <label>Daily calories</label>
-                  <span class="setting-value"
-                    >{{ nutritionTargets.calories }} kcal</span
-                  >
-                </div>
-                <input
-                  type="range"
-                  min="1200"
-                  max="4000"
-                  step="50"
-                  :value="nutritionTargets.calories"
-                  @input="(e) => updateNutritionTargets({ calories: Number((e.target as HTMLInputElement).value) })"
-                />
-              </div>
-
-              <div class="setting-group setting-group--switch">
-                <label>Enable macro ranges</label>
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :checked="nutritionTargets.macrosEnabled"
-                    @change="(e) => updateNutritionTargets({ macrosEnabled: (e.target as HTMLInputElement).checked })"
-                  />
-                  <span class="slider" />
-                </label>
-              </div>
-
-              <div
-                class="macro-grid"
-                :class="{ disabled: !nutritionTargets.macrosEnabled }"
-              >
-                <div
-                  v-for="macro in macroFields"
-                  :key="macro.key"
-                  class="macro-card"
-                >
-                  <div
-                    class="macro-card__label"
-                    :style="{ color: macro.color }"
-                  >
-                    {{ macro.label }}
-                  </div>
-                  <div class="macro-card__inputs">
-                    <div class="macro-input">
-                      <span>Min</span>
-                      <input
-                        type="number"
-                        :value="nutritionTargets.macros[macro.key].min"
-                        @input="(e) => updateMacro(macro.key, 'min', Number((e.target as HTMLInputElement).value))"
-                      />
-                    </div>
-                    <div class="macro-input">
-                      <span>Max</span>
-                      <input
-                        type="number"
-                        :value="nutritionTargets.macros[macro.key].max"
-                        @input="(e) => updateMacro(macro.key, 'max', Number((e.target as HTMLInputElement).value))"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                    <div class="macro-card__inputs">
+                      <div class="macro-input">
+                        <span>Min</span>
+                        <input
+                          type="number"
+                          :value="nutritionTargets.macros[macro.key].min"
+                          @input="(e) => updateMacro(macro.key, 'min', Number((e.target as HTMLInputElement).value))"
+                        />
+                      </div>
+                      <div class="macro-input">
+                        <span>Max</span>
+                        <input
+                          type="number"
+                          :value="nutritionTargets.macros[macro.key].max"
+                          @input="(e) => updateMacro(macro.key, 'max', Number((e.target as HTMLInputElement).value))"
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
-              </Transition>
-            </Teleport>
-          </template>
-          <script setup lang="ts">
+              </div>
+            </div>
+
+            <!-- Bloodwork View -->
+            <div v-else-if="view === 'bloodwork'" class="view-items">
+              <div
+                v-for="panel in BLOODWORK_PANELS"
+                :key="panel.id"
+                class="bw-panel"
+              >
+                <h3 class="bw-panel__header">
+                <span>{{ panel.label }}</span>
+              </h3>
+                                                            <div
+                                                              v-for="field in panel.fields"
+                                                              :key="field.key"
+                                                              class="bw-field-item"
+                                                            >
+                                                              <div class="bw-field-item__top-row">
+                                                                <div class="bw-row__label-area">
+                                                                  <div class="bw-row__label">{{ field.label }}</div>
+                                                                  <div class="bw-row__ref">
+                                                                    Ref: {{ field.refMin }} – {{ field.refMax }} {{ field.unit }}
+                                                                  </div>
+                                                                </div>
+                                                                <div class="bw-field-item__actions">
+                                                                  <button
+                                                                    v-if="getBloodworkValue(field.key) !== undefined"
+                                                                    class="bw-row__clear"
+                                                                    @click="setBloodworkValue(field.key, undefined)"
+                                                                    v-tooltip="'Reset to default'"
+                                                                  >
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-refresh-cw"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.5 9a8 8 0 0 1 14.17-5.59L23 10M1 14l4.33 4.59A8 8 0 0 0 20.5 15"></path></svg>
+                                                                  </button>
+                                                                  <div class="bw-field-item__numeric-readout">
+                                                                    <input
+                                                                      type="number"
+                                                                      :value="getBloodworkValue(field.key)"
+                                                                      :placeholder="String(field.default)"
+                                                                      @input="(e) => setBloodworkValue(field.key, Number((e.target as HTMLInputElement).value))"
+                                                                      class="bw-row__input"
+                                                                      :style="{ 'color': getStatusColor(field.key) }"
+                                                                    />
+                                                                    <span class="bw-row__unit">{{ field.unit }}</span>
+                                                                  </div>
+                                                                </div>
+                                                              </div>
+                                                              <PrecisionSlider
+                                                                :value="getBloodworkValue(field.key) ?? field.default"
+                                                                :min="field.sliderMin"
+                                                                :max="field.sliderMax"
+                                                                :step="field.step"
+                                                                :unit="field.unit"
+                                                                :statusColor="getStatusColor(field.key)"
+                                                                :refMin="field.refMin"
+                                                                :refMax="field.refMax"
+                                                                :showRangeBand="true"
+                                                                @input="(e) => setBloodworkValue(field.key, Number((e.target as HTMLInputElement).value))"
+                                                              />
+                                                            </div>              </div>
+            </div>
+            <button
+              class="button button--full-width button--secondary"
+              @click="resetAllBloodwork"
+              v-tooltip="'Reset all bloodwork values to population averages'"
+            >
+              Reset All Bloodwork
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+<script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { useUIStore } from '@/stores/ui';
@@ -419,6 +494,7 @@ import type { ConditionKey } from '@kyneticbio/core';
 import type { Subject } from '@/types';
 import type { Goal } from '@/types';
 import Sortable from 'sortablejs';
+import PrecisionSlider from '@/components/core/PrecisionSlider.vue';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -430,8 +506,52 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const uiStore = useUIStore();
-const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'display' | 'subscription'>('categories');
+const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'display' | 'subscription' | 'bloodwork'>('categories');
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
+
+const BLOODWORK_PANELS = [
+  {
+    id: 'metabolic',
+    label: 'Comprehensive Metabolic Panel',
+    fields: [
+      { key: 'metabolic.glucose_mg_dL',    label: 'Glucose (Fasting)', unit: 'mg/dL',  refMin: 70,  refMax: 100,  sliderMin: 40,  sliderMax: 300, step: 1,   default: 90 },
+      { key: 'metabolic.albumin_g_dL',     label: 'Albumin',          unit: 'g/dL',   refMin: 3.5, refMax: 5.0,  sliderMin: 1.0, sliderMax: 6.0, step: 0.1, default: 4.0 },
+      { key: 'metabolic.creatinine_mg_dL', label: 'Creatinine',       unit: 'mg/dL',  refMin: 0.6, refMax: 1.2,  sliderMin: 0.2, sliderMax: 5.0, step: 0.1, default: 0.9 },
+      { key: 'metabolic.eGFR_mL_min',      label: 'eGFR',             unit: 'mL/min', refMin: 90,  refMax: 120,  sliderMin: 10,  sliderMax: 140, step: 1,   default: 100 },
+      { key: 'metabolic.alt_U_L',          label: 'ALT',              unit: 'U/L',    refMin: 7,   refMax: 56,   sliderMin: 5,   sliderMax: 200, step: 1,   default: 25 },
+      { key: 'metabolic.ast_U_L',          label: 'AST',              unit: 'U/L',    refMin: 10,  refMax: 40,   sliderMin: 5,   sliderMax: 200, step: 1,   default: 22 },
+      { key: 'metabolic.bilirubin_mg_dL',  label: 'Bilirubin',        unit: 'mg/dL',  refMin: 0.1, refMax: 1.2,  sliderMin: 0.1, sliderMax: 5.0, step: 0.1, default: 0.7 },
+      { key: 'metabolic.potassium_mmol_L', label: 'Potassium',        unit: 'mmol/L', refMin: 3.5, refMax: 5.0,  sliderMin: 2.5, sliderMax: 7.0, step: 0.1, default: 4.2 },
+    ]
+  },
+  {
+    id: 'hematology',
+    label: 'Complete Blood Count',
+    fields: [
+      { key: 'hematology.hemoglobin_g_dL',      label: 'Hemoglobin',  unit: 'g/dL', refMin: 12.0, refMax: 17.5, sliderMin: 6,   sliderMax: 22,  step: 0.1, default: 14.5 },
+      { key: 'hematology.hematocrit_pct',        label: 'Hematocrit',  unit: '%',    refMin: 36,   refMax: 54,   sliderMin: 20,  sliderMax: 65,   step: 1,   default: 43 },
+      { key: 'hematology.platelet_count_k_uL',   label: 'Platelets',   unit: 'K/µL', refMin: 150,  refMax: 400,  sliderMin: 50,  sliderMax: 600, step: 5,   default: 250 },
+      { key: 'hematology.wbc_count_k_uL',        label: 'WBC',         unit: 'K/µL', refMin: 4.5,  refMax: 11.0, sliderMin: 1.0, sliderMax: 25,   step: 0.1, default: 7.0 },
+    ]
+  },
+  {
+    id: 'inflammation',
+    label: 'Inflammatory Markers',
+    fields: [
+      { key: 'inflammation.hsCRP_mg_L',      label: 'hs-CRP',   unit: 'mg/L',  refMin: 0,   refMax: 3.0,  sliderMin: 0.1, sliderMax: 20,  step: 0.1, default: 1.0 },
+      { key: 'inflammation.ferritin_ng_mL',  label: 'Ferritin',  unit: 'ng/mL', refMin: 12,  refMax: 300,  sliderMin: 5,   sliderMax: 500, step: 5,   default: 50 },
+    ]
+  },
+  {
+    id: 'hormones',
+    label: 'Hormonal Panel',
+    fields: [
+      { key: 'hormones.tsh_uIU_mL',               label: 'TSH',               unit: 'µIU/mL', refMin: 0.4, refMax: 4.0, sliderMin: 0.1, sliderMax: 15,  step: 0.1, default: 2.0 },
+      { key: 'hormones.cortisol_ug_dL',            label: 'Cortisol',          unit: 'µg/dL',  refMin: 6,   refMax: 18,  sliderMin: 1, sliderMax: 35,  step: 0.5, default: 12 },
+      { key: 'hormones.free_testosterone_pg_mL',   label: 'Free Testosterone', unit: 'pg/mL',  refMin: 5,   refMax: 25,  sliderMin: 1, sliderMax: 50,  step: 0.5, default: 15 },
+    ]
+  }
+];
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen && uiStore.profileModalView) {
@@ -456,6 +576,7 @@ const selectedViewLabel = computed(() => {
   if (view.value === 'goals') return 'My Goals';
   if (view.value === 'display') return 'Display';
   if (view.value === 'subscription') return 'Subscription';
+  if (view.value === 'bloodwork') return 'Bloodwork';
   return '';
 });
 
@@ -581,13 +702,74 @@ const macroFields = [
   { key: 'fat' as const, label: 'Fat', color: 'var(--color-text-primary)' },
 ];
 
-const goalCategories = GOAL_CATEGORIES;
-
 const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', value: number) => {
   const current = nutritionTargets.value.macros[key];
   const next = { ...current, [field]: Math.max(0, value) };
   userStore.updateNutritionTargets({ macros: { ...nutritionTargets.value.macros, [key]: next } });
 };
+
+// Read a bloodwork value (e.g., 'metabolic.glucose_mg_dL')
+function getBloodworkValue(dotPath: string): number | undefined {
+  const [panel, field] = dotPath.split('.');
+  // @ts-ignore
+  return subject.value.bloodwork?.[panel]?.[field];
+}
+
+// Write a bloodwork value, deep-merging into the existing bloodwork object
+function setBloodworkValue(dotPath: string, value: number | undefined) {
+  const [panel, field] = dotPath.split('.');
+  const current = subject.value.bloodwork ?? {};
+  // @ts-ignore
+  const panelData = { ...(current[panel] ?? {}) };
+  if (value === undefined || isNaN(value)) {
+    delete panelData[field];
+  } else {
+    panelData[field] = value;
+  }
+  // Clean up empty panels
+  const next = { ...current, [panel]: Object.keys(panelData).length ? panelData : undefined };
+  userStore.updateSubject({ bloodwork: next });
+}
+
+function getStatusColor(dotPath: string): string {
+  const [panelId, fieldId] = dotPath.split('.');
+  const panel = BLOODWORK_PANELS.find(p => p.id === panelId);
+  const field = panel?.fields.find(f => f.key === dotPath);
+
+  if (!field) return 'transparent';
+
+  // Use the actual value if set, otherwise use the default for color calculation
+  const value = getBloodworkValue(dotPath) ?? field.default;
+
+  const { refMin, refMax, sliderMin, sliderMax } = field;
+
+  // Within reference range
+  if (value >= refMin && value <= refMax) {
+    return 'var(--color-success)';
+  }
+
+  // Close to reference range (within 10% of the diff between ref and slider boundary)
+  const refRange = refMax - refMin;
+  const lowerBound = Math.max(sliderMin, refMin - refRange * 0.2); // 20% buffer
+  const upperBound = Math.min(sliderMax, refMax + refRange * 0.2); // 20% buffer
+
+  if ((value >= lowerBound && value < refMin) || (value > refMax && value <= upperBound)) {
+    return 'var(--color-warning)';
+  }
+
+  // Far outside
+  return 'var(--color-danger)';
+}
+
+function resetAllBloodwork() {
+  BLOODWORK_PANELS.forEach(panel => {
+    panel.fields.forEach(field => {
+      setBloodworkValue(field.key, undefined);
+    });
+  });
+}
+
+const goalCategories = GOAL_CATEGORIES;
 </script>
 
 <style scoped>
@@ -1056,6 +1238,172 @@ input:checked + .slider {
 
 input:checked + .slider:before {
   transform: translateX(20px);
+}
+
+/* Common Components */
+.switch {
+  position: relative;
+  display: inline-block;
+  height: 24px;
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--color-bg-elevated);
+  transition: 0.2s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: '';
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--color-success);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Bloodwork Styles */
+.bw-panel {
+  background: var(--color-bg-subtle);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.bw-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+  border-left: 3px solid var(--color-active);
+  padding-left: 0.75rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-secondary);
+}
+
+.bw-field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 0.75rem;
+}
+
+.bw-field-item:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.bw-field-item__top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bw-field-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* Space between refresh button and numeric readout */
+}
+
+.bw-field-item__numeric-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.bw-row__label-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.bw-row__label {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.bw-row__ref {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  color: var(--color-text-secondary);
+}
+
+.bw-row__input {
+  background: var(--color-bg-base);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 0.5em 0.25em;
+  color: var(--color-active);
+  width: 3.5em;
+  font-family: monospace;
+  font-size: 0.9rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.bw-row__input::-webkit-outer-spin-button,
+.bw-row__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.bw-row__unit {
+  font-size: 0.8rem;
+  opacity: 0.6;
+  color: var(--color-text-secondary);
+  min-width: 50px;
+  width: 50px;
+  text-align: left;
+}
+
+.bw-row__clear {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.bw-row__clear:hover {
+  opacity: 1;
+  color: var(--color-danger);
+}
+
+.bw-row--empty .bw-row__label,
+.bw-row--empty .bw-row__ref,
+.bw-row--empty .bw-row__unit {
+  opacity: 0.5;
 }
 
 @keyframes fadeIn {

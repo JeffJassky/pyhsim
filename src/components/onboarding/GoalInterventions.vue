@@ -6,7 +6,7 @@
       <div class="intervention-select__header">
         <h2 class="intervention-select__title">Starting points for {{ goalLabel }}</h2>
         <p class="intervention-select__subtitle">
-          Select any interventions you'd like to explore, or skip to start from scratch.
+          Evidence-based picks for your goal. Select any to add to your first simulation.
         </p>
       </div>
 
@@ -49,7 +49,7 @@
           </svg>
         </button>
         <button class="intervention-select__skip" @click="$emit('next')">
-          {{ selectedKeys.size > 0 ? 'Skip adding these' : 'Skip for now' }}
+          {{ selectedKeys.size > 0 ? 'Skip these' : 'I\'ll build from scratch' }}
         </button>
       </div>
     </div>

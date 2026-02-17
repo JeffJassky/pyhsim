@@ -124,18 +124,18 @@ interface Question {
 }
 
 const goalDescriptions: Record<string, string> = {
-  energy: 'Avoid crashes, stay consistent',
-  productivity: 'Optimize mental output',
-  weightLoss: 'Metabolic flexibility & fat loss',
+  energy: 'Avoid crashes, stay consistent all day',
+  productivity: 'Get more done in less time',
+  weightLoss: 'Lose fat without crashing your energy',
   mood: 'Reduce anxiety, feel balanced',
   focus: 'Deep work & concentration',
-  recovery: 'Bounce back faster',
+  recovery: 'Recover from workouts and stress faster',
   sleep: 'Fall asleep faster, wake refreshed',
   digestion: 'Gut health & regularity',
   pain: 'Manage chronic pain & inflammation',
-  cycle: 'Sync with your rhythm',
-  calm: 'Stress resilience',
-  longevity: 'Mitochondrial health & lifespan',
+  cycle: 'Sync with your hormonal rhythm',
+  calm: 'Build stress resilience',
+  longevity: 'Age slower, recover faster',
 };
 
 const questions = computed<Question[]>(() => {
@@ -148,7 +148,7 @@ const questions = computed<Question[]>(() => {
   return [
     {
       id: 'archetype',
-      hint: 'This helps us calibrate the simulation for your needs.',
+      hint: 'People like you tend to care about specific things. This helps us show you what matters.',
       title: 'Which describes you best?',
       layout: 'grid',
       options: ARCHETYPES.map(a => ({
@@ -160,8 +160,8 @@ const questions = computed<Question[]>(() => {
     },
     {
       id: 'goal',
-      hint: 'We\'ll tailor the simulation to your primary objective.',
-      title: 'Primary focus',
+      hint: 'We\'ll build your first day around this. You can always change it later.',
+      title: 'What brought you here?',
       layout: 'list',
       options: filteredGoals.map(g => ({
         value: g.id,
@@ -172,8 +172,8 @@ const questions = computed<Question[]>(() => {
     },
     {
       id: 'sex',
-      hint: 'This helps calibrate hormonal and metabolic baselines.',
-      title: 'Sex assignment at birth',
+      hint: 'Hormones, metabolism, and drug response differ meaningfully. This makes the model accurate to you.',
+      title: 'Biological sex',
       layout: 'row',
       options: [
         { value: 'male', label: 'Male' },
@@ -182,8 +182,8 @@ const questions = computed<Question[]>(() => {
     },
     {
       id: 'age',
-      hint: 'Metabolism and recovery patterns shift with age.',
-      title: 'Age range',
+      hint: 'Your metabolism, recovery speed, and hormone levels shift with age. We\'ll match the model to yours.',
+      title: 'How old are you?',
       layout: 'grid',
       options: [
         { value: '18-25', label: '18-25' },
