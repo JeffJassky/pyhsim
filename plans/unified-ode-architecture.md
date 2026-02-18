@@ -5,11 +5,13 @@
 This plan outlines the migration from the current hybrid architecture (analytical signals + ODE homeostasis) to a unified system where **all physiological signals are ODE state variables** with proper dynamics and time persistence.
 
 ### Goals
+
 1. Make ALL signals ODE-based with proper dynamics
 2. Eliminate the artificial signal/homeostasis distinction
 3. Have one unified system where everything has state persistence
 
 ### Why This Matters
+
 - **Biological accuracy**: In real physiology, everything has dynamics and memory
 - **Conceptual clarity**: One unified model instead of two interacting systems
 - **Natural multi-day support**: State persistence is automatic, not bolted on
@@ -22,10 +24,12 @@ This plan outlines the migration from the current hybrid architecture (analytica
 ### 1.1 The Two Systems Today
 
 **Analytical Signals (50 signals)**
+
 ```typescript
 // Current: Value computed fresh at each time point
 signal[t] = baseline(t) + kernels(t) + couplings(t) + homeostasis_correction(t)
 ```
+
 - No memory between time points
 - Baseline functions encode circadian patterns
 - Kernels add intervention effects
@@ -33,22 +37,26 @@ signal[t] = baseline(t) + kernels(t) + couplings(t) + homeostasis_correction(t)
 - Homeostasis provides "corrections" from ODE system
 
 Current signals by category:
+
 - **NeuroSignal (10)**: dopamine, serotonin, norepi, acetylcholine, gaba, melatonin, histamine, orexin, glutamate, endocannabinoid
 - **HormoneSignal (18)**: cortisol, adrenaline, insulin, glucagon, leptin, ghrelin, oxytocin, prolactin, vasopressin, vip, testosterone, estrogen, progesterone, lh, fsh, thyroid, growthHormone, glp1
 - **MetabolicProxy (22)**: glucose, energy, vagal, ketone, hrv, bloodPressure, oxygen, ethanol, acetaldehyde, inflammation, bdnf, magnesium, sensoryLoad, shbg, ferritin, dheas, alt, ast, egfr, vitaminD3, mtor, ampk
 
 **ODE Homeostasis (18 state variables)**
+
 ```typescript
 // Current: State evolved via numerical integration
 d(state)/dt = f(state, inputs)
 state[t] = state[t-1] + derivative * dt
 ```
+
 - Has memory (state persists)
 - Uses RK4 numerical integration
 - Provides corrections to analytical signals
 - Handles: glucose/insulin, sleep pressure, vesicle stores, receptor adaptation
 
 Current homeostasis state variables:
+
 - **Glucose-Insulin (4)**: glucosePool, insulinPool, insulinAction, hepaticGlycogen
 - **Sleep (1)**: adenosinePressure
 - **HPA (4)**: crhPool, cortisolPool, cortisolIntegral, adrenalineReserve
@@ -58,13 +66,13 @@ Current homeostasis state variables:
 
 ### 1.2 Problems with Current Architecture
 
-| Issue | Description |
-|-------|-------------|
-| **Arbitrary split** | No principled reason why dopamine is analytical but dopamineVesicles is ODE |
-| **Redundancy** | `glucosePool` (ODE) vs `glucose` (signal) represent the same thing |
-| **Coupling complexity** | Couplings are instantaneous, but real biology has delays and dynamics |
-| **Correction layer** | Homeostasis "corrects" signals rather than being the source of truth |
-| **Multi-day hacks** | State persistence requires explicit chaining, not natural |
+| Issue                   | Description                                                                 |
+| ----------------------- | --------------------------------------------------------------------------- |
+| **Arbitrary split**     | No principled reason why dopamine is analytical but dopamineVesicles is ODE |
+| **Redundancy**          | `glucosePool` (ODE) vs `glucose` (signal) represent the same thing          |
+| **Coupling complexity** | Couplings are instantaneous, but real biology has delays and dynamics       |
+| **Correction layer**    | Homeostasis "corrects" signals rather than being the source of truth        |
+| **Multi-day hacks**     | State persistence requires explicit chaining, not natural                   |
 
 ### 1.3 What We Want
 
@@ -94,21 +102,25 @@ d(signal)/dt = production_terms - clearance_terms + intervention_terms
 Not all signals need the same complexity. We can classify by their dominant timescale:
 
 **Fast Dynamics (minutes)**
+
 - Glucose, insulin (meal response)
 - Adrenaline (acute stress)
 - Heart rate, blood pressure
 
 **Medium Dynamics (hours)**
+
 - Neurotransmitters (dopamine, serotonin, etc.)
 - Most hormones (cortisol, growth hormone)
 - Sleep pressure (adenosine)
 
 **Slow Dynamics (days-weeks)**
+
 - Receptor density (tolerance/sensitization)
 - Vesicle stores (depletion/recovery)
 - Body composition, VO2max
 
 **Very Slow Dynamics (months-years)**
+
 - Hormone baselines (aging, menopause)
 - Chronic adaptation
 
@@ -139,7 +151,7 @@ interface SignalDefinition {
   };
 
   // Initial state
-  initialValue: number | ((ctx: SubjectContext) => number);
+  initialValue: number | ((ctx: DynamicsContextContext) => number);
 
   // Bounds
   min?: number;
@@ -480,39 +492,46 @@ const caffeineIntervention: InterventionDefinition = {
 We can't rewrite everything at once. Phased migration:
 
 **Phase 1: Infrastructure**
+
 - Create new `SignalDefinition` type system
 - Implement unified ODE solver
 - Build state management for unified state vector
 - Create adapter layer to maintain backward compatibility
 
 **Phase 2: Core Metabolic Signals**
+
 - Migrate glucose, insulin, glucagon (already have ODE models in homeostasis.ts)
 - Migrate energy, ketone
 - Validate against current behavior
 
 **Phase 3: HPA Axis**
+
 - Migrate cortisol (already has ODE model)
 - Migrate adrenaline
 - Add CRH/ACTH as proper signals (currently only state variables)
 - Implement proper feedback loops
 
 **Phase 4: Neurotransmitters**
+
 - Migrate dopamine, serotonin, norepinephrine
 - Migrate GABA, glutamate, acetylcholine
 - Migrate histamine, orexin
 - This is the largest group
 
 **Phase 5: Other Hormones**
+
 - Migrate melatonin, growth hormone, prolactin
 - Migrate thyroid, sex hormones
 - Migrate appetite hormones (ghrelin, leptin, GLP-1)
 
 **Phase 6: Derived Signals**
+
 - Migrate HRV, blood pressure
 - Migrate inflammation, BDNF
 - These may remain as "computed from other signals" rather than true ODEs
 
 **Phase 7: Cleanup & Optimization**
+
 - Remove old analytical system
 - Optimize ODE solver performance
 - Implement adaptive time stepping
@@ -584,18 +603,21 @@ describe('Dopamine ODE Migration', () => {
 ### 5.1 Computational Cost
 
 **Current system:**
+
 - Analytical: O(n) where n = grid points (~288 for 5-min resolution)
-- Homeostasis ODE: O(n * k) where k = ~18 state variables
+- Homeostasis ODE: O(n \* k) where k = ~18 state variables
 - Total: ~50ms for full day
 
 **Unified ODE system:**
-- O(n * m * 4) where m = ~50 signals, 4 = RK4 stages
+
+- O(n _ m _ 4) where m = ~50 signals, 4 = RK4 stages
 - Naive implementation: ~200-400ms for full day (4-8x slower)
 
 ### 5.2 Optimization Strategies
 
 **Sparse coupling matrix:**
 Not every signal affects every other signal. Use sparse representation:
+
 ```typescript
 // Instead of checking all 50*50 = 2500 possible couplings
 // Only iterate over actual couplings (maybe 100-200)
@@ -604,6 +626,7 @@ const couplingGraph: Map<Signal, Signal[]> = buildCouplingGraph(SIGNAL_DEFINITIO
 
 **Adaptive time stepping:**
 Use larger dt when system is stable, smaller when changing rapidly:
+
 ```typescript
 const adaptiveStep = (state: SimulationState, t: number): number => {
   const derivatives = computeDerivatives(state, t);
@@ -618,6 +641,7 @@ const adaptiveStep = (state: SimulationState, t: number): number => {
 
 **Signal grouping by timescale:**
 Fast signals (glucose) need small dt. Slow signals (receptor density) can use larger dt:
+
 ```typescript
 // Multi-rate integration
 const fastSignals = ['glucose', 'insulin', 'adrenaline'];
@@ -631,6 +655,7 @@ const slowSignals = ['receptorDensity_*', 'vesicleStores_*'];
 
 **Web Worker parallelization:**
 Different signal groups can be computed in parallel (with synchronization for couplings):
+
 ```typescript
 // Main thread coordinates, workers compute
 const workers = [
@@ -642,6 +667,7 @@ const workers = [
 
 **WASM for inner loop:**
 The derivative computation is highly parallelizable and benefits from WASM:
+
 ```rust
 // Rust compiled to WASM
 #[wasm_bindgen]
@@ -652,12 +678,12 @@ pub fn compute_derivatives(state: &[f32], params: &[f32]) -> Vec<f32> {
 
 ### 5.3 Performance Targets
 
-| Scenario | Current | Target | Acceptable |
-|----------|---------|--------|------------|
-| Single day simulation | 50ms | 100ms | 200ms |
-| Playhead scrub (per frame) | 1ms | 5ms | 16ms (60fps) |
-| Week simulation | N/A | 500ms | 1s |
-| Month simulation | N/A | 2s | 5s |
+| Scenario                   | Current | Target | Acceptable   |
+| -------------------------- | ------- | ------ | ------------ |
+| Single day simulation      | 50ms    | 100ms  | 200ms        |
+| Playhead scrub (per frame) | 1ms     | 5ms    | 16ms (60fps) |
+| Week simulation            | N/A     | 500ms  | 1s           |
+| Month simulation           | N/A     | 2s     | 5s           |
 
 ---
 
@@ -666,6 +692,7 @@ pub fn compute_derivatives(state: &[f32], params: &[f32]) -> Vec<f32> {
 ### 6.1 Storage Schema
 
 **Current:**
+
 ```typescript
 // Separate structures
 series: Record<Signal, Float32Array>;           // Computed values
@@ -673,6 +700,7 @@ homeostasisState: HomeostasisStateSnapshot;     // ODE state
 ```
 
 **Unified:**
+
 ```typescript
 interface SimulationResult {
   // Time grid
@@ -775,13 +803,13 @@ const stateAtWednesday3pm = getStateAt(weekResult, '2026-01-08T15:00:00');
 
 Each signal needs a biologically defensible ODE. The current codebase already uses established models:
 
-| Signal | Current Model | Notes |
-|--------|---------------|-------|
-| Glucose/Insulin | Bergman Minimal Model | Already implemented in homeostasis.ts |
-| Cortisol/HPA | Feedback with CRH | Already implemented in homeostasis.ts |
-| Sleep pressure | Two-process model | Already implemented in homeostasis.ts |
-| Vesicle pools | Depletion/recovery | Already implemented in homeostasis.ts |
-| Receptor adaptation | Biphasic kinetics | Already implemented with full/partial agonist support |
+| Signal              | Current Model         | Notes                                                 |
+| ------------------- | --------------------- | ----------------------------------------------------- |
+| Glucose/Insulin     | Bergman Minimal Model | Already implemented in homeostasis.ts                 |
+| Cortisol/HPA        | Feedback with CRH     | Already implemented in homeostasis.ts                 |
+| Sleep pressure      | Two-process model     | Already implemented in homeostasis.ts                 |
+| Vesicle pools       | Depletion/recovery    | Already implemented in homeostasis.ts                 |
+| Receptor adaptation | Biphasic kinetics     | Already implemented with full/partial agonist support |
 
 ### 8.2 Parameter Sensitivity
 
@@ -849,16 +877,19 @@ src/models/
 All 50 signals that need ODE definitions (from `SIGNALS_ALL` in neurostate.ts):
 
 **NeuroSignal (10)**
+
 - dopamine, serotonin, norepi, acetylcholine, gaba
 - melatonin, histamine, orexin, glutamate, endocannabinoid
 
 **HormoneSignal (18)**
+
 - cortisol, adrenaline, insulin, glucagon
 - leptin, ghrelin, oxytocin, prolactin
 - vasopressin, vip, testosterone, estrogen
 - progesterone, lh, fsh, thyroid, growthHormone, glp1
 
 **MetabolicProxy (22)**
+
 - glucose, energy, vagal, ketone
 - hrv, bloodPressure, oxygen
 - ethanol, acetaldehyde
@@ -868,6 +899,7 @@ All 50 signals that need ODE definitions (from `SIGNALS_ALL` in neurostate.ts):
 - mtor, ampk
 
 **Notes:**
+
 - Some signals (HRV, bloodPressure, sensoryLoad, oxygen) may remain derived/computed rather than full ODEs
 - Lab biomarkers (ferritin, SHBG, DHEAS, ALT/AST, eGFR, vitD3) operate on very slow timescales
 - CRH and ACTH are currently only homeostasis state variables, not signals - consider promoting them
@@ -876,14 +908,14 @@ All 50 signals that need ODE definitions (from `SIGNALS_ALL` in neurostate.ts):
 
 ## Appendix B: Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Performance regression | Benchmark early, optimize incrementally |
-| Behavioral changes | Extensive validation tests against current system |
-| Numerical instability | Use proven ODE formulations, test edge cases |
-| Scope creep | Strict phase gates, minimum viable per phase |
-| Scientific validity | Consult literature, leverage existing homeostasis.ts models |
+| Risk                   | Mitigation                                                  |
+| ---------------------- | ----------------------------------------------------------- |
+| Performance regression | Benchmark early, optimize incrementally                     |
+| Behavioral changes     | Extensive validation tests against current system           |
+| Numerical instability  | Use proven ODE formulations, test edge cases                |
+| Scope creep            | Strict phase gates, minimum viable per phase                |
+| Scientific validity    | Consult literature, leverage existing homeostasis.ts models |
 
 ---
 
-*Plan created: January 2026*
+_Plan created: January 2026_

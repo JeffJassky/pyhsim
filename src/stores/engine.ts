@@ -168,17 +168,8 @@ export const useEngineStore = defineStore("engine", {
       const conditionAdjustments = buildConditionAdjustments(
         userStore.conditions
       );
-      // Ensure subject is a plain object by explicit construction
-      const s = userStore.subject;
-      const subject = {
-        age: s.age,
-        weight: s.weight,
-        height: s.height,
-        sex: s.sex,
-        cycleLength: s.cycleLength,
-        lutealPhaseLength: s.lutealPhaseLength,
-        cycleDay: s.cycleDay,
-      };
+      // Ensure subject is a plain object (structuredClone strips reactivity)
+      const subject = JSON.parse(JSON.stringify(userStore.subject));
       const physiology = derivePhysiology(subject);
 
       // Build intervention library with dynamic PK parameters based on subject/physiology

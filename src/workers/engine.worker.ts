@@ -8,7 +8,8 @@ import {
   AUXILIARY_DEFINITIONS,
   HUMAN_RESOLVER,
   getAllUnifiedDefinitions,
-  createInitialState,
+  getAllReceptorKeys,
+  getAllTransporterKeys,
   type Signal
 } from "@kyneticbio/core";
 
@@ -24,7 +25,7 @@ self.onmessage = (event: MessageEvent<WorkerComputeRequest>) => {
     signalDefinitions: getAllUnifiedDefinitions(),
     auxDefinitions: AUXILIARY_DEFINITIONS,
     resolver: HUMAN_RESOLVER,
-    createInitialState
+    receptorKeys: [...getAllReceptorKeys(), ...getAllTransporterKeys()],
   };
 
   const result = runOptimizedV2(request, system);

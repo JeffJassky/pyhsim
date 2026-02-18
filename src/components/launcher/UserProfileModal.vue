@@ -522,6 +522,7 @@ const BLOODWORK_PANELS = [
       { key: 'metabolic.ast_U_L',          label: 'AST',              unit: 'U/L',    refMin: 10,  refMax: 40,   sliderMin: 5,   sliderMax: 200, step: 1,   default: 22 },
       { key: 'metabolic.bilirubin_mg_dL',  label: 'Bilirubin',        unit: 'mg/dL',  refMin: 0.1, refMax: 1.2,  sliderMin: 0.1, sliderMax: 5.0, step: 0.1, default: 0.7 },
       { key: 'metabolic.potassium_mmol_L', label: 'Potassium',        unit: 'mmol/L', refMin: 3.5, refMax: 5.0,  sliderMin: 2.5, sliderMax: 7.0, step: 0.1, default: 4.2 },
+      { key: 'metabolic.fasting_insulin_uIU_mL', label: 'Fasting Insulin', unit: 'µIU/mL', refMin: 2, refMax: 25, sliderMin: 1, sliderMax: 100, step: 0.5, default: 8.0 },
     ]
   },
   {
@@ -549,6 +550,27 @@ const BLOODWORK_PANELS = [
       { key: 'hormones.tsh_uIU_mL',               label: 'TSH',               unit: 'µIU/mL', refMin: 0.4, refMax: 4.0, sliderMin: 0.1, sliderMax: 15,  step: 0.1, default: 2.0 },
       { key: 'hormones.cortisol_ug_dL',            label: 'Cortisol',          unit: 'µg/dL',  refMin: 6,   refMax: 18,  sliderMin: 1, sliderMax: 35,  step: 0.5, default: 12 },
       { key: 'hormones.free_testosterone_pg_mL',   label: 'Free Testosterone', unit: 'pg/mL',  refMin: 5,   refMax: 25,  sliderMin: 1, sliderMax: 50,  step: 0.5, default: 15 },
+      { key: 'hormones.total_testosterone_ng_dL',  label: 'Total Testosterone', unit: 'ng/dL', refMin: 300, refMax: 1000, sliderMin: 50, sliderMax: 1500, step: 10, default: 500 },
+      { key: 'hormones.estradiol_pg_mL',           label: 'Estradiol (E2)',    unit: 'pg/mL',  refMin: 20,  refMax: 400, sliderMin: 5,  sliderMax: 600, step: 5,   default: 40 },
+      { key: 'hormones.progesterone_ng_mL',        label: 'Progesterone',      unit: 'ng/mL',  refMin: 0.1, refMax: 20,  sliderMin: 0.1, sliderMax: 30, step: 0.1, default: 0.5 },
+      { key: 'hormones.lh_IU_L',                   label: 'LH',               unit: 'IU/L',   refMin: 2,   refMax: 15,  sliderMin: 0.5, sliderMax: 50, step: 0.5, default: 5.0 },
+      { key: 'hormones.fsh_IU_L',                  label: 'FSH',              unit: 'IU/L',   refMin: 1,   refMax: 10,  sliderMin: 0.5, sliderMax: 30, step: 0.5, default: 5.0 },
+      { key: 'hormones.shbg_nmol_L',               label: 'SHBG',             unit: 'nmol/L', refMin: 20,  refMax: 100, sliderMin: 5,   sliderMax: 200, step: 1,  default: 40 },
+      { key: 'hormones.dheas_ug_dL',               label: 'DHEA-S',           unit: 'µg/dL',  refMin: 100, refMax: 500, sliderMin: 10,  sliderMax: 700, step: 10, default: 200 },
+      { key: 'hormones.igf1_ng_mL',                label: 'IGF-1',            unit: 'ng/mL',  refMin: 100, refMax: 300, sliderMin: 20,  sliderMax: 500, step: 5,  default: 150 },
+      { key: 'hormones.freeT4_ng_dL',              label: 'Free T4',          unit: 'ng/dL',  refMin: 0.8, refMax: 1.8, sliderMin: 0.3, sliderMax: 3.0, step: 0.1, default: 1.2 },
+    ]
+  },
+  {
+    id: 'nutritional',
+    label: 'Nutritional Panel',
+    fields: [
+      { key: 'nutritional.vitaminD3_ng_mL',  label: 'Vitamin D3',  unit: 'ng/mL',  refMin: 30,  refMax: 80,  sliderMin: 5,   sliderMax: 120, step: 1,   default: 35 },
+      { key: 'nutritional.b12_pg_mL',        label: 'Vitamin B12', unit: 'pg/mL',  refMin: 200, refMax: 900, sliderMin: 50,  sliderMax: 1500, step: 10, default: 500 },
+      { key: 'nutritional.iron_ug_dL',       label: 'Serum Iron',  unit: 'µg/dL',  refMin: 60,  refMax: 170, sliderMin: 10,  sliderMax: 300, step: 5,   default: 100 },
+      { key: 'nutritional.folate_ng_mL',     label: 'Folate',      unit: 'ng/mL',  refMin: 4,   refMax: 20,  sliderMin: 1,   sliderMax: 40,  step: 0.5, default: 12 },
+      { key: 'nutritional.zinc_ug_dL',       label: 'Zinc',        unit: 'µg/dL',  refMin: 70,  refMax: 120, sliderMin: 20,  sliderMax: 200, step: 5,   default: 90 },
+      { key: 'nutritional.magnesium_mg_dL',  label: 'Magnesium',   unit: 'mg/dL',  refMin: 1.7, refMax: 2.3, sliderMin: 0.5, sliderMax: 4.0, step: 0.1, default: 2.0 },
     ]
   }
 ];
