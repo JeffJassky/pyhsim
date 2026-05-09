@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Protokol Lab — A laboratory for your own biology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="app"></div>
+
+<script src="js/shared.js"></script>
+<script src="js/home-main.js"></script>
+<script src="js/home.js"></script>
+<script src="js/audience.js"></script>
+<script>
+(function(){
+  const app = document.getElementById('app');
+
+  function parseHash(){
+    const h = (location.hash || '').replace(/^#\/?/, '');
+    // strip any trailing in-page anchor like "#how"
+    const slug = h.split('#')[0].split('?')[0];
+    const inPage = h.includes('#') ? h.slice(h.indexOf('#') + 1) : '';
+    return { slug, inPage };
+  }
+
+  function render(){
+    const { slug, inPage } = parseHash();
+    const audSlugs = PL.AUDIENCES.map(a => a.slug);
+
+    let body = '';
+    let activeSlug = '';
+    if(slug && audSlugs.includes(slug)){
+      activeSlug = slug;
+      body = PL.renderAudience(slug);
+    } else {
+      body = PL.renderHome();
+    }
+
+    app.innerHTML = PL.renderNav(activeSlug) + body + PL.renderFooter();
+    PL.bindNav();
+
+    // Scroll: if there's an in-page anchor, jump to it; else top.
+    requestAnimationFrame(() => {
+      if(inPage){
+        const el = document.getElementById(inPage);
+        if(el){
+          const top = el.getBoundingClientRect().top + window.scrollY - 70;
+          window.scrollTo(0, top);
+          return;
+        }
+      }
+      window.scrollTo(0, 0);
+    });
+  }
+
+  window.addEventListener('hashchange', render);
+  render();
+})();
+</script>
+</body>
+</html>

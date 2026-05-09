@@ -422,8 +422,8 @@
                 <h3 class="bw-panel__header">
                 <span>{{ panel.label }}</span>
               </h3>
-                                                            <div
-                                                              v-for="field in panel.fields"
+                                                              <div
+                                                              v-for="(field) in (panel.fields as BloodworkField[])"
                                                               :key="field.key"
                                                               class="bw-field-item"
                                                             >
@@ -444,20 +444,40 @@
                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-refresh-cw"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.5 9a8 8 0 0 1 14.17-5.59L23 10M1 14l4.33 4.59A8 8 0 0 0 20.5 15"></path></svg>
                                                                   </button>
                                                                   <div class="bw-field-item__numeric-readout">
-                                                                    <input
-                                                                      type="number"
-                                                                      :value="getBloodworkValue(field.key)"
-                                                                      :placeholder="String(field.default)"
-                                                                      @input="(e) => setBloodworkValue(field.key, Number((e.target as HTMLInputElement).value))"
-                                                                      class="bw-row__input"
-                                                                      :style="{ 'color': getStatusColor(field.key) }"
-                                                                    />
+                                                                    <template v-if="field.isCategorical">
+                                                                      <select
+                                                                        :value="getBloodworkValue(field.key) ?? ''"
+                                                                        @change="(e) => setBloodworkValue(field.key, (e.target as HTMLSelectElement).value)"
+                                                                        class="bw-row__input"
+                                                                        :style="{ 'min-width': '80px', 'width': 'auto' }"
+                                                                      >
+                                                                        <option value="">— not set —</option>
+                                                                        <option
+                                                                          v-for="option in field.options"
+                                                                          :key="option"
+                                                                          :value="option"
+                                                                        >
+                                                                          {{ option }}
+                                                                        </option>
+                                                                      </select>
+                                                                    </template>
+                                                                    <template v-else>
+                                                                      <input
+                                                                        type="number"
+                                                                        :value="getBloodworkValue(field.key)"
+                                                                        :placeholder="String(field.default)"
+                                                                        @input="(e) => setBloodworkValue(field.key, Number((e.target as HTMLInputElement).value))"
+                                                                        class="bw-row__input"
+                                                                        :style="{ 'color': getStatusColor(field.key) }"
+                                                                      />
+                                                                    </template>
                                                                     <span class="bw-row__unit">{{ field.unit }}</span>
                                                                   </div>
                                                                 </div>
                                                               </div>
                                                               <PrecisionSlider
-                                                                :value="getBloodworkValue(field.key) ?? field.default"
+                                                                v-if="!field.isCategorical"
+                                                                :value="numericBloodworkValue(field)"
                                                                 :min="field.sliderMin"
                                                                 :max="field.sliderMax"
                                                                 :step="field.step"
@@ -488,9 +508,18 @@ import { ref, computed, watch, nextTick } from 'vue';
 import { useUserStore } from '@/stores/user';
 import { useUIStore } from '@/stores/ui';
 import { CONDITION_LIBRARY } from '@/models';
-import { Signal, getAllUnifiedDefinitions } from '@kyneticbio/core';
+import {
+  Signal,
+  getAllUnifiedDefinitions,
+  BLOODWORK_PANELS,
+  BLOODWORK_FIELD_INDEX,
+} from '@kyneticbio/core';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
-import type { ConditionKey } from '@kyneticbio/core';
+import type {
+  ConditionKey,
+  BloodworkField,
+  NumericBloodworkField,
+} from '@kyneticbio/core';
 import type { Subject } from '@/types';
 import type { Goal } from '@/types';
 import Sortable from 'sortablejs';
@@ -509,71 +538,6 @@ const uiStore = useUIStore();
 const view = ref<'categories' | 'physiology' | 'conditions' | 'nutrition' | 'goals' | 'display' | 'subscription' | 'bloodwork'>('categories');
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
-const BLOODWORK_PANELS = [
-  {
-    id: 'metabolic',
-    label: 'Comprehensive Metabolic Panel',
-    fields: [
-      { key: 'metabolic.glucose_mg_dL',    label: 'Glucose (Fasting)', unit: 'mg/dL',  refMin: 70,  refMax: 100,  sliderMin: 40,  sliderMax: 300, step: 1,   default: 90 },
-      { key: 'metabolic.albumin_g_dL',     label: 'Albumin',          unit: 'g/dL',   refMin: 3.5, refMax: 5.0,  sliderMin: 1.0, sliderMax: 6.0, step: 0.1, default: 4.0 },
-      { key: 'metabolic.creatinine_mg_dL', label: 'Creatinine',       unit: 'mg/dL',  refMin: 0.6, refMax: 1.2,  sliderMin: 0.2, sliderMax: 5.0, step: 0.1, default: 0.9 },
-      { key: 'metabolic.eGFR_mL_min',      label: 'eGFR',             unit: 'mL/min', refMin: 90,  refMax: 120,  sliderMin: 10,  sliderMax: 140, step: 1,   default: 100 },
-      { key: 'metabolic.alt_U_L',          label: 'ALT',              unit: 'U/L',    refMin: 7,   refMax: 56,   sliderMin: 5,   sliderMax: 200, step: 1,   default: 25 },
-      { key: 'metabolic.ast_U_L',          label: 'AST',              unit: 'U/L',    refMin: 10,  refMax: 40,   sliderMin: 5,   sliderMax: 200, step: 1,   default: 22 },
-      { key: 'metabolic.bilirubin_mg_dL',  label: 'Bilirubin',        unit: 'mg/dL',  refMin: 0.1, refMax: 1.2,  sliderMin: 0.1, sliderMax: 5.0, step: 0.1, default: 0.7 },
-      { key: 'metabolic.potassium_mmol_L', label: 'Potassium',        unit: 'mmol/L', refMin: 3.5, refMax: 5.0,  sliderMin: 2.5, sliderMax: 7.0, step: 0.1, default: 4.2 },
-      { key: 'metabolic.fasting_insulin_uIU_mL', label: 'Fasting Insulin', unit: 'µIU/mL', refMin: 2, refMax: 25, sliderMin: 1, sliderMax: 100, step: 0.5, default: 8.0 },
-    ]
-  },
-  {
-    id: 'hematology',
-    label: 'Complete Blood Count',
-    fields: [
-      { key: 'hematology.hemoglobin_g_dL',      label: 'Hemoglobin',  unit: 'g/dL', refMin: 12.0, refMax: 17.5, sliderMin: 6,   sliderMax: 22,  step: 0.1, default: 14.5 },
-      { key: 'hematology.hematocrit_pct',        label: 'Hematocrit',  unit: '%',    refMin: 36,   refMax: 54,   sliderMin: 20,  sliderMax: 65,   step: 1,   default: 43 },
-      { key: 'hematology.platelet_count_k_uL',   label: 'Platelets',   unit: 'K/µL', refMin: 150,  refMax: 400,  sliderMin: 50,  sliderMax: 600, step: 5,   default: 250 },
-      { key: 'hematology.wbc_count_k_uL',        label: 'WBC',         unit: 'K/µL', refMin: 4.5,  refMax: 11.0, sliderMin: 1.0, sliderMax: 25,   step: 0.1, default: 7.0 },
-    ]
-  },
-  {
-    id: 'inflammation',
-    label: 'Inflammatory Markers',
-    fields: [
-      { key: 'inflammation.hsCRP_mg_L',      label: 'hs-CRP',   unit: 'mg/L',  refMin: 0,   refMax: 3.0,  sliderMin: 0.1, sliderMax: 20,  step: 0.1, default: 1.0 },
-      { key: 'inflammation.ferritin_ng_mL',  label: 'Ferritin',  unit: 'ng/mL', refMin: 12,  refMax: 300,  sliderMin: 5,   sliderMax: 500, step: 5,   default: 50 },
-    ]
-  },
-  {
-    id: 'hormones',
-    label: 'Hormonal Panel',
-    fields: [
-      { key: 'hormones.tsh_uIU_mL',               label: 'TSH',               unit: 'µIU/mL', refMin: 0.4, refMax: 4.0, sliderMin: 0.1, sliderMax: 15,  step: 0.1, default: 2.0 },
-      { key: 'hormones.cortisol_ug_dL',            label: 'Cortisol',          unit: 'µg/dL',  refMin: 6,   refMax: 18,  sliderMin: 1, sliderMax: 35,  step: 0.5, default: 12 },
-      { key: 'hormones.free_testosterone_pg_mL',   label: 'Free Testosterone', unit: 'pg/mL',  refMin: 5,   refMax: 25,  sliderMin: 1, sliderMax: 50,  step: 0.5, default: 15 },
-      { key: 'hormones.total_testosterone_ng_dL',  label: 'Total Testosterone', unit: 'ng/dL', refMin: 300, refMax: 1000, sliderMin: 50, sliderMax: 1500, step: 10, default: 500 },
-      { key: 'hormones.estradiol_pg_mL',           label: 'Estradiol (E2)',    unit: 'pg/mL',  refMin: 20,  refMax: 400, sliderMin: 5,  sliderMax: 600, step: 5,   default: 40 },
-      { key: 'hormones.progesterone_ng_mL',        label: 'Progesterone',      unit: 'ng/mL',  refMin: 0.1, refMax: 20,  sliderMin: 0.1, sliderMax: 30, step: 0.1, default: 0.5 },
-      { key: 'hormones.lh_IU_L',                   label: 'LH',               unit: 'IU/L',   refMin: 2,   refMax: 15,  sliderMin: 0.5, sliderMax: 50, step: 0.5, default: 5.0 },
-      { key: 'hormones.fsh_IU_L',                  label: 'FSH',              unit: 'IU/L',   refMin: 1,   refMax: 10,  sliderMin: 0.5, sliderMax: 30, step: 0.5, default: 5.0 },
-      { key: 'hormones.shbg_nmol_L',               label: 'SHBG',             unit: 'nmol/L', refMin: 20,  refMax: 100, sliderMin: 5,   sliderMax: 200, step: 1,  default: 40 },
-      { key: 'hormones.dheas_ug_dL',               label: 'DHEA-S',           unit: 'µg/dL',  refMin: 100, refMax: 500, sliderMin: 10,  sliderMax: 700, step: 10, default: 200 },
-      { key: 'hormones.igf1_ng_mL',                label: 'IGF-1',            unit: 'ng/mL',  refMin: 100, refMax: 300, sliderMin: 20,  sliderMax: 500, step: 5,  default: 150 },
-      { key: 'hormones.freeT4_ng_dL',              label: 'Free T4',          unit: 'ng/dL',  refMin: 0.8, refMax: 1.8, sliderMin: 0.3, sliderMax: 3.0, step: 0.1, default: 1.2 },
-    ]
-  },
-  {
-    id: 'nutritional',
-    label: 'Nutritional Panel',
-    fields: [
-      { key: 'nutritional.vitaminD3_ng_mL',  label: 'Vitamin D3',  unit: 'ng/mL',  refMin: 30,  refMax: 80,  sliderMin: 5,   sliderMax: 120, step: 1,   default: 35 },
-      { key: 'nutritional.b12_pg_mL',        label: 'Vitamin B12', unit: 'pg/mL',  refMin: 200, refMax: 900, sliderMin: 50,  sliderMax: 1500, step: 10, default: 500 },
-      { key: 'nutritional.iron_ug_dL',       label: 'Serum Iron',  unit: 'µg/dL',  refMin: 60,  refMax: 170, sliderMin: 10,  sliderMax: 300, step: 5,   default: 100 },
-      { key: 'nutritional.folate_ng_mL',     label: 'Folate',      unit: 'ng/mL',  refMin: 4,   refMax: 20,  sliderMin: 1,   sliderMax: 40,  step: 0.5, default: 12 },
-      { key: 'nutritional.zinc_ug_dL',       label: 'Zinc',        unit: 'µg/dL',  refMin: 70,  refMax: 120, sliderMin: 20,  sliderMax: 200, step: 5,   default: 90 },
-      { key: 'nutritional.magnesium_mg_dL',  label: 'Magnesium',   unit: 'mg/dL',  refMin: 1.7, refMax: 2.3, sliderMin: 0.5, sliderMax: 4.0, step: 0.1, default: 2.0 },
-    ]
-  }
-];
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen && uiStore.profileModalView) {
@@ -731,22 +695,46 @@ const updateMacro = (key: 'protein' | 'carbs' | 'fat', field: 'min' | 'max', val
 };
 
 // Read a bloodwork value (e.g., 'metabolic.glucose_mg_dL')
-function getBloodworkValue(dotPath: string): number | undefined {
+function getBloodworkValue(dotPath: string): string | number | undefined {
   const [panel, field] = dotPath.split('.');
   // @ts-ignore
   return subject.value.bloodwork?.[panel]?.[field];
 }
 
-// Write a bloodwork value, deep-merging into the existing bloodwork object
-function setBloodworkValue(dotPath: string, value: number | undefined) {
+// Typed numeric read for slider binding. Falls back to field default
+// when the user hasn't overridden, or value is the wrong shape.
+function numericBloodworkValue(field: NumericBloodworkField): number {
+  const raw = getBloodworkValue(field.key);
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : field.default;
+}
+
+// Write a bloodwork value, deep-merging into the existing bloodwork object.
+// Categorical writes are validated against the field's declared options;
+// numeric writes round-trip through Number() and reject NaN.
+function setBloodworkValue(dotPath: string, value: string | number | undefined) {
   const [panel, field] = dotPath.split('.');
   const current = subject.value.bloodwork ?? {};
   // @ts-ignore
   const panelData = { ...(current[panel] ?? {}) };
-  if (value === undefined || isNaN(value)) {
+
+  const isClear =
+    value === undefined ||
+    (typeof value === 'number' && !Number.isFinite(value)) ||
+    (typeof value === 'string' && value.trim() === '');
+
+  if (isClear) {
     delete panelData[field];
   } else {
-    panelData[field] = value;
+    const def = BLOODWORK_FIELD_INDEX.get(dotPath);
+    if (def?.isCategorical) {
+      const str = String(value);
+      if (!def.options.includes(str)) return;
+      panelData[field] = str;
+    } else {
+      const num = typeof value === 'number' ? value : Number(value);
+      if (!Number.isFinite(num)) return;
+      panelData[field] = num;
+    }
   }
   // Clean up empty panels
   const next = { ...current, [panel]: Object.keys(panelData).length ? panelData : undefined };
@@ -754,26 +742,26 @@ function setBloodworkValue(dotPath: string, value: number | undefined) {
 }
 
 function getStatusColor(dotPath: string): string {
-  const [panelId, fieldId] = dotPath.split('.');
-  const panel = BLOODWORK_PANELS.find(p => p.id === panelId);
-  const field = panel?.fields.find(f => f.key === dotPath);
+  const field = BLOODWORK_FIELD_INDEX.get(dotPath);
+  if (!field || field.isCategorical) return 'transparent';
 
-  if (!field) return 'transparent';
-
-  // Use the actual value if set, otherwise use the default for color calculation
-  const value = getBloodworkValue(dotPath) ?? field.default;
+  // Use the actual value if set, otherwise use the default for color calculation.
+  const raw = getBloodworkValue(dotPath);
+  const value = typeof raw === 'number' ? raw : field.default;
+  if (!Number.isFinite(value)) return 'transparent';
 
   const { refMin, refMax, sliderMin, sliderMax } = field;
+  if (!Number.isFinite(refMin) || !Number.isFinite(refMax)) return 'transparent';
 
   // Within reference range
   if (value >= refMin && value <= refMax) {
     return 'var(--color-success)';
   }
 
-  // Close to reference range (within 10% of the diff between ref and slider boundary)
+  // Close to reference range (within 20% of the ref span)
   const refRange = refMax - refMin;
-  const lowerBound = Math.max(sliderMin, refMin - refRange * 0.2); // 20% buffer
-  const upperBound = Math.min(sliderMax, refMax + refRange * 0.2); // 20% buffer
+  const lowerBound = Math.max(sliderMin, refMin - refRange * 0.2);
+  const upperBound = Math.min(sliderMax, refMax + refRange * 0.2);
 
   if ((value >= lowerBound && value < refMin) || (value > refMax && value <= upperBound)) {
     return 'var(--color-warning)';

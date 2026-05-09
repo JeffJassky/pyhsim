@@ -249,6 +249,10 @@ onMounted(scrollToBottom);
   line-height: 1.2;
 }
 
+:deep(.markdown-body strong){
+	color: var(--color-text-primary);
+}
+
 :deep(.markdown-body h1) { font-size: 1.4em; }
 :deep(.markdown-body h2) { font-size: 1.25em; }
 :deep(.markdown-body h3) { font-size: 1.1em; }
