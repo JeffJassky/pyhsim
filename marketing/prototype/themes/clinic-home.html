@@ -1,0 +1,1739 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Protokol Lab — Clinic direction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     CLINIC · WARM tokens
+     ============================================================ */
+  :root {
+    /* Surfaces */
+    --bg:           #fbf8f3;
+    --bg-alt:       #f5efe4;
+    --panel:        #ffffff;
+    --panel-warm:   #f8f3e8;
+
+    /* Ink */
+    --ink:          #1c1a17;
+    --ink-dim:      #5a5249;
+    --ink-mute:     #928876;
+
+    /* Lines (derived from ink, so borders feel like the same family) */
+    --line:         rgba(40,30,20,0.10);
+    --line-strong:  rgba(40,30,20,0.22);
+
+    /* Accent — single terracotta */
+    --accent:       #c4633c;
+    --accent-deep:  #a14e2c;
+    --accent-soft:  #ecd5c4;
+    --accent-ink:   #ffffff;
+
+    /* Semantic (used sparingly) */
+    --good:         #6b8a4f;
+    --warn:         #c97b3a;
+
+    /* Type */
+    --serif:        "Fraunces", "Tiempos", Georgia, serif;
+    --sans:         "Inter", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+    --mono:         "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  /* ============================================================
+     Base
+     ============================================================ */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--accent); color: var(--accent-ink); }
+
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; }
+
+  /* Typography helpers */
+  .serif { font-family: var(--serif); font-weight: 380; letter-spacing: -0.018em; font-feature-settings: "ss01"; }
+  .serif-disp {
+    font-family: var(--serif);
+    font-weight: 380;
+    letter-spacing: -0.02em;
+    line-height: 1.04;
+    font-feature-settings: "ss01";
+  }
+  .serif-disp i { font-style: italic; color: var(--accent-deep); font-weight: 400; }
+  .mono {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .mono-accent {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .strike { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--ink-mute); }
+
+  /* Layout */
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 40px; }
+  .wrap-narrow { max-width: 980px; margin: 0 auto; padding: 0 40px; }
+  .wrap-wide { max-width: 1360px; margin: 0 auto; padding: 0 40px; }
+
+  /* Buttons (pill, function-style) */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 48px;
+    padding: 0 26px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+    background: var(--panel);
+    transition: all .15s ease;
+  }
+  .btn:hover { border-color: var(--ink); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .btn.primary:hover { background: var(--accent-deep); }
+  .btn.outline { background: transparent; border-color: var(--accent); color: var(--accent); }
+  .btn.outline:hover { background: var(--accent); color: var(--accent-ink); }
+  .btn.sm { height: 38px; padding: 0 18px; font-size: 13px; }
+  .btn.ghost { border-color: transparent; }
+  .btn.ghost:hover { border-color: var(--line-strong); }
+
+  /* Eyebrow pill */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    background: var(--panel);
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* ============================================================
+     NAV
+     ============================================================ */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in oklab, var(--bg) 92%, transparent);
+    backdrop-filter: saturate(140%) blur(14px);
+    -webkit-backdrop-filter: saturate(140%) blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 72px;
+    gap: 32px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+  }
+  .brand-mark {
+    width: 28px; height: 28px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  /* Sunrise/horizon mark — echo Function's circle-with-stripes without copying */
+  .brand-mark svg { width: 100%; height: 100%; display: block; }
+  .brand-text {
+    font-family: var(--serif);
+    font-weight: 450;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .nav-links {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+  }
+  .nav-links a {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-cta { display: flex; gap: 10px; align-items: center; }
+
+  /* Top promo strip */
+  .promo {
+    background: var(--accent);
+    color: var(--accent-ink);
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .promo a { text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ============================================================
+     HERO
+     ============================================================ */
+  .hero {
+    padding: 110px 0 140px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-blob {
+    position: absolute;
+    right: -10%;
+    top: -10%;
+    width: 720px;
+    height: 720px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(196,99,60,0.16), transparent 65%);
+    filter: blur(40px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hero-inner { position: relative; z-index: 2; }
+  .hero h1 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(56px, 7.6vw, 112px);
+    line-height: 1.02;
+    letter-spacing: -0.022em;
+    margin: 32px 0 0;
+    max-width: 16ch;
+    color: var(--ink);
+    font-feature-settings: "ss01";
+  }
+  .hero h1 .accent-italic {
+    font-style: italic;
+    color: var(--accent-deep);
+    font-weight: 400;
+  }
+  .hero-sub {
+    margin-top: 36px;
+    max-width: 60ch;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-dim);
+    font-weight: 350;
+  }
+  .hero-sub b { color: var(--ink); font-weight: 500; }
+  .hero-ctas { margin-top: 44px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero-tagline {
+    margin-top: 60px;
+    padding-top: 28px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    max-width: 880px;
+  }
+  .hero-tagline .stat-big {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 32px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .hero-tagline .stat-label {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    line-height: 1.4;
+  }
+
+  /* ============================================================
+     CAPABILITY STACK (3 verbs)
+     ============================================================ */
+  .stack {
+    padding: 100px 0;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+  }
+  .stack-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 80px;
+    align-items: start;
+  }
+  .stack-grid h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(40px, 4.4vw, 60px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: var(--ink);
+    max-width: 14ch;
+    font-feature-settings: "ss01";
+  }
+  .stack-grid h2 i { font-style: italic; color: var(--accent-deep); font-weight: 400; }
+  .stack-items { display: flex; flex-direction: column; }
+  .stack-item {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 32px;
+    padding: 36px 0;
+    border-top: 1px solid var(--line);
+    align-items: start;
+  }
+  .stack-item:last-child { border-bottom: 1px solid var(--line); }
+  .stack-item .num {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 38px;
+    color: var(--accent);
+    line-height: 1;
+    padding-top: 8px;
+  }
+  .stack-item h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+  .stack-item p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-dim);
+    max-width: 56ch;
+  }
+
+  /* ============================================================
+     IDENTITY BAND
+     ============================================================ */
+  .identity {
+    padding: 140px 0;
+    background: var(--bg-alt);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .identity::before {
+    content: "";
+    position: absolute;
+    left: -10%;
+    bottom: -40%;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(ellipse at center, rgba(196,99,60,0.08), transparent 60%);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .identity-inner { position: relative; z-index: 2; }
+  .identity h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(56px, 7vw, 104px);
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    margin: 18px auto 0;
+    max-width: 16ch;
+    color: var(--ink);
+    font-feature-settings: "ss01";
+  }
+  .identity h2 i {
+    font-style: italic;
+    color: var(--accent-deep);
+    font-weight: 400;
+  }
+  .identity p {
+    margin: 32px auto 0;
+    max-width: 56ch;
+    font-size: 20px;
+    line-height: 1.5;
+    color: var(--ink-dim);
+  }
+
+  /* ============================================================
+     CATEGORIES (Function-style 3x2 grid)
+     ============================================================ */
+  .cats {
+    padding: 120px 0;
+    background: var(--bg);
+  }
+  .cats-head {
+    text-align: center;
+    margin-bottom: 80px;
+  }
+  .cats-head h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(44px, 5.2vw, 72px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 18px auto 0;
+    max-width: 22ch;
+    font-feature-settings: "ss01";
+  }
+  .cats-head h2 i { font-style: italic; color: var(--accent-deep); font-weight: 400; }
+  .cats-head p {
+    margin: 20px auto 0;
+    max-width: 52ch;
+    font-size: 18px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .cat {
+    padding: 56px 48px 64px;
+    border-top: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .cat:nth-child(3n) { border-right: 0; }
+  .cat:nth-child(-n+3) { border-top: 0; }
+  .cat:hover { background: var(--panel-warm); }
+  .cat h3 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: 38px;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin: 0 0 12px;
+    max-width: 12ch;
+  }
+  .cat-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 28px;
+    letter-spacing: 0.04em;
+  }
+  .cat-count::before {
+    content: "";
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--accent);
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .cat-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cat-items li {
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .cat-items li:nth-child(n+4) { color: var(--ink-mute); }
+  .cat-items li:nth-child(n+6) { color: rgba(146,136,118,0.5); }
+
+  /* Conditions row — different header treatment */
+  .cat.conditions {
+    background: var(--accent-soft);
+    border-color: transparent;
+    grid-column: 3 / 4;
+  }
+  .cat.conditions h3 { color: var(--accent-deep); font-style: italic; }
+  .cat.conditions .cat-count { color: var(--accent-deep); }
+  .cat.conditions .cat-count::before { border-color: var(--accent-deep); }
+  .cat.conditions .cat-items li:nth-child(n+4) { color: var(--accent-deep); opacity: 0.6; }
+  .cat.conditions .cat-items li { color: var(--ink); }
+
+  .cats-cta {
+    margin-top: 48px;
+    text-align: center;
+  }
+
+  /* ============================================================
+     METHODOLOGY BAND
+     ============================================================ */
+  .methodology {
+    padding: 120px 0;
+    background: var(--bg-alt);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .method-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 80px;
+    align-items: start;
+  }
+  .method-grid h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(40px, 4.8vw, 64px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    margin: 18px 0 0;
+    max-width: 14ch;
+    font-feature-settings: "ss01";
+  }
+  .method-grid h2 i { font-style: italic; color: var(--accent-deep); font-weight: 400; }
+  .method-grid h2 small {
+    display: block;
+    font-family: var(--sans);
+    font-size: 18px;
+    color: var(--ink-dim);
+    font-weight: 400;
+    line-height: 1.5;
+    margin-top: 24px;
+    max-width: 38ch;
+    letter-spacing: 0;
+  }
+  .method-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .method-item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 20px;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+    align-items: start;
+  }
+  .method-item:last-child { border-bottom: 1px solid var(--line); }
+  .method-item .check {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .method-item h4 {
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .method-item p {
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-dim);
+    margin: 0;
+  }
+
+  /* ============================================================
+     SOCIAL PROOF — protocols people are building
+     ============================================================ */
+  .social {
+    padding: 120px 0;
+    background: var(--bg);
+  }
+  .social-head { text-align: center; margin-bottom: 64px; }
+  .social-head h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(44px, 5.2vw, 72px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 18px auto 0;
+    max-width: 18ch;
+    font-feature-settings: "ss01";
+  }
+  .social-head h2 i { font-style: italic; color: var(--accent-deep); font-weight: 400; }
+  .social-head p {
+    margin: 18px auto 0;
+    max-width: 52ch;
+    font-size: 17px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+  .proto-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+  .proto {
+    background: var(--panel);
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+  }
+  .proto-img {
+    height: 220px;
+    background: var(--bg-alt);
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    /* Soft gradient overlay for placeholder feel */
+    background-image:
+      linear-gradient(135deg, rgba(196,99,60,0.16), rgba(94,110,74,0.1)),
+      radial-gradient(ellipse at top right, rgba(196,99,60,0.18), transparent 60%);
+  }
+  .proto-img::after {
+    /* "Photo" placeholder dot — like Function's play button */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at center, rgba(255,255,255,0.85) 0 28px, transparent 29px),
+      radial-gradient(circle at 50% 47%, transparent 0 8px, transparent 9px);
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.4;
+  }
+  .proto-img-label {
+    position: absolute;
+    top: 16px; left: 16px;
+    background: rgba(28,26,23,0.7);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    z-index: 2;
+  }
+  .proto-body {
+    padding: 24px 22px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .proto-body h4 {
+    font-family: var(--serif);
+    font-weight: 450;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin: 0;
+  }
+  .proto-body .meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+  }
+  .proto-body p {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+  .proto-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 14px;
+  }
+  .proto-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+
+  /* ============================================================
+     HOW THE MODEL WORKS — methodology pipeline
+     ============================================================ */
+  .pipeline {
+    padding: 120px 0;
+    background: var(--bg-alt);
+    border-top: 1px solid var(--line);
+  }
+  .pipeline-head {
+    text-align: center;
+    margin-bottom: 80px;
+  }
+  .pipeline-head h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(44px, 5.2vw, 72px);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 18px auto 0;
+    max-width: 20ch;
+    font-feature-settings: "ss01";
+  }
+  .pipeline-head h2 i { font-style: italic; color: var(--accent-deep); font-weight: 400; }
+  .pipeline-head p {
+    margin: 18px auto 0;
+    max-width: 56ch;
+    font-size: 17px;
+    color: var(--ink-dim);
+    line-height: 1.55;
+  }
+
+  .pipe-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .pipe-step {
+    background: var(--panel);
+    border-radius: 18px;
+    padding: 36px 32px 40px;
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 380px;
+  }
+  .pipe-step .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-align: center;
+  }
+  .pipe-step h3 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 30px;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-align: center;
+  }
+  .pipe-step .pipe-vis {
+    margin: 8px 0;
+    padding: 24px 18px;
+    background: var(--panel-warm);
+    border-radius: 12px;
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pipe-step p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--ink-dim);
+    line-height: 1.55;
+    text-align: center;
+  }
+
+  /* Vis: citation rows */
+  .vis-cite {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .vis-cite-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 8px 12px;
+    background: var(--panel);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--ink-dim);
+    align-items: center;
+  }
+  .vis-cite-row .what {
+    font-family: var(--sans);
+    color: var(--ink);
+  }
+  .vis-cite-row .src {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Vis: receptor map */
+  .vis-receptor {
+    width: 100%;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-dim);
+  }
+  .vis-receptor .center {
+    display: inline-block;
+    padding: 10px 18px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-radius: 6px;
+    margin-bottom: 14px;
+  }
+  .vis-receptor .branches {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .vis-receptor .branch {
+    flex: 1;
+    padding: 8px 6px;
+    background: var(--panel);
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-size: 10px;
+  }
+
+  /* Vis: refusal */
+  .vis-refusal {
+    text-align: center;
+    width: 100%;
+  }
+  .vis-refusal .stack {
+    display: inline-block;
+    background: var(--panel);
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-decoration: line-through;
+    text-decoration-thickness: 1.5px;
+    text-decoration-color: var(--accent);
+  }
+  .vis-refusal .msg {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+
+  /* ============================================================
+     PRICING (function-card style)
+     ============================================================ */
+  .pricing {
+    padding: 140px 0;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    text-align: center;
+  }
+  .price-h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(52px, 6.8vw, 96px);
+    line-height: 1.04;
+    letter-spacing: -0.022em;
+    margin: 0;
+    color: var(--ink);
+    font-feature-settings: "ss01";
+  }
+  .price-h2 i { font-style: italic; color: var(--accent-deep); font-weight: 400; }
+  .price-h2 .strike {
+    color: var(--ink-mute);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent-deep);
+  }
+  .price-sub {
+    margin: 22px auto 56px;
+    max-width: 46ch;
+    font-size: 18px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+  .price-card {
+    margin: 0 auto;
+    max-width: 1000px;
+    background: var(--panel-warm);
+    border-radius: 22px;
+    padding: 48px 56px;
+    display: grid;
+    grid-template-columns: 1fr 1px 1.2fr;
+    gap: 56px;
+    text-align: left;
+    border: 1px solid var(--line);
+  }
+  .price-card .divider { background: var(--line); }
+  .price-card .left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .price-card .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .price-card .badge::before {
+    content: "✓";
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+  .price-card h3 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0;
+    max-width: 12ch;
+    font-feature-settings: "ss01";
+  }
+  .price-card .amount {
+    margin: 16px 0 8px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .price-card .amount .big {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: 88px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .price-card .amount .unit { color: var(--ink-dim); font-size: 18px; }
+  .price-card .billed { color: var(--ink-dim); font-size: 14px; margin-bottom: 22px; }
+
+  .price-card .right ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .price-card .right li {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 14px;
+    align-items: start;
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .price-card .right li::before {
+    content: "✓";
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .quotes {
+    margin-top: 56px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .quote-card {
+    padding: 0 8px;
+  }
+  .quote-stars {
+    color: var(--accent);
+    font-size: 13px;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+  .quote-card p {
+    margin: 0;
+    color: var(--ink-dim);
+    font-size: 15px;
+    line-height: 1.55;
+    max-width: 32ch;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* ============================================================
+     CLOSING — black box
+     ============================================================ */
+  .closer {
+    padding: 180px 0 200px;
+    text-align: center;
+    background: var(--bg-alt);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+  }
+  .closer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 30%, rgba(196,99,60,0.10), transparent 50%),
+      radial-gradient(ellipse at 70% 70%, rgba(94,110,74,0.08), transparent 50%);
+    pointer-events: none;
+  }
+  .closer-inner { position: relative; z-index: 2; }
+  .closer h2 {
+    font-family: var(--serif);
+    font-weight: 380;
+    font-size: clamp(60px, 8vw, 128px);
+    line-height: 1;
+    letter-spacing: -0.025em;
+    margin: 0;
+    max-width: 14ch;
+    margin-inline: auto;
+    color: var(--ink);
+    font-feature-settings: "ss01";
+  }
+  .closer h2 i {
+    font-style: italic;
+    color: var(--accent-deep);
+    font-weight: 400;
+  }
+  .closer h2 .line2 {
+    display: block;
+    margin-top: 0.18em;
+  }
+  .closer p {
+    margin: 36px auto 44px;
+    max-width: 40ch;
+    font-size: 20px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+  .closer-ctas { display: inline-flex; gap: 14px; }
+
+  /* ============================================================
+     FOOTER
+     ============================================================ */
+  footer {
+    padding: 80px 0 56px;
+    background: var(--bg);
+  }
+  .foot-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1.6fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .foot-brand p {
+    margin: 18px 0 0;
+    max-width: 40ch;
+    color: var(--ink-dim);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .foot-col h6 {
+    margin: 0 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .foot-col a {
+    display: block;
+    padding: 5px 0;
+    color: var(--ink-dim);
+    font-size: 14px;
+  }
+  .foot-col a:hover { color: var(--accent); }
+  .foot-cta h6 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 380;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    font-feature-settings: "ss01";
+  }
+  .foot-cta h6 i { font-style: italic; color: var(--accent-deep); }
+  .foot-cta p {
+    color: var(--ink-dim);
+    font-size: 13px;
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+  .foot-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    padding: 6px 6px 6px 18px;
+  }
+  .foot-form input {
+    border: 0;
+    background: transparent;
+    flex: 1;
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+  }
+  .foot-form input::placeholder { color: var(--ink-mute); }
+  .foot-form button {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: 0;
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .foot-bottom {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-mute);
+  }
+  .disclaim {
+    margin-top: 24px;
+    padding: 18px 22px;
+    background: var(--panel);
+    border-radius: 14px;
+    border-left: 3px solid var(--accent);
+    color: var(--ink-dim);
+    font-size: 13px;
+    line-height: 1.55;
+    max-width: 80ch;
+  }
+  .disclaim b { color: var(--ink); }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .stack-grid, .method-grid { grid-template-columns: 1fr; gap: 48px; }
+    .cat-grid, .pipe-steps { grid-template-columns: 1fr 1fr; }
+    .cat:nth-child(2n) { border-right: 0; }
+    .cat:nth-child(3n) { border-right: 1px solid var(--line); }
+    .cat.conditions { grid-column: 1 / -1; }
+    .proto-grid { grid-template-columns: 1fr 1fr; }
+    .nav-links { display: none; }
+    .foot-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
+    .price-card { grid-template-columns: 1fr; gap: 28px; }
+    .price-card .divider { height: 1px; width: 100%; }
+    .quotes { grid-template-columns: 1fr; gap: 28px; }
+  }
+  @media (max-width: 640px) {
+    .wrap, .wrap-narrow, .wrap-wide { padding: 0 22px; }
+    .cat-grid, .proto-grid, .pipe-steps { grid-template-columns: 1fr; }
+    .cat { border-right: 0; }
+    .hero-tagline { grid-template-columns: 1fr; }
+    .price-card { padding: 32px 24px; }
+    .foot-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PROMO BAR
+     ============================================================ -->
+<div class="promo">
+  Use your HSA/FSA funds — Protokol Lab membership is eligible. <a href="#hsa">Learn more →</a>
+</div>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<header class="nav">
+  <div class="wrap-wide nav-bar">
+    <a href="#" class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="13" fill="#c4633c" />
+          <path d="M3 14 L25 14" stroke="#fbf8f3" stroke-width="1.2" />
+          <path d="M5 17 L23 17" stroke="#fbf8f3" stroke-width="1.2" opacity="0.85" />
+          <path d="M7 20 L21 20" stroke="#fbf8f3" stroke-width="1.2" opacity="0.7" />
+          <path d="M9 23 L19 23" stroke="#fbf8f3" stroke-width="1.2" opacity="0.55" />
+        </svg>
+      </span>
+      <span class="brand-text">Protokol</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#what">What we model</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="#about">About</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="#signin" class="btn ghost sm">Sign in</a>
+      <a href="#join" class="btn primary sm">Join the lab</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     HERO — methodology-first
+     ============================================================ -->
+<section class="hero">
+  <div class="hero-blob"></div>
+  <div class="wrap hero-inner">
+    <span class="eyebrow"><span class="dot"></span>Self-experimentation, with citations.</span>
+    <h1>
+      If we can't <i class="accent-italic">cite&nbsp;it</i>,<br>
+      we don't model&nbsp;it.
+    </h1>
+    <p class="hero-sub">
+      A <b>simulation lab</b> for your routine. 1,200+ compounds, 62 biological signals, every effect traced to peer-reviewed pharmacology. Test changes before you live through them.
+    </p>
+    <div class="hero-ctas">
+      <a href="#join" class="btn primary">Join the lab →</a>
+      <a href="#how" class="btn">How the model works</a>
+    </div>
+    <div class="hero-tagline">
+      <div>
+        <div class="stat-big">1,200+ compounds</div>
+        <div class="stat-label">Pharmacology library, every effect cited</div>
+      </div>
+      <div>
+        <div class="stat-big">62 signals</div>
+        <div class="stat-label">From dopamine to ApoB, modeled together</div>
+      </div>
+      <div>
+        <div class="stat-big">Your bloodwork</div>
+        <div class="stat-label">Quest, LabCorp, Function — parsed and baselined</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     CAPABILITY STACK — 3 verbs
+     ============================================================ -->
+<section class="stack">
+  <div class="wrap">
+    <div class="stack-grid">
+      <h2>What the lab actually lets you do.</h2>
+      <div class="stack-items">
+        <div class="stack-item">
+          <span class="num">01</span>
+          <div>
+            <h3>Test changes before you live them.</h3>
+            <p>Drop a new compound, a different dose, a re-timed meal into your day and see how the rest of your body responds. The next twelve weeks, simulated in an afternoon.</p>
+          </div>
+        </div>
+        <div class="stack-item">
+          <span class="num">02</span>
+          <div>
+            <h3>Find the overlaps in your stack.</h3>
+            <p>Caffeine, nicotine, modafinil — they're often hitting the same receptor three different ways. The lab decomposes every input down to its binding profile and shows you what's redundant.</p>
+          </div>
+        </div>
+        <div class="stack-item">
+          <span class="num">03</span>
+          <div>
+            <h3>Iterate in afternoons, not months.</h3>
+            <p>You won't find out you were wrong twelve weeks from now. You'll know within ten minutes — and you can fork the day, test the change, and pick the version of you you want.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     IDENTITY BAND
+     ============================================================ -->
+<section class="identity">
+  <div class="wrap identity-inner">
+    <span class="mono-accent">02 / Who it's for</span>
+    <h2>The lab for the <i>self-clinician</i>.</h2>
+    <p>For people who refuse to outsource their body. You've read the studies. You've screenshot the bloodwork. You've felt the difference between "in range" and well. The lab is built for what you do next.</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     CATEGORIES — peptides first
+     ============================================================ -->
+<section class="cats" id="what">
+  <div class="wrap-wide">
+    <div class="cats-head">
+      <span class="mono-accent">03 / What we model</span>
+      <h2>Every compound, every food, every workout — modeled <i>together</i>.</h2>
+      <p>Built around the things our users actually take. Peptides first, because no one else is doing it honestly.</p>
+    </div>
+
+    <div class="cat-grid">
+      <div class="cat">
+        <h3>Peptides</h3>
+        <div class="cat-count">40+ compounds</div>
+        <ul class="cat-items">
+          <li>Retatrutide</li>
+          <li>Tirzepatide</li>
+          <li>Semaglutide</li>
+          <li>BPC-157</li>
+          <li>TB-500</li>
+          <li>GHK-Cu</li>
+          <li>MOTS-c</li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3>Stimulants &amp; nootropics</h3>
+        <div class="cat-count">60+ compounds</div>
+        <ul class="cat-items">
+          <li>Caffeine</li>
+          <li>Modafinil</li>
+          <li>Methylene blue</li>
+          <li>L-Theanine</li>
+          <li>Alpha-GPC</li>
+          <li>Lion's Mane</li>
+          <li>Nicotine</li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3>Longevity stack</h3>
+        <div class="cat-count">30+ compounds</div>
+        <ul class="cat-items">
+          <li>Rapamycin</li>
+          <li>Metformin</li>
+          <li>NAD+</li>
+          <li>Berberine</li>
+          <li>Resveratrol</li>
+          <li>Spermidine</li>
+          <li>Bempedoic acid</li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3>Foundational supplements</h3>
+        <div class="cat-count">80+ compounds</div>
+        <ul class="cat-items">
+          <li>Creatine</li>
+          <li>Magnesium L-threonate</li>
+          <li>Omega-3</li>
+          <li>Vitamin D3</li>
+          <li>Ashwagandha</li>
+          <li>Glycine</li>
+          <li>Tyrosine</li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3>Hormones &amp; TRT</h3>
+        <div class="cat-count">25+ compounds</div>
+        <ul class="cat-items">
+          <li>Testosterone</li>
+          <li>Enclomiphene</li>
+          <li>Anastrozole</li>
+          <li>HCG</li>
+          <li>Progesterone</li>
+          <li>DHEA</li>
+        </ul>
+      </div>
+
+      <div class="cat">
+        <h3>Lifestyle interventions</h3>
+        <div class="cat-count">40+ inputs</div>
+        <ul class="cat-items">
+          <li>Zone 2 cardio</li>
+          <li>Resistance training</li>
+          <li>Sauna</li>
+          <li>Cold exposure</li>
+          <li>Morning light</li>
+          <li>HRV breathing</li>
+          <li>Sleep timing</li>
+        </ul>
+      </div>
+
+      <div class="cat conditions" style="grid-column: 1 / -1;">
+        <span class="mono-accent" style="color: var(--accent-deep)">Modeled for</span>
+        <h3 style="margin-top: 8px;">Twenty+ chronic conditions, stackable.</h3>
+        <div class="cat-count">20+ conditions</div>
+        <ul class="cat-items" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 100%;">
+          <li>ADHD</li>
+          <li>Hashimoto's</li>
+          <li>PCOS</li>
+          <li>POTS</li>
+          <li>T2D</li>
+          <li>Perimenopause</li>
+          <li>Long-COVID</li>
+          <li>Sleep apnea</li>
+          <li>Hypertension</li>
+          <li>IBS</li>
+          <li>Anxiety</li>
+          <li>Depression</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cats-cta">
+      <a href="#full-library" class="btn outline">See the full library →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     METHODOLOGY BAND
+     ============================================================ -->
+<section class="methodology">
+  <div class="wrap method-grid">
+    <div>
+      <span class="mono-accent">04 / The standard</span>
+      <h2>Built <i>in the open</i>.
+        <small>Every effect curve in the lab is traced to a published study. Every drug interaction is rule-coded by a pharmacist, not hallucinated by an LLM.</small>
+      </h2>
+    </div>
+    <div class="method-list">
+      <div class="method-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Every effect has a citation.</h4>
+          <p>Hover any biological effect in the model and you'll see the paper it came from. If we can't cite it, we don't model it.</p>
+        </div>
+      </div>
+      <div class="method-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Confidence bands, not false certainty.</h4>
+          <p>Every prediction is tagged with how strong the underlying evidence is. Rapamycin Q14d has weak human data; we say so.</p>
+        </div>
+      </div>
+      <div class="method-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Drug interactions are rule-coded.</h4>
+          <p>MAOIs + SSRIs. Methylene blue + serotonergics. Hard rules from pharmacist-reviewed sources, not statistical guesses.</p>
+        </div>
+      </div>
+      <div class="method-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>The model knows what it doesn't know.</h4>
+          <p>Pregnant, breastfeeding, under 18, or stacking compounds with low literature — the lab flags it and refuses to overstate confidence.</p>
+        </div>
+      </div>
+      <div class="method-item">
+        <div class="check">✓</div>
+        <div>
+          <h4>Not medical advice. By design.</h4>
+          <p>Protokol Lab is an educational tool for self-experimentation. We're not a clinic. We don't want to be.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SOCIAL PROOF — protocols people are building
+     ============================================================ -->
+<section class="social">
+  <div class="wrap">
+    <div class="social-head">
+      <span class="mono-accent">05 / In the lab right now</span>
+      <h2>The protocols people are <i>building</i>.</h2>
+      <p>Real scenarios from the closed beta. Names removed. Doses preserved. Nothing here is a recommendation — they're worked examples to show you the shape of what you'd design for yourself.</p>
+    </div>
+
+    <div class="proto-grid">
+      <article class="proto">
+        <div class="proto-img">
+          <span class="proto-img-label">GLP-1 · 41M</span>
+        </div>
+        <div class="proto-body">
+          <div class="meta">12-week scenario</div>
+          <h4>Muscle-first tirzepatide.</h4>
+          <p>10 mg/wk titration with three protein bumps, two resistance sessions, and electrolyte support. Lab flags catabolism risk on day-3 of every dose week.</p>
+          <div class="proto-tags">
+            <span class="proto-tag">Tirzepatide</span>
+            <span class="proto-tag">Muscle</span>
+            <span class="proto-tag">Electrolytes</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="proto">
+        <div class="proto-img" style="background-image: linear-gradient(135deg, rgba(94,110,74,0.18), rgba(196,99,60,0.10)), radial-gradient(ellipse at top right, rgba(94,110,74,0.22), transparent 60%);">
+          <span class="proto-img-label">Performance · 38M</span>
+        </div>
+        <div class="proto-body">
+          <div class="meta">14-day scenario</div>
+          <h4>Two-pulse caffeine, no afternoon stims.</h4>
+          <p>Replaced a 600 mg/day caffeine + nicotine loop. 100 mg AM, 100 mg before lunch, hard cutoff. HRV +9 ms in two weeks.</p>
+          <div class="proto-tags">
+            <span class="proto-tag">Caffeine</span>
+            <span class="proto-tag">HRV</span>
+            <span class="proto-tag">Sleep</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="proto">
+        <div class="proto-img" style="background-image: linear-gradient(135deg, rgba(196,99,60,0.20), rgba(94,110,74,0.08)), radial-gradient(ellipse at bottom left, rgba(196,99,60,0.18), transparent 65%);">
+          <span class="proto-img-label">Conditions · 41F</span>
+        </div>
+        <div class="proto-body">
+          <div class="meta">16-week scenario</div>
+          <h4>Hashimoto's + perimenopause + iron low.</h4>
+          <p>Levothyroxine timing, alternate-day iron repletion, magnesium PM, structured light exposure. Daily energy +34% modeled.</p>
+          <div class="proto-tags">
+            <span class="proto-tag">Hashimoto's</span>
+            <span class="proto-tag">Iron</span>
+            <span class="proto-tag">Perimenopause</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="proto">
+        <div class="proto-img" style="background-image: linear-gradient(135deg, rgba(94,110,74,0.16), rgba(196,99,60,0.16)), radial-gradient(ellipse at top left, rgba(196,99,60,0.22), transparent 60%);">
+          <span class="proto-img-label">ADHD · 33F</span>
+        </div>
+        <div class="proto-body">
+          <div class="meta">12-week scenario</div>
+          <h4>Natural-baseline dopamine, alongside Vyvanse.</h4>
+          <p>Bright light, protein-led morning, training, magnesium L-threonate, tyrosine timing. No dose change. 3 PM crash flattened.</p>
+          <div class="proto-tags">
+            <span class="proto-tag">ADHD</span>
+            <span class="proto-tag">Dopamine</span>
+            <span class="proto-tag">Provider-led</span>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     HOW THE MODEL WORKS — pipeline + limits
+     ============================================================ -->
+<section class="pipeline" id="how">
+  <div class="wrap">
+    <div class="pipeline-head">
+      <span class="mono-accent">06 / How the model works</span>
+      <h2>The pipeline behind <i>every prediction</i>.</h2>
+      <p>You don't need to understand any of this to use the lab. But if you want to know how a model earns the right to make a claim about your body — here's how ours does.</p>
+    </div>
+
+    <div class="pipe-steps">
+      <div class="pipe-step">
+        <div class="num">STEP 01</div>
+        <h3>Cited inputs.</h3>
+        <div class="pipe-vis">
+          <div class="vis-cite">
+            <div class="vis-cite-row"><span class="what">Caffeine → A2A</span><span class="src">Fredholm 1999</span></div>
+            <div class="vis-cite-row"><span class="what">Caffeine → cortisol</span><span class="src">Lovallo 2005</span></div>
+            <div class="vis-cite-row"><span class="what">Tirzepatide → MPS</span><span class="src">Wilkinson 2024</span></div>
+          </div>
+        </div>
+        <p>Every compound is decomposed into its receptor binding profile and downstream effects, each one traced to a peer-reviewed source.</p>
+      </div>
+
+      <div class="pipe-step">
+        <div class="num">STEP 02</div>
+        <h3>Receptor-level modeling.</h3>
+        <div class="pipe-vis">
+          <div class="vis-receptor">
+            <div class="center">Caffeine 200 mg</div>
+            <div class="branches">
+              <div class="branch">A1<br><b style="color:var(--accent)">−80</b></div>
+              <div class="branch">A2A<br><b style="color:var(--accent)">−160</b></div>
+              <div class="branch">Cortisol<br><b style="color:var(--accent)">+16</b></div>
+            </div>
+          </div>
+        </div>
+        <p>Dose, timing, and your own baseline propagate through the receptor graph — and every downstream signal moves with realistic magnitude and timing.</p>
+      </div>
+
+      <div class="pipe-step">
+        <div class="num">STEP 03</div>
+        <h3>Honest limits.</h3>
+        <div class="pipe-vis">
+          <div class="vis-refusal">
+            <div class="stack">SSRI + Methylene Blue</div>
+            <div class="msg">Refused · MAOI window</div>
+          </div>
+        </div>
+        <p>When the model isn't confident — or the stack is unsafe — it tells you. We'd rather be useful in fewer places than wrong in more.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PRICING — function-card style
+     ============================================================ -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <span class="mono-accent">07 / Pricing</span>
+    <h2 class="price-h2" style="margin-top: 18px;">
+      What could cost you <span class="strike">three months</span><br>
+      is <i>twenty-four dollars</i>.
+    </h2>
+    <p class="price-sub">Founding-member pricing. Locks for life. Cancel anytime. Every protocol exports as JSON the day you decide to leave.</p>
+
+    <div class="price-card">
+      <div class="left">
+        <span class="badge">HSA / FSA eligible</span>
+        <h3>Lab access</h3>
+        <div class="amount">
+          <span class="big">$0.80</span>
+          <span class="unit">/ day</span>
+        </div>
+        <div class="billed">Billed annually at $288 · $24/month</div>
+        <a href="#join" class="btn primary" style="height: 52px; padding: 0 28px;">Join the lab →</a>
+      </div>
+      <div class="divider"></div>
+      <div class="right">
+        <ul>
+          <li>1,200+ compounds, every effect cited.</li>
+          <li>62 biological signals, modeled together.</li>
+          <li>Bloodwork PDF parsing — Quest, LabCorp, Function.</li>
+          <li>Twenty+ chronic conditions, stackable.</li>
+          <li>Drug-interaction harm engine, rule-coded.</li>
+          <li>A/B any two scenarios. Iterate in afternoons.</li>
+          <li>Export every protocol as PDF or JSON.</li>
+          <li>No ads. No selling your bloodwork. Ever.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="quotes">
+      <div class="quote-card">
+        <div class="quote-stars">★★★★★</div>
+        <p>"Finally a tool that doesn't pretend to be my doctor. The receipts on every effect are the whole point."</p>
+      </div>
+      <div class="quote-card">
+        <div class="quote-stars">★★★★★</div>
+        <p>"I caught a duplicate in my stack the first afternoon. Saved me from a tolerance break I was about to start."</p>
+      </div>
+      <div class="quote-card">
+        <div class="quote-stars">★★★★★</div>
+        <p>"This is what I wish I'd had on day one of my GLP-1. Twelve months of mistakes I now would have avoided."</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     CLOSING — black box
+     ============================================================ -->
+<section class="closer">
+  <div class="wrap-narrow closer-inner">
+    <h2>
+      Your body isn't a <i>black box</i>.<br>
+      <span class="line2">Stop treating it like one.</span>
+    </h2>
+    <p>Closed beta. Tell us what you're building and we'll get you in.</p>
+    <div class="closer-ctas">
+      <a href="#join" class="btn primary" style="height: 52px; padding: 0 32px;">Request access →</a>
+      <a href="#how" class="btn">Read the methodology</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a href="#" class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="14" r="13" fill="#c4633c" />
+              <path d="M3 14 L25 14" stroke="#fbf8f3" stroke-width="1.2" />
+              <path d="M5 17 L23 17" stroke="#fbf8f3" stroke-width="1.2" opacity="0.85" />
+              <path d="M7 20 L21 20" stroke="#fbf8f3" stroke-width="1.2" opacity="0.7" />
+              <path d="M9 23 L19 23" stroke="#fbf8f3" stroke-width="1.2" opacity="0.55" />
+            </svg>
+          </span>
+          <span class="brand-text">Protokol</span>
+        </a>
+        <p>A simulation lab for your routine. Built for the people who decided their body is too important to outsource.</p>
+      </div>
+
+      <div class="foot-col">
+        <h6>Product</h6>
+        <a href="#what">What we model</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#methodology">Methodology</a>
+        <a href="#changelog">Changelog</a>
+      </div>
+
+      <div class="foot-col">
+        <h6>Trust</h6>
+        <a href="#privacy">Privacy</a>
+        <a href="#security">Security</a>
+        <a href="#data">Your data, your hardware</a>
+        <a href="#terms">Terms</a>
+        <a href="mailto:founder@protokol.lab">founder@protokol.lab</a>
+      </div>
+
+      <div class="foot-cta">
+        <h6>Subscribe and get the <i>self-experimenter's</i> field guide.</h6>
+        <p>One email a month. The protocols people are running, with the citations behind them. Nothing to sell.</p>
+        <form class="foot-form" onsubmit="event.preventDefault();">
+          <input type="email" placeholder="Email address" />
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="disclaim">
+      <b>Important.</b> Protokol Lab is an educational tool for adults running their own experiments. It is not a medical device, does not diagnose, and does not treat any condition. Predictions are model-based and may be wrong. Talk to a licensed clinician before changing medications, peptides, or supplements — especially during pregnancy, while breastfeeding, or if you have a diagnosed condition. Nothing in this product is medical advice. By design.
+    </div>
+
+    <div class="foot-bottom">
+      <span>© 2026 Protokol Lab, Inc.</span>
+      <span>Built because we felt like a black box and wanted to feel less like one.</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -5,3 +5,11 @@ test-results
 .env
 tsconfig.tsbuildinfo
 package-lock.json
+
+# Raw video masters — host externally, don't bloat repo
+*.mov
+marketing/public/hero-video.*
+
+# Prototype scratch + screenshot uploads
+marketing/prototype/uploads/
+marketing/screenshots/

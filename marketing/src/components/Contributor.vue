@@ -7,7 +7,7 @@ const props = defineProps<{
 }>();
 
 const valColor =
-  props.kind === "neg" ? "oklch(0.78 0.12 25)" : "var(--accent)";
+  props.kind === "neg" ? "var(--neg)" : "var(--accent)";
 </script>
 
 <template>
