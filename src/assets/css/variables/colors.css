@@ -46,4 +46,51 @@
   --rose-400: #fb7185;
   --rose-500: #f43f5e;
   --rose-600: #e11d48;
+
+  /* ============================================================
+     Earthy / Parchment palette (active theme primitives)
+     ============================================================ */
+
+  /* Parchment / warm neutral scale (used by both light & dark) */
+  --parch-0: #ffffff;
+  --parch-50: #fbf8f3;
+  --parch-100: #f5efe4;
+  --parch-200: #ebe3d3;
+  --parch-300: #d9cdb5;
+  --parch-400: #b8a98a;
+  --parch-500: #928876;
+  --parch-600: #6e6557;
+  --parch-700: #5a5249;
+  --parch-800: #2e2922;
+  --parch-900: #1c1a17;
+  --parch-1000: #0f0d0a;
+
+  /* Umber (inky dark surfaces, neutral) */
+  --umber-900: #0c0c0c;
+  --umber-800: #131313;
+  --umber-750: #191919;
+  --umber-700: #252525;
+  --umber-600: #383838;
+
+  /* Terracotta (accent / danger) */
+  --terra-50: #fbeee6;
+  --terra-100: #f4d8c6;
+  --terra-400: #d98a64;
+  --terra-500: #c4633c;
+  --terra-600: #a14e2c;
+  --terra-1000: #2a1308;
+
+  /* Olive (success / lower-tendency) */
+  --olive-50: #eef2e3;
+  --olive-400: #8aaa68;
+  --olive-500: #6b8a4e;
+  --olive-600: #557040;
+  --olive-1000: #1a2210;
+
+  /* Ochre (warning) */
+  --ochre-50: #f7ecd6;
+  --ochre-400: #d4a05a;
+  --ochre-500: #b8853a;
+  --ochre-600: #946828;
+  --ochre-1000: #261a09;
 }

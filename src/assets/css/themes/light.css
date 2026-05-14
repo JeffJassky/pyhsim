@@ -2,57 +2,57 @@
   color-scheme: light;
 
   /* Backgrounds */
-  --color-bg-base: var(--neutral-0);
-  --color-bg-subtle: var(--neutral-100);
-  --color-bg-elevated: var(--neutral-50);
-  --color-bg-disabled: var(--amber-50);
-  --color-bg-active: var(--neutral-200);
+  --color-bg-base: var(--parch-50);
+  --color-bg-subtle: var(--parch-100);
+  --color-bg-elevated: var(--parch-0);
+  --color-bg-disabled: var(--parch-200);
+  --color-bg-active: var(--parch-200);
 
   /* Text */
-  --color-text-primary: var(--neutral-1000);
-  --color-text-secondary: var(--neutral-600);
-  --color-text-muted: var(--neutral-400);
-  --color-text-inverted: var(--neutral-50);
-  --color-text-active: var(--sky-600);
+  --color-text-primary: var(--parch-900);
+  --color-text-secondary: var(--parch-700);
+  --color-text-muted: var(--parch-500);
+  --color-text-inverted: var(--parch-50);
+  --color-text-active: var(--terra-600);
 
   /* Numbers */
-  --color-metric-primary: var(--sky-600);
-  --color-metric-secondary: var(--sky-600);
+  --color-metric-primary: var(--terra-600);
+  --color-metric-secondary: var(--parch-700);
 
   /* Borders / Dividers */
-  --color-border-subtle: var(--neutral-100);
-  --color-border-default: var(--neutral-200);
-  --color-border-strong: var(--neutral-300);
-  --color-active: var(--sky-600);
+  --color-border-subtle: var(--parch-200);
+  --color-border-default: var(--parch-300);
+  --color-border-strong: var(--parch-400);
+  --color-active: var(--terra-500);
 
   /* Shadows */
-  --shadow-large: 3px 6px 15px rgba(0, 0, 0, 0.1);
+  --shadow-large: 3px 6px 15px rgba(40, 30, 20, 0.12);
 
-  /* Semantic / Functional (Grayscale) */
-  --color-accent: var(--neutral-900);
-  --color-accent-hover: var(--neutral-700);
+  /* Semantic / Functional */
+  --color-accent: var(--terra-500);
+  --color-accent-hover: var(--terra-600);
 
   /* Biological Exceptions (Only for signals) */
-  --color-success: var(--emerald-600);
-  --color-warning: var(--amber-600);
-  --color-danger: var(--rose-600);
+  --color-success: var(--olive-500);
+  --color-warning: var(--ochre-500);
+  --color-danger: var(--terra-600);
 
   /* Legacy / Specific Macros */
-  --color-macro-carbs: var(--sky-600);
+  --color-macro-carbs: var(--terra-500);
 
   /* Chart Tendencies */
-  --chart-line-higher: var(--sky-600);
-  --chart-fill-higher: color-mix(in srgb, var(--sky-600), transparent 88%);
-  --chart-grad-higher-0: var(--sky-400);
-  --chart-grad-higher-1: var(--sky-600);
+  --chart-line-higher: var(--terra-500);
+  --chart-fill-higher: color-mix(in srgb, var(--terra-500), transparent 88%);
+  --chart-grad-higher-0: var(--terra-400);
+  --chart-grad-higher-1: var(--terra-600);
 
-  --chart-line-lower: var(--amber-600);
-  --chart-fill-lower: color-mix(in srgb, var(--amber-600), transparent 88%);
-  --chart-grad-lower-0: var(--amber-400);
-  --chart-grad-lower-1: var(--rose-600);
+  --chart-line-lower: var(--olive-500);
+  --chart-fill-lower: color-mix(in srgb, var(--olive-500), transparent 88%);
+  --chart-grad-lower-0: var(--olive-400);
+  --chart-grad-lower-1: var(--olive-600);
 
-  --chart-line-neutral: var(--neutral-300);
-  --chart-fill-neutral: color-mix(in srgb, var(--neutral-300), transparent 88%);
-  --chart-grad-neutral-0: var(--neutral-200);
-  --chart-grad-neutral-1: var(--neutral-400);
+  --chart-line-neutral: var(--parch-400);
+  --chart-fill-neutral: color-mix(in srgb, var(--parch-400), transparent 88%);
+  --chart-grad-neutral-0: var(--parch-300);
+  --chart-grad-neutral-1: var(--parch-500);
 }
