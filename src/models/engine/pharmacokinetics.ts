@@ -782,18 +782,31 @@ export function calculateClearance(
 
   let totalCL_L_min = 0;
 
-  // Hepatic clearance scaled by liver blood flow
+  // Hepatic clearance scaled by liver blood flow.
+  // Lab's standalone PK uses the new clearance schema's CL_int_mL_min when
+  // present; the core engine handles per-CYP activity composition. Here we
+  // treat CL_int as a reference apparent clearance for simplicity.
   if (pk.clearance.hepatic) {
-    const baseCL = pk.clearance.hepatic.baseCL_mL_min;
+    const baseCL = pk.clearance.hepatic.CL_int_mL_min ?? 0;
     const liverScale = phys.liverBloodFlow / REF_LIVER_BLOOD_FLOW;
     totalCL_L_min += (baseCL / 1000) * liverScale; // mL/min -> L/min
   }
 
-  // Renal clearance scaled by eGFR
+  // Renal clearance scaled by eGFR. New schema: filtration + transporter
+  // secretion. For lab's simplified PK, sum the secretion entries (treated
+  // as reference apparent renal CL) and add a filtration approximation when
+  // filtration declared (uses subject GFR directly).
   if (pk.clearance.renal) {
-    const baseCL = pk.clearance.renal.baseCL_mL_min;
+    const renal = pk.clearance.renal;
+    const filtrationCL = renal.filtration
+      ? phys.estimatedGFR * (renal.filtration.fu_filtered ?? 1.0)
+      : 0;
+    const secretionCL = Object.values(renal.secretion ?? {}).reduce(
+      (sum, v) => sum + (v ?? 0),
+      0,
+    );
     const renalScale = phys.estimatedGFR / REF_GFR;
-    totalCL_L_min += (baseCL / 1000) * renalScale;
+    totalCL_L_min += (filtrationCL / 1000) + (secretionCL / 1000) * renalScale;
   }
 
   // Calculate Vd for k_e = CL / Vd

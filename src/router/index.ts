@@ -9,6 +9,7 @@ import type { TimelineItem } from '@/types';
 
 const StudioPage = () => import("@/pages/StudioPage.vue");
 const OnboardingPage = () => import("@/pages/OnboardingPage.vue");
+const BibliographyPage = () => import("@/pages/BibliographyPage.vue");
 
 export const router = createRouter({
   history: createWebHashHistory(),
@@ -35,6 +36,11 @@ export const router = createRouter({
       path: "/onboarding",
       name: "onboarding",
       component: OnboardingPage
+    },
+    {
+      path: "/bibliography",
+      name: "bibliography",
+      component: BibliographyPage
     },
     {
       path: '/presets/:id',

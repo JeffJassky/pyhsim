@@ -394,6 +394,20 @@
                 </div>
               </div>
             </div>
+
+            <!-- Enzyme factor breakdown (marquee — for enzyme aux signals) -->
+            <EnzymeBreakdownWrapper
+              :signal-key="spec.key"
+              :grid="grid"
+              :series-data="seriesData"
+              :playhead-min="props.playheadMin"
+            />
+
+            <!-- Active modulators (enzyme/transporter signals only) -->
+            <SignalModulatorsWrapper
+              :signal-key="spec.key"
+              :playhead-min="props.playheadMin"
+            />
           </div>
         </div>
       </Transition>
@@ -402,7 +416,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Dropdown as VDropdown } from 'floating-vue';
 import type { ChartSeriesSpec, ResponseSpec, Signal, Minute, MonitorResult } from '@/types';
 import { getAllUnifiedDefinitions } from '@kyneticbio/core';
@@ -418,6 +432,8 @@ import {
 import { CONDITION_LIBRARY, RECEPTOR_SIGNAL_MAP, RECEPTOR_SENSITIVITY_GAIN } from '@kyneticbio/core';
 import { UNIT_CONVERSIONS } from '@kyneticbio/core';
 import { EnzymeKey, ReceptorKey, TransporterKey, ProductionTerm, DynamicCoupling } from '@kyneticbio/core';
+import SignalModulatorsWrapper from '@/components/pkpd/sections/SignalModulatorsWrapper.vue';
+import EnzymeBreakdownWrapper from '@/components/pkpd/sections/EnzymeBreakdownWrapper.vue';
 
 const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
@@ -969,6 +985,28 @@ const describeMapping = (spec: ResponseSpec): string => {
   }
 };
 
+/**
+ * Cross-link handler: EnzymeChip clicks in the drug inspector dispatch a
+ * window event with the target aux signal key. We respond by opening that
+ * signal's info panel and scrolling the row into view.
+ */
+function handleNavigateToSignal(evt: Event) {
+  const detail = (evt as CustomEvent).detail as { signalKey?: string };
+  const key = detail?.signalKey;
+  if (!key) return;
+  // Only act when the requested signal is in this chart's visible specs
+  const found = props.seriesSpecs.find((s) => s.key === key);
+  if (!found) return;
+  infoOpenKey.value = key;
+  // Scroll the series row into view after Vue settles the open state
+  nextTick(() => {
+    const el = chartContainer.value?.querySelector<HTMLElement>(`[data-id="${key}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+}
+
 onMounted(() => {
   if (chartContainer.value) {
     sortable.value = new Sortable(chartContainer.value, {
@@ -995,10 +1033,13 @@ onMounted(() => {
       }
     });
   }
+
+  window.addEventListener('pkpd:navigate-to-signal', handleNavigateToSignal);
 });
 
 onBeforeUnmount(() => {
   sortable.value?.destroy();
+  window.removeEventListener('pkpd:navigate-to-signal', handleNavigateToSignal);
 });
 
 watch(

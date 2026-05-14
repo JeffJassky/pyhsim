@@ -10,6 +10,10 @@ export const useLibraryStore = defineStore('library', {
   state: (): LibraryState => ({
     defs: [...INTERVENTIONS],
   }),
+  getters: {
+    defsMap: (state): Map<string, InterventionDef> =>
+      new Map(state.defs.map((d) => [d.key, d])),
+  },
   actions: {
     addDef(def: InterventionDef) {
       this.defs.push(def);

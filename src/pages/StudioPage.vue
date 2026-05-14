@@ -426,6 +426,11 @@
         @bulk-change="handleBulkInspectorChange"
         @close="handleInspectorClose"
       />
+      <EnzymeDetailsDrawer
+        :open="enzymeDrawerSignalKey !== null"
+        :signal-key="enzymeDrawerSignalKey"
+        @close="enzymeDrawerSignalKey = null"
+      />
       <div class="fab-group">
         <button
           class="studio-fab studio-fab--comprehensive"
@@ -490,6 +495,7 @@ import ProfilePalette from '@/components/palette/ProfilePalette.vue';
 import TimelineView from '@/components/timeline/TimelineView.vue';
 import SignalChart from '@/components/charts/SignalChart.vue';
 import FloatingInspector from '@/components/inspector/FloatingInspector.vue';
+import EnzymeDetailsDrawer from '@/components/pkpd/EnzymeDetailsDrawer.vue';
 import AIChatPanel from '@/components/ai/AIChatPanel.vue';
 import SignalToggleMenu from '@/components/charts/SignalToggleMenu.vue';
 import NutritionCarousel from '@/components/log/NutritionCarousel.vue';
@@ -516,6 +522,11 @@ import { BIOLOGICAL_SYSTEMS } from '@kyneticbio/core';
 import type { BioSystemDef, DynamicCoupling, MonitorResult } from '@kyneticbio/core';
 import { GOAL_CATEGORIES } from '@/models/domain/goals';
 import type { GoalCategory } from '@/models/domain/goals';
+import {
+  PHARMACOKINETICS_SIGNAL_KEYS,
+  PHARMACOKINETICS_GROUP,
+  isPharmacokineticsSignal,
+} from '@/models/domain/pharmacokinetics-group';
 import type {
   ChartSeriesSpec,
   FoodSearchHit,
@@ -759,10 +770,23 @@ const handleTimelineDeleteShortcut = (event: KeyboardEvent) => {
   ids.forEach(id => timeline.removeItem(id));
 };
 
+// Enzyme details drawer — opens when an EnzymeChip in the drug inspector
+// dispatches the navigate-to-signal event. Decoupled from chart visibility
+// so users can always inspect an enzyme's current factor breakdown even when
+// the signal isn't toggled on in the chart list. Single ref: non-null ≡ open.
+const enzymeDrawerSignalKey = ref<string | null>(null);
+
+function handleEnzymeNavigate(evt: Event) {
+  const detail = (evt as CustomEvent).detail as { signalKey?: string };
+  if (!detail?.signalKey) return;
+  enzymeDrawerSignalKey.value = detail.signalKey;
+}
+
 onMounted(() => {
   window.addEventListener('click', handleWindowClick);
   scenariosStore.init();
   window.addEventListener('keydown', handleTimelineDeleteShortcut);
+  window.addEventListener('pkpd:navigate-to-signal', handleEnzymeNavigate);
 
   // If the timeline only has the default sleep event, add the comprehensive day items
   if (timeline.items.length === 1 && timeline.items[0].meta.key === 'sleep') {
@@ -773,6 +797,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('click', handleWindowClick);
   window.removeEventListener('keydown', handleTimelineDeleteShortcut);
+  window.removeEventListener('pkpd:navigate-to-signal', handleEnzymeNavigate);
 });
 
 watch(
@@ -800,7 +825,14 @@ const subscriptionTier = computed(() => user.subscriptionTier);
 
 const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSeriesSpec[] =>
   keys
-    .filter((key) => !filterByEnabled || enabledSignals.value[key as Signal] !== false)
+    .filter((key) => {
+      if (!filterByEnabled) return true;
+      // Pharmacokinetics aux signals default to OFF unless explicitly enabled;
+      // standard signals default to ON unless explicitly disabled.
+      const flag = enabledSignals.value[key as Signal];
+      if (isPharmacokineticsSignal(key)) return flag === true;
+      return flag !== false;
+    })
     .map((key) => {
       const def = UNIFIED_DEFS[key as Signal];
       const auxDef = AUXILIARY_DEFINITIONS[key];
@@ -826,15 +858,15 @@ const buildSpecs = (keys: readonly string[], filterByEnabled = true): ChartSerie
       } else if (auxDef) {
         return {
           key: auxDef.key,
-          label: auxDef.key, // Auxiliary defs might not have pretty labels yet
+          label: auxDef.label || auxDef.key,
           unit: 'activity',
-          yMin: 0,
-          yMax: 2,
-          color: '#94a3b8',
+          yMin: auxDef.min ?? 0,
+          yMax: auxDef.max ?? 2,
           idealTendency: 'none',
           info: {
-            description: 'Mechanistic state tracking for auxiliary variable (enzyme, transporter, or pool)'
-          }
+            description:
+              'Enzyme or transporter activity multiplier — 1.00 means your baseline; deviations come from genetics, sex, age, inflammation, hepatic state, or active inducer/inhibitor drugs on the timeline.',
+          },
         } as ChartSeriesSpec;
       }
       return null;
@@ -1053,8 +1085,12 @@ const activeSpecs = computed(() => {
 
     keys = Array.from(signalSet);
   } else {
-    // 'all' - Show all enabled signals
-    keys = (Object.values(UNIFIED_DEFS) as any[]).map((sig) => sig.key as Signal);
+    // 'all' - Show all enabled signals (incl. pharmacokinetics aux signals that
+    // the user has explicitly toggled on)
+    keys = [
+      ...(Object.values(UNIFIED_DEFS) as any[]).map((sig) => sig.key as Signal),
+      ...PHARMACOKINETICS_SIGNAL_KEYS,
+    ];
   }
 
   const specs = buildSpecs(keys, true);
@@ -1098,6 +1134,19 @@ const groupedSpecs = computed(() => {
         systemSpecs.forEach((s) => usedKeys.add(s.key));
       }
     });
+
+    // Pharmacokinetics — our enzyme/transporter aux signals, when any are enabled.
+    const pkSpecs = specs.filter((s) => isPharmacokineticsSignal(s.key));
+    if (pkSpecs.length > 0) {
+      result.push({
+        id: PHARMACOKINETICS_GROUP.id,
+        label: PHARMACOKINETICS_GROUP.label,
+        description: PHARMACOKINETICS_GROUP.description,
+        icon: PHARMACOKINETICS_GROUP.icon,
+        specs: pkSpecs,
+      });
+      pkSpecs.forEach((s) => usedKeys.add(s.key));
+    }
   } else if (chartGroupBy.value === 'goals') {
     const categories = chartFilter.value === 'goals'
       ? GOAL_CATEGORIES.filter(g => user.selectedGoals.includes(g.id))

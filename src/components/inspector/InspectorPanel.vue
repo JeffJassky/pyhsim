@@ -132,6 +132,20 @@
         ></textarea>
       </div>
 
+      <!-- New PK/PD sections — surface biological relationships from this PR -->
+      <!-- Hero: surfaces only when the subject's biology materially changes this drug -->
+      <DrugSubjectImpactSection :pharmacology="primaryPharmacology" />
+      <DrugClearanceSection
+        :pharmacology="primaryPharmacology"
+        @enzyme-click="handleEnzymeClick"
+      />
+      <DrugInteractionsSection
+        :pharmacology="primaryPharmacology"
+        @enzyme-click="handleEnzymeClick"
+      />
+      <DrugAbsorptionBindingSection :pharmacology="primaryPharmacology" />
+      <DrugReferencesSection :pharmacology="primaryPharmacology" />
+
       <div v-if="resolvedEffects.length" class="effects-section">
         <button
           v-if="!showEffects"
@@ -186,6 +200,12 @@ import moment from 'moment';
 import type { InterventionDef, ParamValues, TimelineItem, PharmacologyDef } from '@/types';
 import type { Signal } from '@kyneticbio/core';
 import ParamEditor from './ParamEditor.vue';
+import DrugClearanceSection from '@/components/pkpd/sections/DrugClearanceSection.vue';
+import DrugInteractionsSection from '@/components/pkpd/sections/DrugInteractionsSection.vue';
+import DrugSubjectImpactSection from '@/components/pkpd/sections/DrugSubjectImpactSection.vue';
+import DrugAbsorptionBindingSection from '@/components/pkpd/sections/DrugAbsorptionBindingSection.vue';
+import DrugReferencesSection from '@/components/pkpd/sections/DrugReferencesSection.vue';
+import { enzymeToAuxSignalKey } from '@/models/domain/enzyme-key-mapping';
 const KCAL_PER_GRAM_CARB = 4;
 const KCAL_PER_GRAM_PROTEIN = 4;
 const KCAL_PER_GRAM_FAT = 9;
@@ -236,21 +256,37 @@ watch(() => local.notes, () => {
   nextTick(adjustNotesHeight);
 });
 
-const resolvedEffects = computed(() => {
-  if (!props.def) return [];
-
-  let pharms: PharmacologyDef[] = [];
-
+const resolvedPharmacology = computed<PharmacologyDef[]>(() => {
+  if (!props.def?.pharmacology) return [];
   if (typeof props.def.pharmacology === 'function') {
     const result = (props.def.pharmacology as any)(local.params);
-    pharms = Array.isArray(result) ? result : [result];
-  } else {
-    pharms = [props.def.pharmacology];
+    return Array.isArray(result) ? result : [result];
   }
-
-  // Aggregate all PD effects from all agents
-  return (pharms as any[]).flatMap(p => p.pd || []);
+  return [props.def.pharmacology as PharmacologyDef];
 });
+
+/**
+ * Primary pharmacology — the first agent in the resolved list. For multi-agent
+ * interventions (e.g., combination drugs), per-section UI currently focuses
+ * on the primary. Could expand to per-agent tabs in a later iteration.
+ */
+const primaryPharmacology = computed<PharmacologyDef | null>(() => {
+  return resolvedPharmacology.value[0] ?? null;
+});
+
+const resolvedEffects = computed(() => {
+  // Aggregate all PD effects across all agents in the pharmacology
+  return (resolvedPharmacology.value as any[]).flatMap(p => p.pd || []);
+});
+
+function handleEnzymeClick(enzyme: string) {
+  const aux = enzymeToAuxSignalKey(enzyme);
+  if (aux) {
+    window.dispatchEvent(
+      new CustomEvent('pkpd:navigate-to-signal', { detail: { signalKey: aux } }),
+    );
+  }
+}
 
 const totalKcal = computed(() => {
   if (!isFood.value) return 0;

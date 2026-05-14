@@ -67,8 +67,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useUserStore } from '@/stores/user';
-import { Signal, getAllUnifiedDefinitions } from '@kyneticbio/core';
+import { Signal, getAllUnifiedDefinitions, AUXILIARY_DEFINITIONS_MAP } from '@kyneticbio/core';
 import { BIOLOGICAL_SYSTEMS } from '@kyneticbio/core';
+import {
+  PHARMACOKINETICS_SIGNAL_KEYS,
+  PHARMACOKINETICS_GROUP,
+  isPharmacokineticsSignal,
+} from '@/models/domain/pharmacokinetics-group';
 
 const userStore = useUserStore();
 const searchQuery = ref('');
@@ -76,17 +81,34 @@ const UNIFIED_DEFS = getAllUnifiedDefinitions();
 
 // Helper to find group name for a signal
 const getSystemName = (sigKey: string) => {
+  if (isPharmacokineticsSignal(sigKey)) {
+    return PHARMACOKINETICS_GROUP.label;
+  }
   const sys = BIOLOGICAL_SYSTEMS.find(s => s.signals.includes(sigKey as Signal));
   return sys?.label ?? 'Other';
 };
 
 const allSignals = computed(() => {
-  return Object.values(UNIFIED_DEFS).map(def => ({
+  const main = Object.values(UNIFIED_DEFS).map(def => ({
     key: def.key,
     label: def.label,
     isPremium: def.isPremium,
-    group: getSystemName(def.key)
-  })).sort((a, b) => a.label.localeCompare(b.label));
+    group: getSystemName(def.key),
+  }));
+  const pk = PHARMACOKINETICS_SIGNAL_KEYS.map((key) => {
+    const auxDef = AUXILIARY_DEFINITIONS_MAP[key];
+    return {
+      key,
+      label: auxDef?.label || key,
+      isPremium: false,
+      group: PHARMACOKINETICS_GROUP.label,
+    };
+  });
+  return [...main, ...pk].sort((a, b) => {
+    // Group entries together by group name, then alphabetical within group
+    if (a.group !== b.group) return a.group.localeCompare(b.group);
+    return a.label.localeCompare(b.label);
+  });
 });
 
 const filteredSignals = computed(() => {
